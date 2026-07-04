@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Restaurace PRO Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+<aside class="sidebar">
+  <h2>🍽️ AI Restaurace<br><span>PRO</span></h2>
+  <nav>
+    <a class="active">🏠 Dashboard</a>
+    <a>📅 Rezervace</a>
+    <a>🍕 Menu</a>
+    <a>🤖 AI Asistent</a>
+    <a>📊 Statistiky</a>
+    <a>⚙️ Nastavení</a>
+  </nav>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <div><h1>Vítejte zpět 👋</h1><p>Přehled vašeho podniku</p></div>
+    <a class="logout" href="index.html">⬅️ Zpět na web</a>
+  </header>
+
+  <section class="cards">
+    <div class="card"><p>Dnešní rezervace</p><h2 id="todayCount">0</h2></div>
+    <div class="card"><p>Celkem rezervací</p><h2 id="totalCount">0</h2></div>
+    <div class="card"><p>Jídla v menu</p><h2 id="foodCount">0</h2></div>
+    <div class="card"><p>Status</p><h2>Online</h2></div>
+  </section>
+
+  <section class="content-grid">
+    <div class="panel">
+      <div class="panel-top">
+        <h2>📋 Seznam rezervací</h2>
+        <input id="search" placeholder="Hledat podle jména..." />
+      </div>
+      <table>
+        <thead><tr><th>Jméno</th><th>Počet osob</th><th>Čas</th><th>Vytvořeno</th><th>Akce</th></tr></thead>
+        <tbody id="reservationTable"><tr><td colspan="5">Načítám...</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>🍕 Správa menu</h2>
+      <input id="foodName" placeholder="Název jídla" />
+      <input id="foodPrice" placeholder="Cena" type="number" />
+      <button onclick="addFood()">Přidat jídlo</button>
+      <h3>🍽️ Jídelní lístek</h3>
+      <div id="foodList"></div>
+    </div>
+  </section>
+</main>
+<script src="dashboard.js"></script>
+</body>
+</html>
