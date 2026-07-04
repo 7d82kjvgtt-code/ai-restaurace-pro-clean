@@ -8,21 +8,38 @@ const DEFAULT_MENU = [
 let reservations = [];
 let foods = [];
 
-function getReservations(){return JSON.parse(localStorage.getItem("reservations")) || []}
-function saveReservations(data){localStorage.setItem("reservations", JSON.stringify(data))}
-function getMenu(){return JSON.parse(localStorage.getItem("menu")) || DEFAULT_MENU}
-function saveMenu(data){localStorage.setItem("menu", JSON.stringify(data))}
+function getReservations() {
+  return JSON.parse(localStorage.getItem("reservations")) || [];
+}
 
-function loadReservations(){
+function saveReservations(data) {
+  localStorage.setItem("reservations", JSON.stringify(data));
+}
+
+function getMenu() {
+  return JSON.parse(localStorage.getItem("menu")) || DEFAULT_MENU;
+}
+
+function saveMenu(data) {
+  localStorage.setItem("menu", JSON.stringify(data));
+}
+
+function loadReservations() {
   reservations = getReservations();
+
   document.getElementById("totalCount").innerText = reservations.length;
   document.getElementById("todayCount").innerText = reservations.length;
+
   renderReservations(reservations);
 }
 
-function renderReservations(data){
+function renderReservations(data) {
   const table = document.getElementById("reservationTable");
-  if(!data.length){table.innerHTML = `<tr><td colspan="5">Žádné rezervace.</td></tr>`; return;}
+
+  if (!data.length) {
+    table.innerHTML = `<tr><td colspan="5">Žádné rezervace.</td></tr>`;
+    return;
+  }
 
   table.innerHTML = data.map(r => `
     <tr>
@@ -30,33 +47,45 @@ function renderReservations(data){
       <td>${r.osoby}</td>
       <td>${r.cas}</td>
       <td>${r.vytvoreno || "-"}</td>
-      <td><button class="deleteBtn" onclick="deleteReservation(${r.id})">🗑️</button></td>
+      <td>
+        <button class="deleteBtn" onclick="deleteReservation(${r.id})">🗑️</button>
+      </td>
     </tr>
   `).join("");
 }
 
-function deleteReservation(id){
-  if(!confirm("Opravdu smazat rezervaci?")) return;
-  saveReservations(reservations.filter(r => r.id !== id));
+function deleteReservation(id) {
+  if (!confirm("Opravdu smazat rezervaci?")) return;
+
+  reservations = reservations.filter(r => r.id !== id);
+  saveReservations(reservations);
   loadReservations();
 }
 
-function loadFoods(){
+function loadFoods() {
   foods = getMenu();
+
   document.getElementById("foodCount").innerText = foods.length;
+
   renderFoods();
 }
 
-function addFood(){
+function addFood() {
   const name = document.getElementById("foodName").value.trim();
   const price = document.getElementById("foodPrice").value.trim();
 
-  if(!name || !price){
+  if (!name || !price) {
     alert("Vyplň název i cenu.");
     return;
   }
 
-  foods.push({ id: Date.now(), name, price, emoji:"🍽️" });
+  foods.push({
+    id: Date.now(),
+    name,
+    price,
+    emoji: "🍽️"
+  });
+
   saveMenu(foods);
 
   document.getElementById("foodName").value = "";
@@ -65,9 +94,13 @@ function addFood(){
   loadFoods();
 }
 
-function renderFoods(){
+function renderFoods() {
   const list = document.getElementById("foodList");
-  if(!foods.length){list.innerHTML = "<p>Žádná jídla.</p>"; return;}
+
+  if (!foods.length) {
+    list.innerHTML = "<p>Žádná jídla.</p>";
+    return;
+  }
 
   list.innerHTML = foods.map(food => `
     <div class="foodItem">
@@ -80,18 +113,27 @@ function renderFoods(){
   `).join("");
 }
 
-function deleteFood(id){
-  if(!confirm("Opravdu smazat jídlo?")) return;
+function deleteFood(id) {
+  if (!confirm("Opravdu smazat jídlo?")) return;
+
   foods = foods.filter(food => food.id !== id);
   saveMenu(foods);
   loadFoods();
 }
 
-document.getElementById("search").addEventListener("input", function(){
+document.getElementById("search").addEventListener("input", function () {
   const value = this.value.toLowerCase();
-  renderReservations(reservations.filter(r => r.jmeno.toLowerCase().includes(value)));
+
+  const filtered = reservations.filter(r =>
+    r.jmeno.toLowerCase().includes(value)
+  );
+
+  renderReservations(filtered);
 });
 
-if(!localStorage.getItem("menu")) saveMenu(DEFAULT_MENU);
+if (!localStorage.getItem("menu")) {
+  saveMenu(DEFAULT_MENU);
+}
+
 loadReservations();
 loadFoods();
