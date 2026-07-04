@@ -12,7 +12,10 @@ let foods = [];
 let editingFoodId = null;
 
 async function loadReservations() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations?select=*&order=id.desc`, { headers });
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations?select=*&order=id.desc`, {
+    headers
+  });
+
   reservations = await res.json();
 
   document.getElementById("totalCount").innerText = reservations.length;
@@ -34,8 +37,12 @@ function renderReservations(data) {
       <td>${r.name}</td>
       <td>${r.people}</td>
       <td>${r.time}</td>
-      <td>${new Date(r.created_at).toLocaleString("cs-CZ")}</td>
-      <td><button class="deleteBtn" onclick="deleteReservation(${r.id})">🗑️</button></td>
+      <td>${new Date(r.created_at).toLocaleString("cs-CZ", {
+        timeZone: "Europe/Prague"
+      })}</td>
+      <td>
+        <button class="deleteBtn" onclick="deleteReservation(${r.id})">🗑️</button>
+      </td>
     </tr>
   `).join("");
 }
@@ -52,7 +59,10 @@ async function deleteReservation(id) {
 }
 
 async function loadFoods() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/menu?select=*&order=id.desc`, { headers });
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/menu?select=*&order=id.desc`, {
+    headers
+  });
+
   foods = await res.json();
 
   document.getElementById("foodCount").innerText = foods.length;
