@@ -35,7 +35,7 @@ function renderReservations(data) {
 
   table.innerHTML = data.map(r => {
 
-    const created = new Date(r.created_at);
+    const created = new Date(r.created_at.replace(" ", "T") + "Z");
 
     const createdCZ = created.toLocaleString("cs-CZ", {
       timeZone: "Europe/Prague",
