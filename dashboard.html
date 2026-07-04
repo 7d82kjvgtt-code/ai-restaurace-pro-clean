@@ -48,6 +48,7 @@
         <h2>📋 Seznam rezervací</h2>
         <input id="search" placeholder="Hledat podle jména..." />
       </div>
+
       <table>
         <thead>
           <tr>
@@ -66,9 +67,13 @@
 
     <div class="panel">
       <h2>🍕 Správa menu</h2>
+
       <input id="foodName" placeholder="Název jídla" />
       <input id="foodPrice" placeholder="Cena" type="number" />
-      <button onclick="addFood()">Přidat jídlo</button>
+      <input id="foodEmoji" placeholder="Emoji např. 🍕" />
+
+      <button onclick="saveFood()" id="foodBtn">Přidat jídlo</button>
+
       <h3>🍽️ Jídelní lístek</h3>
       <div id="foodList"></div>
     </div>
