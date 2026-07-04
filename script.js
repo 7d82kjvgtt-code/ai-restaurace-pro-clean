@@ -10,15 +10,22 @@ const headers = {
 let menu = [];
 
 async function loadMenu() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/menu?select=*&order=id.asc`, { headers });
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/menu?select=*&order=id.asc`, {
+    headers
+  });
+
   menu = await res.json();
   renderPublicMenu();
 }
 
 function renderPublicMenu() {
-  document.getElementById("publicMenu").innerHTML = menu.map(item => `
+  const container = document.getElementById("publicMenu");
+
+  if (!container) return;
+
+  container.innerHTML = menu.map(item => `
     <div class="food-card">
-      <div style="font-size:34px">${item.emoji || "🍽️"}</div>
+      <div style="font-size:40px">${item.emoji || "🍽️"}</div>
       <h3>${item.name}</h3>
       <p>${item.price} Kč</p>
     </div>
@@ -30,14 +37,16 @@ function odpoved() {
   const vysledek = document.getElementById("vysledek");
 
   if (text.includes("menu")) {
-    vysledek.innerHTML = menu.map(item => `${item.emoji || "🍽️"} ${item.name} — ${item.price} Kč`).join("<br>");
+    vysledek.innerHTML = menu
+      .map(item => `${item.emoji || "🍽️"} ${item.name} – ${item.price} Kč`)
+      .join("<br>");
   } else if (text.includes("otev")) {
-    vysledek.innerHTML = "🕒 Máme otevřeno každý den 10:00–22:00.";
+    vysledek.innerHTML = "🕒 Otevřeno každý den 10:00–22:00";
   } else if (text.includes("rezerv")) {
     document.getElementById("rezervace").scrollIntoView({ behavior: "smooth" });
-    vysledek.innerHTML = "📅 Formulář rezervace je níže na stránce.";
+    vysledek.innerHTML = "📅 Formulář rezervace je níže.";
   } else {
-    vysledek.innerHTML = "Zkus napsat: <b>menu</b>, <b>otevřeno</b> nebo <b>rezervace</b>.";
+    vysledek.innerHTML = "Zkus napsat <b>menu</b>, <b>otevřeno</b> nebo <b>rezervace</b>.";
   }
 }
 
@@ -51,18 +60,28 @@ async function ulozitRezervaci() {
     return;
   }
 
-  await fetch(`${SUPABASE_URL}/rest/v1/reservations`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations`, {
     method: "POST",
-    headers,
+    headers: {
+      ...headers,
+      Prefer: "return=minimal"
+    },
     body: JSON.stringify({
-      name,
+      name: name,
       people: Number(people),
-      time,
+      time: time,
       status: "Čeká"
     })
   });
 
-  alert(`✅ Rezervace uložena: ${name}, ${people} osob, ${time}`);
+  if (!res.ok) {
+    const errorText = await res.text();
+    alert("Chyba rezervace: " + errorText);
+    console.error(errorText);
+    return;
+  }
+
+  alert("✅ Rezervace uložena!");
 
   document.getElementById("jmeno").value = "";
   document.getElementById("osoby").value = "";
