@@ -58,3 +58,27 @@ input::placeholder{color:#94a3b8}
   .subtitle{font-size:17px}
   .nav-links{gap:12px}
 }
+.food-card p{
+  color:#cbd5e1;
+  font-size:16px;
+  line-height:1.6;
+  font-weight:500;
+}
+
+#menu .food-card p{
+  color:#fbbf24;
+  font-size:22px;
+  font-weight:900;
+}
+
+.section:nth-of-type(even){
+  background:rgba(2,6,23,.22);
+}
+
+.assistant-card{
+  transform:translateY(10px);
+}
+
+.contact{
+  border-radius:28px 28px 0 0;
+}
