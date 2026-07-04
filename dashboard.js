@@ -1,76 +1,136 @@
-const DEFAULT_MENU = [
-  { id: 1, name: "Margherita", price: "189", emoji: "🍕" },
-  { id: 2, name: "Prosciutto", price: "219", emoji: "🍕" },
-  { id: 3, name: "Caesar salát", price: "179", emoji: "🥗" },
-  { id: 4, name: "Tiramisu", price: "129", emoji: "🍰" }
-];
+const SUPABASE_URL = "https://decpnnbaejxjbpmyjocs.supabase.co";
+const SUPABASE_KEY = "sb_publishable_l6ko8NS_92RjQBM2rEzAvA_Sd2hYicb";
 
 let reservations = [];
 let foods = [];
 
-function getReservations(){return JSON.parse(localStorage.getItem("reservations")) || []}
-function saveReservations(data){localStorage.setItem("reservations", JSON.stringify(data))}
-function getMenu(){return JSON.parse(localStorage.getItem("menu")) || DEFAULT_MENU}
-function saveMenu(data){localStorage.setItem("menu", JSON.stringify(data))}
+const headers = {
+  apikey: SUPABASE_KEY,
+  Authorization: `Bearer ${SUPABASE_KEY}`,
+  "Content-Type": "application/json"
+};
 
-function loadReservations(){
-  reservations = getReservations();
+async function loadReservations() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations?select=*&order=id.desc`, {
+    headers
+  });
+
+  reservations = await res.json();
+
   document.getElementById("totalCount").innerText = reservations.length;
   document.getElementById("todayCount").innerText = reservations.length;
+
   renderReservations(reservations);
 }
 
-function renderReservations(data){
+function renderReservations(data) {
   const table = document.getElementById("reservationTable");
-  if(!data.length){table.innerHTML = `<tr><td colspan="5">Žádné rezervace.</td></tr>`; return;}
+
+  if (!data.length) {
+    table.innerHTML = `<tr><td colspan="5">Žádné rezervace.</td></tr>`;
+    return;
+  }
+
   table.innerHTML = data.map(r => `
-    <tr><td>${r.jmeno}</td><td>${r.osoby}</td><td>${r.cas}</td><td>${r.vytvoreno || "-"}</td><td><button class="deleteBtn" onclick="deleteReservation(${r.id})">🗑️</button></td></tr>
+    <tr>
+      <td>${r.name}</td>
+      <td>${r.people}</td>
+      <td>${r.time}</td>
+      <td>${new Date(r.created_at).toLocaleString("cs-CZ")}</td>
+      <td>
+        <button class="deleteBtn" onclick="deleteReservation(${r.id})">🗑️</button>
+      </td>
+    </tr>
   `).join("");
 }
 
-function deleteReservation(id){
-  if(!confirm("Opravdu smazat rezervaci?")) return;
-  saveReservations(reservations.filter(r => r.id !== id));
+async function deleteReservation(id) {
+  if (!confirm("Opravdu smazat rezervaci?")) return;
+
+  await fetch(`${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`, {
+    method: "DELETE",
+    headers
+  });
+
   loadReservations();
 }
 
-function loadFoods(){
-  foods = getMenu();
+async function loadFoods() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/menu?select=*&order=id.desc`, {
+    headers
+  });
+
+  foods = await res.json();
+
   document.getElementById("foodCount").innerText = foods.length;
+
   renderFoods();
 }
 
-function addFood(){
+async function addFood() {
   const name = document.getElementById("foodName").value.trim();
   const price = document.getElementById("foodPrice").value.trim();
-  if(!name || !price){alert("Vyplň název i cenu."); return;}
-  foods.push({ id: Date.now(), name, price, emoji:"🍽️" });
-  saveMenu(foods);
+
+  if (!name || !price) {
+    alert("Vyplň název i cenu.");
+    return;
+  }
+
+  await fetch(`${SUPABASE_URL}/rest/v1/menu`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      name: name,
+      price: Number(price)
+    })
+  });
+
   document.getElementById("foodName").value = "";
   document.getElementById("foodPrice").value = "";
+
   loadFoods();
 }
 
-function renderFoods(){
+function renderFoods() {
   const list = document.getElementById("foodList");
-  if(!foods.length){list.innerHTML = "<p>Žádná jídla.</p>"; return;}
+
+  if (!foods.length) {
+    list.innerHTML = "<p>Žádná jídla.</p>";
+    return;
+  }
+
   list.innerHTML = foods.map(food => `
-    <div class="foodItem"><div><b>${food.emoji || "🍽️"} ${food.name}</b><div class="foodPrice">${food.price} Kč</div></div><button class="deleteBtn" onclick="deleteFood(${food.id})">🗑️</button></div>
+    <div class="foodItem">
+      <div>
+        <b>🍕 ${food.name}</b>
+        <div class="foodPrice">${food.price} Kč</div>
+      </div>
+
+      <button class="deleteBtn" onclick="deleteFood(${food.id})">🗑️</button>
+    </div>
   `).join("");
 }
 
-function deleteFood(id){
-  if(!confirm("Opravdu smazat jídlo?")) return;
-  foods = foods.filter(food => food.id !== id);
-  saveMenu(foods);
+async function deleteFood(id) {
+  if (!confirm("Opravdu smazat jídlo?")) return;
+
+  await fetch(`${SUPABASE_URL}/rest/v1/menu?id=eq.${id}`, {
+    method: "DELETE",
+    headers
+  });
+
   loadFoods();
 }
 
-document.getElementById("search").addEventListener("input", function(){
+document.getElementById("search").addEventListener("input", function () {
   const value = this.value.toLowerCase();
-  renderReservations(reservations.filter(r => r.jmeno.toLowerCase().includes(value)));
+
+  const filtered = reservations.filter(r =>
+    r.name.toLowerCase().includes(value)
+  );
+
+  renderReservations(filtered);
 });
 
-if(!localStorage.getItem("menu")) saveMenu(DEFAULT_MENU);
 loadReservations();
 loadFoods();
