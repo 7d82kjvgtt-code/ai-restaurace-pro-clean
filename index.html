@@ -1,119 +1,252 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Restaurace PRO</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Restaurace PRO</title>
+<link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
 <nav class="navbar">
-  <a class="brand" href="/">🍽️ AI Restaurace <span>PRO</span></a>
-  <div class="nav-links">
-    <a href="#funkce">Funkce</a>
-    <a href="#menu">Menu</a>
-    <a href="#rezervace">Rezervace</a>
-    <a href="#kontakt">Kontakt</a>
-    <a class="admin-link" href="dashboard.html">Dashboard</a>
-  </div>
+<a class="brand" href="/">🍽️ AI Restaurace <span>PRO</span></a>
+
+<div class="nav-links">
+<a href="#funkce">Funkce</a>
+<a href="#menu">Menu</a>
+<a href="#rezervace">Rezervace</a>
+<a href="#cenik">Ceník</a>
+<a href="#kontakt">Kontakt</a>
+<a class="admin-link" href="dashboard.html">Dashboard</a>
+</div>
 </nav>
 
 <section class="hero">
-  <div class="hero-text">
-    <p class="badge">Prémiový systém pro moderní restaurace</p>
-    <h1>Web, rezervace, menu a AI asistent v jednom systému.</h1>
-    <p class="subtitle">Profesionální řešení pro restaurace, které chtějí víc rezervací, moderní prezentaci a jednoduchou správu podniku.</p>
 
-    <div class="actions">
-      <a class="btn" href="#rezervace">Rezervovat stůl</a>
-      <a class="btn secondary" href="#funkce">Co systém umí</a>
-    </div>
-  </div>
+<div class="hero-text">
 
-  <div class="assistant-card">
-    <h3>🤖 AI Asistent</h3>
-    <input id="dotaz" placeholder="Napiš: menu, otevřeno, rezervace" />
-    <button onclick="odpoved()">Odeslat</button>
-    <div id="vysledek">Zeptejte se asistenta.</div>
-  </div>
+<p class="badge">Prémiový systém pro moderní restaurace</p>
+
+<h1>
+Web, rezervace,
+menu a AI asistent
+v jednom systému.
+</h1>
+
+<p class="subtitle">
+Profesionální řešení pro restaurace,
+které chtějí více rezervací,
+moderní prezentaci a jednoduchou správu podniku.
+</p>
+
+<div class="actions">
+<a class="btn" href="#rezervace">Rezervovat stůl</a>
+<a class="btn secondary" href="#funkce">Co systém umí</a>
+</div>
+
+</div>
+
+<div class="assistant-card">
+
+<h3>🤖 AI Asistent</h3>
+
+<input id="dotaz" placeholder="Napiš: menu, otevřeno, rezervace">
+
+<button onclick="odpoved()">Odeslat</button>
+
+<div id="vysledek">
+Zeptejte se asistenta.
+</div>
+
+</div>
+
 </section>
 
 <section id="funkce" class="section">
-  <div class="section-head">
-    <p class="badge">Co systém umí</p>
-    <h2>Všechno důležité pro restauraci</h2>
-  </div>
 
-  <div class="grid">
-    <div class="food-card">
-      <h3>🤖 AI asistent</h3>
-      <p>Odpovídá hostům na dotazy o menu, otevírací době a rezervacích.</p>
-    </div>
-    <div class="food-card">
-      <h3>📅 Online rezervace</h3>
-      <p>Hosté si mohou jednoduše rezervovat stůl přímo z webu.</p>
-    </div>
-    <div class="food-card">
-      <h3>🍽️ Správa menu</h3>
-      <p>Restaurace může upravovat nabídku jídel přes dashboard.</p>
-    </div>
-    <div class="food-card">
-      <h3>📊 Dashboard</h3>
-      <p>Přehled rezervací, menu a důležitých dat na jednom místě.</p>
-    </div>
-  </div>
+<div class="section-head">
+<p class="badge">Co systém umí</p>
+<h2>Moderní digitální restaurace</h2>
+</div>
+
+<div class="grid">
+
+<div class="food-card">
+<h3>🤖 AI Asistent</h3>
+<p>Odpovídá hostům na dotazy o menu, rezervacích a otevírací době.</p>
+</div>
+
+<div class="food-card">
+<h3>📅 Online rezervace</h3>
+<p>Rezervace přímo z webu bez telefonování.</p>
+</div>
+
+<div class="food-card">
+<h3>🍽️ Správa menu</h3>
+<p>Jednoduché přidávání a mazání jídel z administrace.</p>
+</div>
+
+<div class="food-card">
+<h3>📊 Dashboard</h3>
+<p>Kompletní přehled rezervací, statistik a menu.</p>
+</div>
+
+</div>
+
 </section>
 
 <section id="menu" class="section">
-  <div class="section-head">
-    <p class="badge">Jídelní lístek</p>
-    <h2>🍕 Ukázkové menu</h2>
-  </div>
-  <div id="publicMenu" class="grid"></div>
+
+<div class="section-head">
+<p class="badge">Jídelní lístek</p>
+<h2>🍕 Naše menu</h2>
+</div>
+
+<div id="publicMenu" class="grid"></div>
+
 </section>
 
 <section id="rezervace" class="section">
-  <div class="section-head">
-    <p class="badge">Rezervace</p>
-    <h2>📅 Rezervovat stůl</h2>
-  </div>
 
-  <div class="reservation-box">
-    <input id="jmeno" placeholder="Jméno" />
-    <input id="osoby" placeholder="Počet osob" type="number" min="1" />
-    <input id="cas" type="time" />
-    <button onclick="ulozitRezervaci()">Potvrdit rezervaci</button>
-  </div>
+<div class="section-head">
+<p class="badge">Rezervace</p>
+<h2>📅 Rezervovat stůl</h2>
+</div>
+
+<div class="reservation-box">
+
+<input id="jmeno" placeholder="Jméno">
+
+<input id="osoby" type="number" min="1" placeholder="Počet osob">
+
+<input id="cas" type="time">
+
+<button onclick="ulozitRezervaci()">
+Potvrdit rezervaci
+</button>
+
+</div>
+
 </section>
 
 <section class="section">
-  <div class="section-head">
-    <p class="badge">Pro restaurace</p>
-    <h2>Jednoduché řešení, které může růst</h2>
-  </div>
 
-  <div class="grid">
-    <div class="food-card">
-      <h3>🚀 Rychlé spuštění</h3>
-      <p>Web může být připravený během krátké doby a okamžitě použitelný.</p>
-    </div>
-    <div class="food-card">
-      <h3>💼 Připravené pro zákazníky</h3>
-      <p>Vhodné jako základ pro reálný produkt pro restaurace, bistra a kavárny.</p>
-    </div>
-    <div class="food-card">
-      <h3>🔒 Administrace</h3>
-      <p>Dashboard je chráněný přihlášením a připravený na další zabezpečení.</p>
-    </div>
-  </div>
+<div class="section-head">
+<p class="badge">Proč AI Restaurace PRO?</p>
+<h2>Moderní řešení pro restaurace</h2>
+</div>
+
+<div class="grid">
+
+<div class="food-card">
+<h3>⭐ 4.9/5</h3>
+<p>Moderní systém připravený pro každou restauraci.</p>
+</div>
+
+<div class="food-card">
+<h3>📈 Více rezervací</h3>
+<p>Hosté rezervují kdykoliv online.</p>
+</div>
+
+<div class="food-card">
+<h3>⚡ Rychlá administrace</h3>
+<p>Úprava menu a rezervací během několika sekund.</p>
+</div>
+
+<div class="food-card">
+<h3>🔒 Bezpečnost</h3>
+<p>Dashboard chráněný přihlášením.</p>
+</div>
+
+</div>
+
+</section>
+
+<section id="cenik" class="section">
+
+<div class="section-head">
+<p class="badge">Ceník</p>
+<h2>Vyberte si plán</h2>
+</div>
+
+<div class="grid">
+
+<div class="food-card">
+
+<h3>START</h3>
+
+<h2>Zdarma</h2>
+
+<p>
+✔ Web<br>
+✔ Menu<br>
+✔ Rezervace
+</p>
+
+</div>
+
+<div class="food-card">
+
+<h3>PRO</h3>
+
+<h2>499 Kč / měsíc</h2>
+
+<p>
+✔ Dashboard<br>
+✔ AI Asistent<br>
+✔ Statistiky
+</p>
+
+</div>
+
+<div class="food-card">
+
+<h3>BUSINESS</h3>
+
+<h2>999 Kč / měsíc</h2>
+
+<p>
+✔ Vše z PRO<br>
+✔ Databáze<br>
+✔ Prioritní podpora
+</p>
+
+</div>
+
+</div>
+
+</section>
+
+<section class="section">
+
+<div class="assistant-card" style="text-align:center">
+
+<h2>🚀 Připraveni posunout restauraci na vyšší úroveň?</h2>
+
+<p style="margin:20px 0;">
+Vyzkoušejte AI Restaurace PRO a spravujte rezervace i menu z jednoho místa.
+</p>
+
+<a class="btn" href="dashboard.html">
+Otevřít Dashboard
+</a>
+
+</div>
+
 </section>
 
 <section id="kontakt" class="section contact">
-  <h2>📍 Kontakt</h2>
-  <p>Praha • +420 777 123 456 • info@restaurace.cz</p>
+
+<h2>📍 Kontakt</h2>
+
+<p>
+Praha • +420 777 123 456 • info@restaurace.cz
+</p>
+
 </section>
 
 <script src="script.js"></script>
+
 </body>
 </html>
