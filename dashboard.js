@@ -9,6 +9,7 @@ const headers = {
 
 let reservations = [];
 let foods = [];
+let editingFoodId = null;
 
 async function loadReservations() {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations?select=*&order=id.desc`, { headers });
@@ -58,27 +59,44 @@ async function loadFoods() {
   renderFoods();
 }
 
-async function addFood() {
+async function saveFood() {
   const name = document.getElementById("foodName").value.trim();
   const price = document.getElementById("foodPrice").value.trim();
+  const emoji = document.getElementById("foodEmoji").value.trim() || "🍽️";
 
   if (!name || !price) {
     alert("Vyplň název i cenu.");
     return;
   }
 
-  await fetch(`${SUPABASE_URL}/rest/v1/menu`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      name,
-      price: Number(price),
-      emoji: "🍽️"
-    })
-  });
+  if (editingFoodId) {
+    await fetch(`${SUPABASE_URL}/rest/v1/menu?id=eq.${editingFoodId}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({
+        name,
+        price: Number(price),
+        emoji
+      })
+    });
+
+    editingFoodId = null;
+    document.getElementById("foodBtn").innerText = "Přidat jídlo";
+  } else {
+    await fetch(`${SUPABASE_URL}/rest/v1/menu`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        name,
+        price: Number(price),
+        emoji
+      })
+    });
+  }
 
   document.getElementById("foodName").value = "";
   document.getElementById("foodPrice").value = "";
+  document.getElementById("foodEmoji").value = "";
 
   loadFoods();
 }
@@ -97,9 +115,25 @@ function renderFoods() {
         <b>${food.emoji || "🍽️"} ${food.name}</b>
         <div class="foodPrice">${food.price} Kč</div>
       </div>
-      <button class="deleteBtn" onclick="deleteFood(${food.id})">🗑️</button>
+      <div>
+        <button class="deleteBtn" onclick="editFood(${food.id})">✏️</button>
+        <button class="deleteBtn" onclick="deleteFood(${food.id})">🗑️</button>
+      </div>
     </div>
   `).join("");
+}
+
+function editFood(id) {
+  const food = foods.find(item => item.id === id);
+  if (!food) return;
+
+  editingFoodId = id;
+
+  document.getElementById("foodName").value = food.name;
+  document.getElementById("foodPrice").value = food.price;
+  document.getElementById("foodEmoji").value = food.emoji || "🍽️";
+
+  document.getElementById("foodBtn").innerText = "Uložit změny";
 }
 
 async function deleteFood(id) {
