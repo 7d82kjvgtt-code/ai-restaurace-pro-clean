@@ -49,8 +49,11 @@ async function loadReservations() {
     reservations = data;
 
     document.getElementById("totalCount").innerText = reservations.length;
-    document.getElementById("todayCount").innerText = reservations.length;
+    const today = new Date().toISOString().split("T")[0];
 
+const todayReservations = reservations.filter(r => r.date === today);
+
+document.getElementById("todayCount").innerText = todayReservations.length;
     renderReservations(reservations);
 
   } catch (error) {
