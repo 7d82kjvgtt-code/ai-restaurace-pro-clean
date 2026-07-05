@@ -43,7 +43,11 @@ async function loadReservations() {
       return;
     }
 
-    reservations = data;
+    reservations = data.sort((a, b) => {
+  const dateA = `${a.date || ""} ${a.time || ""}`;
+  const dateB = `${b.date || ""} ${b.time || ""}`;
+  return dateA.localeCompare(dateB);
+});
 
     document.getElementById("totalCount").innerText = reservations.length;
     const today = new Date().toISOString().split("T")[0];
