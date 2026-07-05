@@ -77,7 +77,11 @@ function renderReservations(data) {
       <td>${r.phone || "-"}</td>
       <td>${r.email || "-"}</td>
       <td>${r.note || "-"}</td>
-      <td>${r.status || "Čeká"}</td>
+      <td>
+  <span class="status ${r.status || "Čeká"}">
+    ${r.status || "Čeká"}
+  </span>
+</td>
 
 <td>
   <button onclick="updateStatus(${r.id}, 'Potvrzeno')">✅</button>
