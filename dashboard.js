@@ -101,7 +101,8 @@ async function deleteReservation(id) {
 }
 
 async function updateStatus(id, status) {
-  await fetch(`${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`, {
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`, {
     method: "PATCH",
     headers,
     body: JSON.stringify({
@@ -109,9 +110,14 @@ async function updateStatus(id, status) {
     })
   });
 
+  if (!res.ok) {
+    alert("Nepodařilo se změnit stav.");
+    console.log(await res.text());
+    return;
+  }
+
   loadReservations();
 }
-
 async function loadFoods() {
   try {
     const res = await fetch(
