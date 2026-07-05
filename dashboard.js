@@ -60,7 +60,14 @@ document.getElementById("todayCount").innerText = todayReservations.length;
     table.innerHTML = `<tr><td colspan="9">JS chyba: ${error.message}</td></tr>`;
   }
 }
+function formatDate(date) {
+  if (!date) return "-";
 
+  const parts = date.split("-");
+  if (parts.length !== 3) return date;
+
+  return `${parts[2]}.${parts[1]}.${parts[0]}`;
+}
 function renderReservations(data) {
   const table = document.getElementById("reservationTable");
 
@@ -75,7 +82,7 @@ function renderReservations(data) {
     <tr>
       <td>${r.name || "-"}</td>
       <td>${r.people || "-"}</td>
-      <td>${r.date || "-"}</td>
+      <td>${formatDate(r.date)}</td>
       <td>${r.time || "-"}</td>
       <td>${r.phone || "-"}</td>
       <td>${r.email || "-"}</td>
