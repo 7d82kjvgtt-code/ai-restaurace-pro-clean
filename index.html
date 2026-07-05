@@ -109,27 +109,34 @@ Zeptejte se asistenta.
 
 <section id="rezervace" class="section">
 
-<div class="section-head">
-<p class="badge">Rezervace</p>
-<h2>📅 Rezervovat stůl</h2>
-</div>
+  <div class="section-head">
+    <p class="badge">Rezervace PRO</p>
+    <h2>📅 Rezervovat stůl</h2>
+  </div>
 
-<div class="reservation-box">
+  <div class="reservation-box">
 
-<input id="jmeno" placeholder="Jméno">
+    <input id="jmeno" placeholder="Jméno">
 
-<input id="osoby" type="number" min="1" placeholder="Počet osob">
+    <input id="osoby" type="number" min="1" placeholder="Počet osob">
 
-<input id="cas" type="time">
+    <input id="datum" type="date">
 
-<button onclick="ulozitRezervaci()">
-Potvrdit rezervaci
-</button>
+    <input id="cas" type="time">
 
-</div>
+    <input id="telefon" placeholder="Telefon">
+
+    <input id="email" type="email" placeholder="E-mail">
+
+    <textarea id="poznamka" placeholder="Poznámka" rows="4"></textarea>
+
+    <button onclick="ulozitRezervaci()">
+      Potvrdit rezervaci
+    </button>
+
+  </div>
 
 </section>
-
 <section class="section">
 
 <div class="section-head">
