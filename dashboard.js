@@ -11,13 +11,30 @@ let reservations = [];
 let foods = [];
 
 async function loadReservations() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations?select=*&order=id.desc`, { headers });
-  reservations = await res.json();
+  const table = document.getElementById("reservationTable");
 
-  document.getElementById("totalCount").innerText = reservations.length;
-  document.getElementById("todayCount").innerText = reservations.length;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations?select=*&order=id.desc`, {
+      headers
+    });
 
-  renderReservations(reservations);
+    const data = await res.json();
+
+    if (!res.ok) {
+      table.innerHTML = `<tr><td colspan="9">${JSON.stringify(data)}</td></tr>`;
+      return;
+    }
+
+    reservations = data;
+
+    document.getElementById("totalCount").innerText = reservations.length;
+    document.getElementById("todayCount").innerText = reservations.length;
+
+    renderReservations(reservations);
+
+  } catch (e) {
+    table.innerHTML = `<tr><td colspan="9">${e.message}</td></tr>`;
+  }
 }
 
 function renderReservations(data) {
