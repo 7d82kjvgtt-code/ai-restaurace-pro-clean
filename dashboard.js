@@ -10,18 +10,39 @@ const headers = {
 let reservations = [];
 let foods = [];
 
+document.addEventListener("DOMContentLoaded", () => {
+  loadReservations();
+  loadFoods();
+
+  const search = document.getElementById("search");
+  if (search) {
+    search.addEventListener("input", () => {
+      const value = search.value.toLowerCase();
+
+      const filtered = reservations.filter(r =>
+        (r.name || "").toLowerCase().includes(value) ||
+        (r.phone || "").toLowerCase().includes(value) ||
+        (r.email || "").toLowerCase().includes(value)
+      );
+
+      renderReservations(filtered);
+    });
+  }
+});
+
 async function loadReservations() {
   const table = document.getElementById("reservationTable");
 
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations?select=*&order=id.desc`, {
-      headers
-    });
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/reservations?select=*&order=id.desc`,
+      { headers }
+    );
 
     const data = await res.json();
 
     if (!res.ok) {
-      table.innerHTML = `<tr><td colspan="9">${JSON.stringify(data)}</td></tr>`;
+      table.innerHTML = `<tr><td colspan="9">Chyba: ${JSON.stringify(data)}</td></tr>`;
       return;
     }
 
@@ -32,38 +53,36 @@ async function loadReservations() {
 
     renderReservations(reservations);
 
-  } catch (e) {
-    table.innerHTML = `<tr><td colspan="9">${e.message}</td></tr>`;
+  } catch (error) {
+    table.innerHTML = `<tr><td colspan="9">JS chyba: ${error.message}</td></tr>`;
   }
 }
 
 function renderReservations(data) {
   const table = document.getElementById("reservationTable");
 
+  if (!table) return;
+
   if (!data.length) {
     table.innerHTML = `<tr><td colspan="9">Žádné rezervace.</td></tr>`;
     return;
   }
 
-  table.innerHTML = data.map(r => {
-    const created = r.created_at || "-";
-
-    return `
-      <tr>
-        <td>${r.name || "-"}</td>
-        <td>${r.people || "-"}</td>
-        <td>${r.date || "-"}</td>
-        <td>${r.time || "-"}</td>
-        <td>${r.phone || "-"}</td>
-        <td>${r.email || "-"}</td>
-        <td>${r.note || "-"}</td>
-        <td>${r.status || "Čeká"}</td>
-        <td>
-          <button class="deleteBtn" onclick="deleteReservation(${r.id})">🗑️</button>
-        </td>
-      </tr>
-    `;
-  }).join("");
+  table.innerHTML = data.map(r => `
+    <tr>
+      <td>${r.name || "-"}</td>
+      <td>${r.people || "-"}</td>
+      <td>${r.date || "-"}</td>
+      <td>${r.time || "-"}</td>
+      <td>${r.phone || "-"}</td>
+      <td>${r.email || "-"}</td>
+      <td>${r.note || "-"}</td>
+      <td>${r.status || "Čeká"}</td>
+      <td>
+        <button class="deleteBtn" onclick="deleteReservation(${r.id})">🗑️</button>
+      </td>
+    </tr>
+  `).join("");
 }
 
 async function deleteReservation(id) {
@@ -78,11 +97,20 @@ async function deleteReservation(id) {
 }
 
 async function loadFoods() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/menu?select=*&order=id.desc`, { headers });
-  foods = await res.json();
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/menu?select=*&order=id.desc`,
+      { headers }
+    );
 
-  document.getElementById("foodCount").innerText = foods.length;
-  renderFoods();
+    foods = await res.json();
+
+    document.getElementById("foodCount").innerText = foods.length;
+    renderFoods();
+
+  } catch (error) {
+    console.error("Chyba menu:", error);
+  }
 }
 
 async function saveFood() {
@@ -115,6 +143,8 @@ async function saveFood() {
 function renderFoods() {
   const list = document.getElementById("foodList");
 
+  if (!list) return;
+
   if (!foods.length) {
     list.innerHTML = "<p>Žádná jídla.</p>";
     return;
@@ -141,23 +171,3 @@ async function deleteFood(id) {
 
   loadFoods();
 }
-window.addEventListener("DOMContentLoaded", function () {
-  loadReservations();
-  loadFoods();
-
-  const search = document.getElementById("search");
-
-  if (search) {
-    search.addEventListener("input", function () {
-      const value = this.value.toLowerCase();
-
-      renderReservations(
-        reservations.filter(r =>
-          (r.name || "").toLowerCase().includes(value) ||
-          (r.phone || "").toLowerCase().includes(value) ||
-          (r.email || "").toLowerCase().includes(value)
-        )
-      );
-    });
-  }
-});
