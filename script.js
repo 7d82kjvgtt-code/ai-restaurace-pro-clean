@@ -53,10 +53,14 @@ function odpoved() {
 async function ulozitRezervaci() {
   const name = document.getElementById("jmeno").value.trim();
   const people = document.getElementById("osoby").value.trim();
+  const date = document.getElementById("datum").value;
   const time = document.getElementById("cas").value;
+  const phone = document.getElementById("telefon").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const note = document.getElementById("poznamka").value.trim();
 
-  if (!name || !people || !time) {
-    alert("Vyplň všechna pole.");
+  if (!name || !people || !date || !time || !phone || !email) {
+    alert("Vyplň jméno, počet osob, datum, čas, telefon a e-mail.");
     return;
   }
 
@@ -67,9 +71,13 @@ async function ulozitRezervaci() {
       Prefer: "return=minimal"
     },
     body: JSON.stringify({
-      name: name,
+      name,
       people: Number(people),
-      time: time,
+      date,
+      time,
+      phone,
+      email,
+      note,
       status: "Čeká"
     })
   });
@@ -85,7 +93,10 @@ async function ulozitRezervaci() {
 
   document.getElementById("jmeno").value = "";
   document.getElementById("osoby").value = "";
+  document.getElementById("datum").value = "";
   document.getElementById("cas").value = "";
+  document.getElementById("telefon").value = "";
+  document.getElementById("email").value = "";
+  document.getElementById("poznamka").value = "";
 }
-
 loadMenu();
