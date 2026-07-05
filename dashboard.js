@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
         (r.email || "").toLowerCase().includes(value)
       );
 
-      renderReservations(filtered);
+      applyFilters();
     });
   }
 });
@@ -207,3 +207,12 @@ async function deleteFood(id) {
 
   loadFoods();
 }
+loadFoods();
+}
+
+function applyFilters() {
+  // ...
+}
+
+document.getElementById("search").addEventListener("input", applyFilters);
+document.getElementById("statusFilter").addEventListener("change", applyFilters);
