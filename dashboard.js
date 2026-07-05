@@ -177,6 +177,7 @@ const image_url = document.getElementById("foodImage").value.trim();
   document.getElementById("foodName").value = "";
   document.getElementById("foodPrice").value = "";
   document.getElementById("foodEmoji").value = "";
+  document.getElementById("foodImage").value = "";
 
   loadFoods();
 }
