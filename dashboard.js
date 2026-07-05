@@ -157,7 +157,7 @@ async function saveFood() {
   const name = document.getElementById("foodName").value.trim();
   const price = document.getElementById("foodPrice").value.trim();
   const emoji = document.getElementById("foodEmoji").value.trim() || "🍽️";
-
+const image_url = document.getElementById("foodImage").value.trim();
   if (!name || !price) {
     alert("Vyplň název i cenu.");
     return;
@@ -166,11 +166,12 @@ async function saveFood() {
   await fetch(`${SUPABASE_URL}/rest/v1/menu`, {
     method: "POST",
     headers,
-    body: JSON.stringify({
-      name,
-      price: Number(price),
-      emoji
-    })
+   body: JSON.stringify({
+    name,
+    price: Number(price),
+    emoji,
+    image_url
+})
   });
 
   document.getElementById("foodName").value = "";
