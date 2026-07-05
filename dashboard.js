@@ -44,11 +44,14 @@ async function loadReservations() {
     }
 
     reservations = data.sort((a, b) => {
-  const dateA = `${a.date || ""} ${a.time || ""}`;
-  const dateB = `${b.date || ""} ${b.time || ""}`;
+  if (!a.date && b.date) return 1;
+  if (a.date && !b.date) return -1;
+
+  const dateA = `${a.date || "9999-12-31"} ${a.time || "99:99"}`;
+  const dateB = `${b.date || "9999-12-31"} ${b.time || "99:99"}`;
+
   return dateA.localeCompare(dateB);
 });
-
     document.getElementById("totalCount").innerText = reservations.length;
     const today = new Date().toISOString().split("T")[0];
 
