@@ -226,8 +226,3 @@ function applyFilters() {
 
   renderReservations(filtered);
 }
-  // ...
-}
-
-document.getElementById("search").addEventListener("input", applyFilters);
-document.getElementById("statusFilter").addEventListener("change", applyFilters);
