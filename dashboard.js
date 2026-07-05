@@ -78,19 +78,35 @@ function renderReservations(data) {
       <td>${r.email || "-"}</td>
       <td>${r.note || "-"}</td>
       <td>${r.status || "Čeká"}</td>
-      <td>
-        <button class="deleteBtn" onclick="deleteReservation(${r.id})">🗑️</button>
-      </td>
+
+<td>
+  <button onclick="updateStatus(${r.id}, 'Potvrzeno')">✅</button>
+  <button onclick="updateStatus(${r.id}, 'Zrušeno')">❌</button>
+  <button class="deleteBtn" onclick="deleteReservation(${r.id})">🗑️</button>
+</td>
     </tr>
   `).join("");
 }
 
 async function deleteReservation(id) {
+  
   if (!confirm("Opravdu smazat rezervaci?")) return;
 
   await fetch(`${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`, {
     method: "DELETE",
     headers
+  });
+
+  loadReservations();
+}
+
+async function updateStatus(id, status) {
+  await fetch(`${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify({
+      status: status
+    })
   });
 
   loadReservations();
