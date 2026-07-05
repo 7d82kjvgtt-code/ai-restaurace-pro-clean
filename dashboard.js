@@ -17,19 +17,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const search = document.getElementById("search");
   if (search) {
     search.addEventListener("input", () => {
-      const value = search.value.toLowerCase();
-
-      const filtered = reservations.filter(r =>
-        (r.name || "").toLowerCase().includes(value) ||
-        (r.phone || "").toLowerCase().includes(value) ||
-        (r.email || "").toLowerCase().includes(value)
-      );
-
       applyFilters();
     });
   }
 });
-
+const statusFilter = document.getElementById("statusFilter");
+if (statusFilter) {
+  statusFilter.addEventListener("change", () => {
+    applyFilters();
+  });
+}
 async function loadReservations() {
   const table = document.getElementById("reservationTable");
 
@@ -207,10 +204,28 @@ async function deleteFood(id) {
 
   loadFoods();
 }
-loadFoods();
-}
 
 function applyFilters() {
+  const searchInput = document.getElementById("search");
+  const statusInput = document.getElementById("statusFilter");
+
+  const search = searchInput ? searchInput.value.toLowerCase() : "";
+  const status = statusInput ? statusInput.value : "";
+
+  const filtered = reservations.filter(r => {
+    const matchSearch =
+      (r.name || "").toLowerCase().includes(search) ||
+      (r.phone || "").toLowerCase().includes(search) ||
+      (r.email || "").toLowerCase().includes(search);
+
+    const matchStatus =
+      status === "" || (r.status || "Čeká") === status;
+
+    return matchSearch && matchStatus;
+  });
+
+  renderReservations(filtered);
+}
   // ...
 }
 
