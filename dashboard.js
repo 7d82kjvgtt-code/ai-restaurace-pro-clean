@@ -141,18 +141,23 @@ async function deleteFood(id) {
 
   loadFoods();
 }
+window.addEventListener("DOMContentLoaded", function () {
+  loadReservations();
+  loadFoods();
 
-document.getElementById("search").addEventListener("input", function () {
-  const value = this.value.toLowerCase();
+  const search = document.getElementById("search");
 
-  renderReservations(
-    reservations.filter(r =>
-      (r.name || "").toLowerCase().includes(value) ||
-      (r.phone || "").toLowerCase().includes(value) ||
-      (r.email || "").toLowerCase().includes(value)
-    )
-  );
+  if (search) {
+    search.addEventListener("input", function () {
+      const value = this.value.toLowerCase();
+
+      renderReservations(
+        reservations.filter(r =>
+          (r.name || "").toLowerCase().includes(value) ||
+          (r.phone || "").toLowerCase().includes(value) ||
+          (r.email || "").toLowerCase().includes(value)
+        )
+      );
+    });
+  }
 });
-
-loadReservations();
-loadFoods();
