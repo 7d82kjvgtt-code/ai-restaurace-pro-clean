@@ -54,7 +54,7 @@ input::placeholder{color:#94a3b8}
 .menu-category .grid{
   display:grid!important;
   grid-template-columns:repeat(auto-fill,260px)!important;
-  gap:30px!important;
+  gap:22px!important;
   width:100%;
 }
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:24px}
