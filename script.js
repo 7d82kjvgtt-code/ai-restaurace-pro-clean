@@ -17,40 +17,46 @@ async function loadMenu() {
   menu = await res.json();
   renderPublicMenu();
 }
- function renderPublicMenu() {
+
+function renderPublicMenu() {
   const container = document.getElementById("publicMenu");
 
   if (!container) return;
 
+  if (!menu.length) {
+    container.innerHTML = "<p>Menu je prázdné.</p>";
+    return;
+  }
+
   container.innerHTML = menu.map(item => `
     <div class="food-card">
-
-      ${item.image_url
-  ? `<img src="${item.image_url}" class="foodPhoto">`
-  : `<div class="foodPhoto foodPlaceholder">${item.emoji || "🍽️"}</div>`
-}
+      ${
+        item.image_url
+          ? `<img src="${item.image_url}" class="foodPhoto">`
+          : `<div class="foodPlaceholder">${item.emoji || "🍽️"}</div>`
+      }
 
       <h3>${item.name}</h3>
       <p>${item.price} Kč</p>
-
     </div>
   `).join("");
 }
+
 function odpoved() {
   const text = document.getElementById("dotaz").value.toLowerCase();
   const vysledek = document.getElementById("vysledek");
 
   if (text.includes("menu")) {
     vysledek.innerHTML = menu
-      .map(item => `${item.emoji || "🍽️"} ${item.name} – ${item.price} Kč`)
+      .map(item => `${item.emoji || "🍽️"} ${item.name} - ${item.price} Kč`)
       .join("<br>");
   } else if (text.includes("otev")) {
-    vysledek.innerHTML = "🕒 Otevřeno každý den 10:00–22:00";
+    vysledek.innerHTML = "🕒 Otevřeno každý den 10:00–22:00.";
   } else if (text.includes("rezerv")) {
     document.getElementById("rezervace").scrollIntoView({ behavior: "smooth" });
     vysledek.innerHTML = "📅 Formulář rezervace je níže.";
   } else {
-    vysledek.innerHTML = "Zkus napsat <b>menu</b>, <b>otevřeno</b> nebo <b>rezervace</b>.";
+    vysledek.innerHTML = "Zkus napsat: <b>menu</b>, <b>otevřeno</b> nebo <b>rezervace</b>.";
   }
 }
 
@@ -103,5 +109,5 @@ async function ulozitRezervaci() {
   document.getElementById("email").value = "";
   document.getElementById("poznamka").value = "";
 }
+
 loadMenu();
-}
