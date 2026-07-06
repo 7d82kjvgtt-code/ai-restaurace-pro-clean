@@ -103,4 +103,4 @@ async function ulozitRezervaci() {
   document.getElementById("email").value = "";
   document.getElementById("poznamka").value = "";
 }
-loadMenu();
+loadMenu()
