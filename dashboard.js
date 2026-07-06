@@ -192,15 +192,20 @@ function renderFoods() {
     return;
   }
 
-  list.innerHTML = foods.map(food => `
-    <div class="foodItem">
-      <div>
-        <b>${food.emoji || "🍽️"} ${food.name}</b>
-        <div class="foodPrice">${food.price} Kč</div>
-      </div>
-      <button class="deleteBtn" onclick="deleteFood(${food.id})">🗑️</button>
+ list.innerHTML = foods.map(food => `
+  <div class="foodItem">
+
+    ${food.image_url ? `<img src="${food.image_url}" class="foodPhoto">` : ""}
+
+    <div>
+      <b>${food.emoji || "🍽️"} ${food.name}</b>
+      <div class="foodPrice">${food.price} Kč</div>
     </div>
-  `).join("");
+
+    <button class="deleteBtn" onclick="deleteFood(${food.id})">🗑️</button>
+
+  </div>
+`).join("");
 }
 
 async function deleteFood(id) {
