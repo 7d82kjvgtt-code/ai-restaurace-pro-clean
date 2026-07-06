@@ -139,4 +139,16 @@ input::placeholder{color:#94a3b8}
     justify-content: center;
     font-size: 70px;
     background: linear-gradient(135deg,#1f2937,#111827);
+}.menu-category{
+    margin-bottom:70px;
+}
+
+.menu-category h2{
+    font-size:36px;
+    margin-bottom:24px;
+    color:#fbbf24;
+    border-left:6px solid #f59e0b;
+    padding-left:16px;
+    font-weight:900;
+    text-transform:uppercase;
 }
