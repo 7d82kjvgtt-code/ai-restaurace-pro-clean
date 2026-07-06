@@ -152,3 +152,12 @@ input::placeholder{color:#94a3b8}
     font-weight:900;
     text-transform:uppercase;
 }
+const categories = [
+  "Předkrm",
+  "Pizza",
+  "Hlavní jídlo",
+  "Těstoviny",
+  "Sladké pokrmy",
+  "Dezert",
+  "Nápoj"
+];
