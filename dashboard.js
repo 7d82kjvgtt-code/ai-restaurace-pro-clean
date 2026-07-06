@@ -15,18 +15,12 @@ document.addEventListener("DOMContentLoaded", () => {
   loadFoods();
 
   const search = document.getElementById("search");
-  if (search) {
-    search.addEventListener("input", () => {
-      applyFilters();
-    });
-  }
+  if (search) search.addEventListener("input", applyFilters);
+
+  const statusFilter = document.getElementById("statusFilter");
+  if (statusFilter) statusFilter.addEventListener("change", applyFilters);
 });
-const statusFilter = document.getElementById("statusFilter");
-if (statusFilter) {
-  statusFilter.addEventListener("change", () => {
-    applyFilters();
-  });
-}
+
 async function loadReservations() {
   const table = document.getElementById("reservationTable");
 
@@ -43,38 +37,29 @@ async function loadReservations() {
       return;
     }
 
-    reservations = data.sort((a, b) => {
-  if (!a.date && b.date) return 1;
-  if (a.date && !b.date) return -1;
+    reservations = data;
 
-  const dateA = `${a.date || "9999-12-31"} ${a.time || "99:99"}`;
-  const dateB = `${b.date || "9999-12-31"} ${b.time || "99:99"}`;
-
-  return dateA.localeCompare(dateB);
-});
     document.getElementById("totalCount").innerText = reservations.length;
+
     const today = new Date().toISOString().split("T")[0];
+    const todayReservations = reservations.filter(r => r.date === today);
+    document.getElementById("todayCount").innerText = todayReservations.length;
 
-const todayReservations = reservations.filter(r => r.date === today);
-
-document.getElementById("todayCount").innerText = todayReservations.length;
     renderReservations(reservations);
-
   } catch (error) {
     table.innerHTML = `<tr><td colspan="9">JS chyba: ${error.message}</td></tr>`;
   }
 }
+
 function formatDate(date) {
   if (!date) return "-";
-
   const parts = date.split("-");
   if (parts.length !== 3) return date;
-
   return `${parts[2]}.${parts[1]}.${parts[0]}`;
 }
+
 function renderReservations(data) {
   const table = document.getElementById("reservationTable");
-
   if (!table) return;
 
   if (!data.length) {
@@ -92,40 +77,24 @@ function renderReservations(data) {
       <td>${r.email || "-"}</td>
       <td>${r.note || "-"}</td>
       <td>
-  <span class="status ${r.status || "Čeká"}">
-    ${r.status || "Čeká"}
-  </span>
-</td>
-
-<td>
-  <button onclick="updateStatus(${r.id}, 'Potvrzeno')">✅</button>
-  <button onclick="updateStatus(${r.id}, 'Zrušeno')">❌</button>
-  <button class="deleteBtn" onclick="deleteReservation(${r.id})">🗑️</button>
-</td>
+        <span class="status ${r.status || "Čeká"}">
+          ${r.status || "Čeká"}
+        </span>
+      </td>
+      <td>
+        <button onclick="updateStatus(${r.id}, 'Potvrzeno')">✅</button>
+        <button onclick="updateStatus(${r.id}, 'Zrušeno')">❌</button>
+        <button class="deleteBtn" onclick="deleteReservation(${r.id})">🗑️</button>
+      </td>
     </tr>
   `).join("");
 }
 
-async function deleteReservation(id) {
-  
-  if (!confirm("Opravdu smazat rezervaci?")) return;
-
-  await fetch(`${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`, {
-    method: "DELETE",
-    headers
-  });
-
-  loadReservations();
-}
-
 async function updateStatus(id, status) {
-
   const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`, {
     method: "PATCH",
     headers,
-    body: JSON.stringify({
-      status: status
-    })
+    body: JSON.stringify({ status })
   });
 
   if (!res.ok) {
@@ -136,6 +105,40 @@ async function updateStatus(id, status) {
 
   loadReservations();
 }
+
+async function deleteReservation(id) {
+  if (!confirm("Opravdu smazat rezervaci?")) return;
+
+  await fetch(`${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`, {
+    method: "DELETE",
+    headers
+  });
+
+  loadReservations();
+}
+
+function applyFilters() {
+  const searchInput = document.getElementById("search");
+  const statusInput = document.getElementById("statusFilter");
+
+  const search = searchInput ? searchInput.value.toLowerCase() : "";
+  const status = statusInput ? statusInput.value : "";
+
+  const filtered = reservations.filter(r => {
+    const matchSearch =
+      (r.name || "").toLowerCase().includes(search) ||
+      (r.phone || "").toLowerCase().includes(search) ||
+      (r.email || "").toLowerCase().includes(search);
+
+    const matchStatus =
+      status === "" || (r.status || "Čeká") === status;
+
+    return matchSearch && matchStatus;
+  });
+
+  renderReservations(filtered);
+}
+
 async function loadFoods() {
   try {
     const res = await fetch(
@@ -145,9 +148,10 @@ async function loadFoods() {
 
     foods = await res.json();
 
-    document.getElementById("foodCount").innerText = foods.length;
-    renderFoods();
+    const foodCount = document.getElementById("foodCount");
+    if (foodCount) foodCount.innerText = foods.length;
 
+    renderFoods();
   } catch (error) {
     console.error("Chyba menu:", error);
   }
@@ -171,16 +175,19 @@ async function saveFood() {
     const fileExt = imageFile.name.split(".").pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
-    const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/food-images/${fileName}`, {
-      method: "POST",
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        "Content-Type": imageFile.type,
-        "x-upsert": "true"
-      },
-      body: imageFile
-    });
+    const uploadRes = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/food-images/${fileName}`,
+      {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": imageFile.type,
+          "x-upsert": "true"
+        },
+        body: imageFile
+      }
+    );
 
     if (!uploadRes.ok) {
       alert("Nepodařilo se nahrát fotku.");
@@ -191,7 +198,7 @@ async function saveFood() {
     image_url = `${SUPABASE_URL}/storage/v1/object/public/food-images/${fileName}`;
   }
 
-  await fetch(`${SUPABASE_URL}/rest/v1/menu`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/menu`, {
     method: "POST",
     headers,
     body: JSON.stringify({
@@ -203,6 +210,12 @@ async function saveFood() {
     })
   });
 
+  if (!res.ok) {
+    alert("Nepodařilo se uložit jídlo.");
+    console.log(await res.text());
+    return;
+  }
+
   document.getElementById("foodName").value = "";
   document.getElementById("foodPrice").value = "";
   document.getElementById("foodEmoji").value = "";
@@ -213,7 +226,6 @@ async function saveFood() {
 
 function renderFoods() {
   const list = document.getElementById("foodList");
-
   if (!list) return;
 
   if (!foods.length) {
@@ -221,19 +233,19 @@ function renderFoods() {
     return;
   }
 
- list.innerHTML = foods.map(food => `
-  <div class="foodItem">
+  list.innerHTML = foods.map(food => `
+    <div class="foodItem">
+      ${food.image_url ? `<img src="${food.image_url}" class="foodPhoto">` : ""}
 
-    ${food.image_url ? `<img src="${food.image_url}" class="foodPhoto">` : ""}
+      <div class="foodInfo">
+        <b>${food.emoji || "🍽️"} ${food.name}</b>
+        <div class="foodPrice">${food.price} Kč</div>
+        <small>${food.category || "Bez kategorie"}</small>
+      </div>
 
-    <div class="foodInfo">
-    <b>${food.emoji || "🍽"} ${food.name}</b>
-    <div class="foodPrice">${food.price} Kč</div>
-</div>
-    <button class="deleteBtn" onclick="deleteFood(${food.id})">🗑️</button>
-
-  </div>
-`).join("");
+      <button class="deleteBtn" onclick="deleteFood(${food.id})">🗑️</button>
+    </div>
+  `).join("");
 }
 
 async function deleteFood(id) {
@@ -245,26 +257,4 @@ async function deleteFood(id) {
   });
 
   loadFoods();
-}
-
-function applyFilters() {
-  const searchInput = document.getElementById("search");
-  const statusInput = document.getElementById("statusFilter");
-
-  const search = searchInput ? searchInput.value.toLowerCase() : "";
-  const status = statusInput ? statusInput.value : "";
-
-  const filtered = reservations.filter(r => {
-    const matchSearch =
-      (r.name || "").toLowerCase().includes(search) ||
-      (r.phone || "").toLowerCase().includes(search) ||
-      (r.email || "").toLowerCase().includes(search);
-
-    const matchStatus =
-      status === "" || (r.status || "Čeká") === status;
-
-    return matchSearch && matchStatus;
-  });
-
-  renderReservations(filtered);
 }
