@@ -25,11 +25,10 @@ async function loadMenu() {
   container.innerHTML = menu.map(item => `
     <div class="food-card">
 
-      ${item.image_url ? `<img src="${item.image_url}" class="foodPhoto">` : ""}
-
-      <div style="font-size:40px">
-        ${item.emoji || "🍽️"}
-      </div>
+      ${item.image_url
+  ? `<img src="${item.image_url}" class="foodPhoto">`
+  : `<div class="foodPhoto foodPlaceholder">${item.emoji || "🍽️"}</div>`
+}
 
       <h3>${item.name}</h3>
       <p>${item.price} Kč</p>
