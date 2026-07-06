@@ -19,53 +19,53 @@ async function loadMenu() {
 }
 
 function renderPublicMenu() {
-    const container = document.getElementById("publicMenu");
+  const container = document.getElementById("publicMenu");
+  if (!container) return;
 
-    if (!container) return;
+  if (!menu.length) {
+    container.innerHTML = "<p>Menu je prázdné.</p>";
+    return;
+  }
 
-    if (!menu.length) {
-        container.innerHTML = "<p>Menu je prázdné.</p>";
-        return;
-    }
+  const categories = [
+    "Předkrm",
+    "Pizza",
+    "Hlavní jídlo",
+    "Těstoviny",
+    "Sladké pokrmy",
+    "Dezert",
+    "Nápoj"
+  ];
 
-    const categories = [
-  "Předkrm",
-  "Pizza",
-  "Hlavní jídlo",
-  "Těstoviny",
-  "Sladké pokrmy",
-  "Dezert",
-  "Nápoj"
-];
+  container.classList.remove("grid");
+  container.style.display = "flex";
+container.style.flexDirection = "column";
+container.style.gap = "70px";
 
-    container.innerHTML = categories.map(category => {
-        const items = menu.filter(item => (item.category || "Hlavní jídlo") === category);
+  container.innerHTML = categories.map(category => {
+    const items = menu.filter(item => item.category === category);
 
-        if (!items.length) return "";
+    if (!items.length) return "";
 
-        return `
-            <div class="menu-category">
-                <h2>${category}</h2>
-
-                <div class="grid">
-                    ${items.map(item => `
-                        <div class="food-card">
-                            ${
-                                item.image_url
-                                    ? `<img src="${item.image_url}" class="foodPhoto">`
-                                    : `<div class="foodPlaceholder">${item.emoji || "🍽️"}</div>`
-                            }
-
-                            <h3>${item.name}</h3>
-                            <p>${item.price} Kč</p>
-                        </div>
-                    `).join("")}
-                </div>
+    return `
+      <section class="menu-category">
+        <h2>${category}</h2>
+        <div class="grid">
+          ${items.map(item => `
+            <div class="food-card">
+              ${item.image_url
+                ? `<img src="${item.image_url}" class="foodPhoto">`
+                : `<div class="foodPlaceholder">${item.emoji || "🍽️"}</div>`
+              }
+              <h3>${item.name}</h3>
+              <p>${item.price} Kč</p>
             </div>
-        `;
-    }).join("");
+          `).join("")}
+        </div>
+      </section>
+    `;
+  }).join("");
 }
-
 function odpoved() {
   const text = document.getElementById("dotaz").value.toLowerCase();
   const vysledek = document.getElementById("vysledek");
