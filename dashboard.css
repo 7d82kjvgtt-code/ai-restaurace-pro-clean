@@ -56,4 +56,43 @@
   color: #22c55e;
   font-weight: 800;
   margin-top: 4px;
+}.foodItem {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 16px;
+    margin-bottom: 14px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.03);
+    transition: 0.2s;
+}
+
+.foodItem:hover {
+    background: rgba(255,255,255,0.06);
+}
+
+.foodPhoto {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.35);
+    flex-shrink: 0;
+}
+
+.foodInfo {
+    flex: 1;
+}
+
+.foodInfo b {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.foodPrice {
+    font-size: 18px;
+    color: #22c55e;
+    font-weight: 700;
 }
