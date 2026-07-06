@@ -53,9 +53,10 @@ container.style.gap = "70px";
         <div class="grid">
           ${items.map(item => `
             <div class="food-card">
-              ${item.image_url
-                ? `<img src="${item.image_url}" class="foodPhoto">`
-                : `<div class="foodPlaceholder">${item.emoji || "🍽️"}</div>`
+             ${item.image_url
+  ? `<img src="${item.image_url}" style="width:100%;height:180px;object-fit:cover;border-radius:18px;margin-bottom:18px;display:block;">`
+  : `<div style="width:100%;height:180px;display:flex;align-items:center;justify-content:center;font-size:64px;border-radius:18px;margin-bottom:18px;background:#111827;">${item.emoji || "🍽️"}</div>`
+}
               }
               <h3>${item.name}</h3>
               <p>${item.price} Kč</p>
