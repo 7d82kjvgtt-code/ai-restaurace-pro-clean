@@ -19,54 +19,27 @@ async function loadMenu() {
 }
 
 function renderPublicMenu() {
-  const container = document.getElementById("publicMenu");
+    const container = document.getElementById("publicMenu");
 
-  if (!container) return;
+    if (!container) return;
 
-  if (!menu.length) {
-    container.innerHTML = "<p>Menu je prázdné.</p>";
-    return;
-  }
+    if (!menu.length) {
+        container.innerHTML = "<p>Menu je prázdné.</p>";
+        return;
+    }
 
-  const categories = ["Pizza", "Předkrm", "Hlavní jídlo", "Těstoviny", "Dezert", "Nápoj"];
+    container.innerHTML = menu.map(item => `
+        <div class="food-card">
+            ${
+                item.image_url
+                    ? `<img src="${item.image_url}" class="foodPhoto">`
+                    : `<div class="foodPlaceholder">${item.emoji || "🍽️"}</div>`
+            }
 
-  container.innerHTML = categories.map(category => {
-    .menu-category{
-    margin-bottom:70px;
-}
-
-.menu-category h2{
-    font-size:36px;
-    margin-bottom:24px;
-    color:#fbbf24;
-    border-left:6px solid #f59e0b;
-    padding-left:16px;
-    font-weight:900;
-    text-transform:uppercase;
-}
-
-    if (!items.length) return "";
-
-    return `
-      <div class="menu-category">
-        <h2>${category}</h2>
-
-        <div class="grid">
-          ${items.map(item => `
-            <div class="food-card">
-              ${item.image_url
-                ? `<img src="${item.image_url}" class="foodPhoto">`
-                : `<div class="foodPlaceholder">${item.emoji || "🍽️"}</div>`
-              }
-
-              <h3>${item.name}</h3>
-              <p>${item.price} Kč</p>
-            </div>
-          `).join("")}
+            <h3>${item.name}</h3>
+            <p>${item.price} Kč</p>
         </div>
-      </div>
-    `;
-  }).join("");
+    `).join("");
 }
 
 function odpoved() {
