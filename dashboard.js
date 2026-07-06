@@ -197,11 +197,10 @@ function renderFoods() {
 
     ${food.image_url ? `<img src="${food.image_url}" class="foodPhoto">` : ""}
 
-    <div>
-      <b>${food.emoji || "🍽️"} ${food.name}</b>
-      <div class="foodPrice">${food.price} Kč</div>
-    </div>
-
+    <div class="foodInfo">
+    <b>${food.emoji || "🍽"} ${food.name}</b>
+    <div class="foodPrice">${food.price} Kč</div>
+</div>
     <button class="deleteBtn" onclick="deleteFood(${food.id})">🗑️</button>
 
   </div>
