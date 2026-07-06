@@ -29,6 +29,22 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle
 
 input{width:100%;padding:15px;margin:10px 0;border:1px solid rgba(255,255,255,.12);border-radius:14px;font-size:15px;background:#020617;color:white}
 input::placeholder{color:#94a3b8}
+textarea{
+  width:100%;
+  min-height:130px;
+  padding:15px;
+  margin:10px 0 20px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;
+  font-size:15px;
+  background:#020617;
+  color:white;
+  resize:vertical;
+}
+
+textarea::placeholder{
+  color:#94a3b8;
+}
 #vysledek{margin-top:16px;line-height:1.7;color:#e5e7eb}
 
 #publicMenu{display:block!important;width:100%}
