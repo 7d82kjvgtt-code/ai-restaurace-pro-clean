@@ -38,7 +38,7 @@ function renderPublicMenu() {
     ];
 
     container.innerHTML = categories.map(category => {
-        const items = menu.filter(item => item.category === category);
+        const items = menu.filter(item => (item.category || "Hlavní jídlo") === category);
 
         if (!items.length) return "";
 
