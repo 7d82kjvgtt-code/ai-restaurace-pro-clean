@@ -161,3 +161,12 @@ const categories = [
   "Dezert",
   "Nápoj"
 ];
+.menu-category{
+    width:100%;
+    margin-bottom:70px;
+}
+
+.menu-category .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:30px;
