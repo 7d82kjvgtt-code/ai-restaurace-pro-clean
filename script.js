@@ -15,23 +15,26 @@ async function loadMenu() {
   });
 
   menu = await res.json();
-  renderPublicMenu();
-}
-
-function renderPublicMenu() {
+ function renderPublicMenu() {
   const container = document.getElementById("publicMenu");
 
   if (!container) return;
 
   container.innerHTML = menu.map(item => `
     <div class="food-card">
-      <div style="font-size:40px">${item.emoji || "🍽️"}</div>
+
+      ${item.image_url ? `<img src="${item.image_url}" class="foodPhoto">` : ""}
+
+      <div style="font-size:40px">
+        ${item.emoji || "🍽️"}
+      </div>
+
       <h3>${item.name}</h3>
       <p>${item.price} Kč</p>
+
     </div>
   `).join("");
 }
-
 function odpoved() {
   const text = document.getElementById("dotaz").value.toLowerCase();
   const vysledek = document.getElementById("vysledek");
