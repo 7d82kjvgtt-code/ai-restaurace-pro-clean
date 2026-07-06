@@ -15,6 +15,8 @@ async function loadMenu() {
   });
 
   menu = await res.json();
+  renderPublicMenu();
+}
  function renderPublicMenu() {
   const container = document.getElementById("publicMenu");
 
