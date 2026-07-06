@@ -31,7 +31,19 @@ function renderPublicMenu() {
   const categories = ["Pizza", "Předkrm", "Hlavní jídlo", "Těstoviny", "Dezert", "Nápoj"];
 
   container.innerHTML = categories.map(category => {
-    const items = menu.filter(item => item.category === category);
+    .menu-category{
+    margin-bottom:70px;
+}
+
+.menu-category h2{
+    font-size:36px;
+    margin-bottom:24px;
+    color:#fbbf24;
+    border-left:6px solid #f59e0b;
+    padding-left:16px;
+    font-weight:900;
+    text-transform:uppercase;
+}
 
     if (!items.length) return "";
 
