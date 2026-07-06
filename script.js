@@ -22,36 +22,54 @@ function renderPublicMenu() {
   const container = document.getElementById("publicMenu");
   if (!container) return;
 
-  const categories = ["Předkrm", "Pizza", "Hlavní jídlo", "Těstoviny", "Sladké pokrmy", "Dezert", "Nápoj"];
+  if (!menu.length) {
+    container.innerHTML = "<p>Menu je prázdné.</p>";
+    return;
+  }
+
+  const categories = [
+    "Předkrm",
+    "Pizza",
+    "Hlavní jídlo",
+    "Těstoviny",
+    "Sladké pokrmy",
+    "Dezert",
+    "Nápoj"
+  ];
 
   container.className = "";
+  container.style.display = "block";
 
   container.innerHTML = categories.map(category => {
-    const items = menu.filter(item => item.category === category);
+    const items = menu.filter(item => (item.category || "Hlavní jídlo") === category);
+
     if (!items.length) return "";
 
     return `
-      <div style="width:100%; margin-bottom:70px;">
-        <h2 style="font-size:36px;color:#f59e0b;margin-bottom:25px;border-left:6px solid #f59e0b;padding-left:15px;">
+      <section class="menu-category" style="width:100%;margin-bottom:70px;">
+        <h2 style="font-size:36px;color:#f59e0b;margin-bottom:25px;border-left:6px solid #f59e0b;padding-left:15px;text-transform:uppercase;">
           ${category}
         </h2>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:30px;">
           ${items.map(item => `
             <div class="food-card">
-              ${item.image_url
-                ? `<img src="${item.image_url}" style="width:100%;height:180px;object-fit:cover;border-radius:18px;margin-bottom:18px;display:block;">`
-                : `<div style="width:100%;height:180px;display:flex;align-items:center;justify-content:center;font-size:64px;border-radius:18px;margin-bottom:18px;background:#111827;">${item.emoji || "🍽️"}</div>`
+              ${
+                item.image_url
+                  ? `<img src="${item.image_url}" style="width:100%;height:180px;object-fit:cover;border-radius:18px;margin-bottom:18px;display:block;">`
+                  : `<div style="width:100%;height:180px;display:flex;align-items:center;justify-content:center;font-size:64px;border-radius:18px;margin-bottom:18px;background:#111827;">${item.emoji || "🍽️"}</div>`
               }
+
               <h3>${item.name}</h3>
               <p>${item.price} Kč</p>
             </div>
           `).join("")}
         </div>
-      </div>
+      </section>
     `;
   }).join("");
 }
+
 function odpoved() {
   const text = document.getElementById("dotaz").value.toLowerCase();
   const vysledek = document.getElementById("vysledek");
