@@ -53,9 +53,14 @@ input::placeholder{color:#94a3b8}
 
 .menu-category .grid{
   display:grid!important;
-  grid-template-columns:repeat(auto-fill,260px)!important;
-  gap:22px!important;
+  grid-template-columns:repeat(auto-fit,minmax(260px,260px))!important;
+  justify-content:center!important;
+  gap:30px!important;
   width:100%;
+}
+.food-card{
+  width:260px;
+  margin:0 auto;
 }
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:24px}
 
