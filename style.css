@@ -184,3 +184,19 @@ const categories = [
   grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
   gap:30px;
 }
+#publicMenu {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 70px !important;
+}
+
+.menu-category {
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.menu-category .grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+  gap: 30px !important;
+}
