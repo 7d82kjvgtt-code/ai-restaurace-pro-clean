@@ -157,21 +157,48 @@ async function saveFood() {
   const name = document.getElementById("foodName").value.trim();
   const price = document.getElementById("foodPrice").value.trim();
   const emoji = document.getElementById("foodEmoji").value.trim() || "🍽️";
-const image_url = document.getElementById("foodImage").value.trim();
+  const imageFile = document.getElementById("foodImage").files[0];
+
   if (!name || !price) {
     alert("Vyplň název i cenu.");
     return;
   }
 
+  let image_url = "";
+
+  if (imageFile) {
+    const fileExt = imageFile.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+
+    const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/food-images/${fileName}`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": imageFile.type,
+        "x-upsert": "true"
+      },
+      body: imageFile
+    });
+
+    if (!uploadRes.ok) {
+      alert("Nepodařilo se nahrát fotku.");
+      console.log(await uploadRes.text());
+      return;
+    }
+
+    image_url = `${SUPABASE_URL}/storage/v1/object/public/food-images/${fileName}`;
+  }
+
   await fetch(`${SUPABASE_URL}/rest/v1/menu`, {
     method: "POST",
     headers,
-   body: JSON.stringify({
-    name,
-    price: Number(price),
-    emoji,
-    image_url
-})
+    body: JSON.stringify({
+      name,
+      price: Number(price),
+      emoji,
+      image_url
+    })
   });
 
   document.getElementById("foodName").value = "";
