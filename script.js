@@ -51,7 +51,7 @@ function renderPublicMenu() {
           ${category}
         </h2>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:30px;">
+       <div style="display:grid;grid-template-columns:repeat(auto-fill,260px);gap:30px;">
           ${items.map(item => `
             <div class="food-card">
               ${
