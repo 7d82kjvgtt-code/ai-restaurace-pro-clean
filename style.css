@@ -170,3 +170,17 @@ const categories = [
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
     gap:30px;
+#publicMenu{
+  display:block !important;
+}
+
+.menu-category{
+  width:100% !important;
+  margin-bottom:70px;
+}
+
+.menu-category .grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:30px;
+}
