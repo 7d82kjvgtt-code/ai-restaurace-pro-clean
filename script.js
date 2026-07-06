@@ -29,13 +29,14 @@ function renderPublicMenu() {
     }
 
     const categories = [
-        "Předkrm",
-        "Pizza",
-        "Hlavní jídlo",
-        "Těstoviny",
-        "Dezert",
-        "Nápoj"
-    ];
+  "Předkrm",
+  "Pizza",
+  "Hlavní jídlo",
+  "Těstoviny",
+  "Sladké pokrmy",
+  "Dezert",
+  "Nápoj"
+];
 
     container.innerHTML = categories.map(category => {
         const items = menu.filter(item => (item.category || "Hlavní jídlo") === category);
