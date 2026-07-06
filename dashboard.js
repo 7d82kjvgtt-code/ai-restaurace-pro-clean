@@ -157,6 +157,7 @@ async function saveFood() {
   const name = document.getElementById("foodName").value.trim();
   const price = document.getElementById("foodPrice").value.trim();
   const emoji = document.getElementById("foodEmoji").value.trim() || "🍽️";
+  const category = document.getElementById("foodCategory").value;
   const imageFile = document.getElementById("foodImage").files[0];
 
   if (!name || !price) {
@@ -197,7 +198,8 @@ async function saveFood() {
       name,
       price: Number(price),
       emoji,
-      image_url
+      image_url,
+      category
     })
   });
 
