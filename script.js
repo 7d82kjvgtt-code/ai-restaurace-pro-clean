@@ -28,18 +28,41 @@ function renderPublicMenu() {
         return;
     }
 
-    container.innerHTML = menu.map(item => `
-        <div class="food-card">
-            ${
-                item.image_url
-                    ? `<img src="${item.image_url}" class="foodPhoto">`
-                    : `<div class="foodPlaceholder">${item.emoji || "🍽️"}</div>`
-            }
+    const categories = [
+        "Předkrm",
+        "Pizza",
+        "Hlavní jídlo",
+        "Těstoviny",
+        "Dezert",
+        "Nápoj"
+    ];
 
-            <h3>${item.name}</h3>
-            <p>${item.price} Kč</p>
-        </div>
-    `).join("");
+    container.innerHTML = categories.map(category => {
+        const items = menu.filter(item => item.category === category);
+
+        if (!items.length) return "";
+
+        return `
+            <div class="menu-category">
+                <h2>${category}</h2>
+
+                <div class="grid">
+                    ${items.map(item => `
+                        <div class="food-card">
+                            ${
+                                item.image_url
+                                    ? `<img src="${item.image_url}" class="foodPhoto">`
+                                    : `<div class="foodPlaceholder">${item.emoji || "🍽️"}</div>`
+                            }
+
+                            <h3>${item.name}</h3>
+                            <p>${item.price} Kč</p>
+                        </div>
+                    `).join("")}
+                </div>
+            </div>
+        `;
+    }).join("");
 }
 
 function odpoved() {
