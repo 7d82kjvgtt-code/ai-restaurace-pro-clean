@@ -164,12 +164,20 @@ function openFoodDetail(id) {
 
   if (!item) return;
 
-  alert(
-    `${item.name}\n\n` +
-    `Cena: ${item.price} Kč\n` +
-    `Popis: ${item.description || "Neuvedeno"}\n` +
-    `Ingredience: ${item.ingredients || "Neuvedeno"}\n` +
-    `Gramáž: ${item.weight || "Neuvedeno"}\n` +
-    `Alergeny: ${item.allergens || "Neuvedeno"}`
-  );
+  document.getElementById("modalFoodName").textContent = item.name;
+  document.getElementById("modalFoodPrice").textContent = `${item.price} Kč`;
+  document.getElementById("modalFoodDescription").textContent =
+    item.description || "Neuvedeno";
+  document.getElementById("modalFoodIngredients").textContent =
+    item.ingredients || "Neuvedeno";
+  document.getElementById("modalFoodWeight").textContent =
+    item.weight || "Neuvedeno";
+  document.getElementById("modalFoodAllergens").textContent =
+    item.allergens || "Neuvedeno";
+
+  document.getElementById("foodModal").classList.add("open");
+}
+
+function closeFoodDetail() {
+  document.getElementById("foodModal").classList.remove("open");
 }
