@@ -1,5 +1,6 @@
 const SUPABASE_URL = "https://decpnnbaejxjbpmyjocs.supabase.co";
-const SUPABASE_KEY = "sb_publishable_l6ko8NS_92RjQBM2rEzAvA_Sd2hYicb";
+const SUPABASE_KEY =
+  "sb_publishable_l6ko8NS_92RjQBM2rEzAvA_Sd2hYicb";
 
 const headers = {
   apikey: SUPABASE_KEY,
@@ -10,16 +11,29 @@ const headers = {
 let reservations = [];
 let foods = [];
 
+let editingFoodId = null;
+let editingImageUrl = "";
+
 document.addEventListener("DOMContentLoaded", () => {
   loadReservations();
   loadFoods();
 
   const search = document.getElementById("search");
-  if (search) search.addEventListener("input", applyFilters);
+
+  if (search) {
+    search.addEventListener("input", applyFilters);
+  }
 
   const statusFilter = document.getElementById("statusFilter");
-  if (statusFilter) statusFilter.addEventListener("change", applyFilters);
+
+  if (statusFilter) {
+    statusFilter.addEventListener("change", applyFilters);
+  }
 });
+
+/* =========================================
+   REZERVACE
+========================================= */
 
 async function loadReservations() {
   const table = document.getElementById("reservationTable");
@@ -33,111 +47,213 @@ async function loadReservations() {
     const data = await res.json();
 
     if (!res.ok) {
-      table.innerHTML = `<tr><td colspan="9">Chyba: ${JSON.stringify(data)}</td></tr>`;
+      if (table) {
+        table.innerHTML = `
+          <tr>
+            <td colspan="9">
+              Chyba: ${JSON.stringify(data)}
+            </td>
+          </tr>
+        `;
+      }
+
       return;
     }
 
-    reservations = data;
+    reservations = Array.isArray(data) ? data : [];
 
-    document.getElementById("totalCount").innerText = reservations.length;
+    const totalCount = document.getElementById("totalCount");
+
+    if (totalCount) {
+      totalCount.innerText = reservations.length;
+    }
 
     const today = new Date().toISOString().split("T")[0];
-    const todayReservations = reservations.filter(r => r.date === today);
-    document.getElementById("todayCount").innerText = todayReservations.length;
+
+    const todayReservations = reservations.filter(
+      reservation => reservation.date === today
+    );
+
+    const todayCount = document.getElementById("todayCount");
+
+    if (todayCount) {
+      todayCount.innerText = todayReservations.length;
+    }
 
     renderReservations(reservations);
   } catch (error) {
-    table.innerHTML = `<tr><td colspan="9">JS chyba: ${error.message}</td></tr>`;
+    if (table) {
+      table.innerHTML = `
+        <tr>
+          <td colspan="9">
+            JS chyba: ${error.message}
+          </td>
+        </tr>
+      `;
+    }
   }
 }
 
 function formatDate(date) {
   if (!date) return "-";
+
   const parts = date.split("-");
-  if (parts.length !== 3) return date;
+
+  if (parts.length !== 3) {
+    return date;
+  }
+
   return `${parts[2]}.${parts[1]}.${parts[0]}`;
 }
 
 function renderReservations(data) {
   const table = document.getElementById("reservationTable");
+
   if (!table) return;
 
   if (!data.length) {
-    table.innerHTML = `<tr><td colspan="9">Žádné rezervace.</td></tr>`;
+    table.innerHTML = `
+      <tr>
+        <td colspan="9">Žádné rezervace.</td>
+      </tr>
+    `;
+
     return;
   }
 
-  table.innerHTML = data.map(r => `
-    <tr>
-      <td>${r.name || "-"}</td>
-      <td>${r.people || "-"}</td>
-      <td>${formatDate(r.date)}</td>
-      <td>${r.time || "-"}</td>
-      <td>${r.phone || "-"}</td>
-      <td>${r.email || "-"}</td>
-      <td>${r.note || "-"}</td>
-      <td>
-        <span class="status ${r.status || "Čeká"}">
-          ${r.status || "Čeká"}
-        </span>
-      </td>
-      <td>
-        <button onclick="updateStatus(${r.id}, 'Potvrzeno')">✅</button>
-        <button onclick="updateStatus(${r.id}, 'Zrušeno')">❌</button>
-        <button class="deleteBtn" onclick="deleteReservation(${r.id})">🗑️</button>
-      </td>
-    </tr>
-  `).join("");
+  table.innerHTML = data
+    .map(
+      reservation => `
+        <tr>
+          <td>${reservation.name || "-"}</td>
+          <td>${reservation.people || "-"}</td>
+          <td>${formatDate(reservation.date)}</td>
+          <td>${reservation.time || "-"}</td>
+          <td>${reservation.phone || "-"}</td>
+          <td>${reservation.email || "-"}</td>
+          <td>${reservation.note || "-"}</td>
+
+          <td>
+            <span class="status ${reservation.status || "Čeká"}">
+              ${reservation.status || "Čeká"}
+            </span>
+          </td>
+
+          <td>
+            <button
+              onclick="updateStatus(${reservation.id}, 'Potvrzeno')"
+            >
+              ✅
+            </button>
+
+            <button
+              onclick="updateStatus(${reservation.id}, 'Zrušeno')"
+            >
+              ❌
+            </button>
+
+            <button
+              class="deleteBtn"
+              onclick="deleteReservation(${reservation.id})"
+            >
+              🗑️
+            </button>
+          </td>
+        </tr>
+      `
+    )
+    .join("");
 }
 
 async function updateStatus(id, status) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`, {
-    method: "PATCH",
-    headers,
-    body: JSON.stringify({ status })
-  });
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ status })
+      }
+    );
 
-  if (!res.ok) {
-    alert("Nepodařilo se změnit stav.");
-    console.log(await res.text());
-    return;
+    if (!res.ok) {
+      alert("Nepodařilo se změnit stav.");
+      console.error(await res.text());
+      return;
+    }
+
+    loadReservations();
+  } catch (error) {
+    alert("Při změně stavu nastala chyba.");
+    console.error(error);
   }
-
-  loadReservations();
 }
 
 async function deleteReservation(id) {
-  if (!confirm("Opravdu smazat rezervaci?")) return;
+  const confirmed = confirm("Opravdu smazat rezervaci?");
 
-  await fetch(`${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`, {
-    method: "DELETE",
-    headers
-  });
+  if (!confirmed) return;
 
-  loadReservations();
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`,
+      {
+        method: "DELETE",
+        headers
+      }
+    );
+
+    if (!res.ok) {
+      alert("Nepodařilo se smazat rezervaci.");
+      console.error(await res.text());
+      return;
+    }
+
+    loadReservations();
+  } catch (error) {
+    alert("Při mazání rezervace nastala chyba.");
+    console.error(error);
+  }
 }
 
 function applyFilters() {
   const searchInput = document.getElementById("search");
   const statusInput = document.getElementById("statusFilter");
 
-  const search = searchInput ? searchInput.value.toLowerCase() : "";
-  const status = statusInput ? statusInput.value : "";
+  const search = searchInput
+    ? searchInput.value.toLowerCase().trim()
+    : "";
 
-  const filtered = reservations.filter(r => {
+  const status = statusInput
+    ? statusInput.value
+    : "";
+
+  const filtered = reservations.filter(reservation => {
+    const name = (reservation.name || "").toLowerCase();
+    const phone = (reservation.phone || "").toLowerCase();
+    const email = (reservation.email || "").toLowerCase();
+
     const matchSearch =
-      (r.name || "").toLowerCase().includes(search) ||
-      (r.phone || "").toLowerCase().includes(search) ||
-      (r.email || "").toLowerCase().includes(search);
+      name.includes(search) ||
+      phone.includes(search) ||
+      email.includes(search);
+
+    const reservationStatus =
+      reservation.status || "Čeká";
 
     const matchStatus =
-      status === "" || (r.status || "Čeká") === status;
+      status === "" ||
+      reservationStatus === status;
 
     return matchSearch && matchStatus;
   });
 
   renderReservations(filtered);
 }
+
+/* =========================================
+   MENU
+========================================= */
 
 async function loadFoods() {
   try {
@@ -146,10 +262,20 @@ async function loadFoods() {
       { headers }
     );
 
-    foods = await res.json();
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error("Chyba při načítání menu:", data);
+      return;
+    }
+
+    foods = Array.isArray(data) ? data : [];
 
     const foodCount = document.getElementById("foodCount");
-    if (foodCount) foodCount.innerText = foods.length;
+
+    if (foodCount) {
+      foodCount.innerText = foods.length;
+    }
 
     renderFoods();
   } catch (error) {
@@ -158,88 +284,137 @@ async function loadFoods() {
 }
 
 async function saveFood() {
-  const name = document.getElementById("foodName").value.trim();
-  const price = document.getElementById("foodPrice").value.trim();
-  const emoji = document.getElementById("foodEmoji").value.trim() || "🍽️";
-  const category = document.getElementById("foodCategory").value;
-  
-  const description = document.getElementById("foodDescription").value.trim();
-const ingredients = document.getElementById("foodIngredients").value.trim();
-const allergens = document.getElementById("foodAllergens").value.trim();
-const weight = document.getElementById("foodWeight").value.trim();
-  
-  const imageFile = document.getElementById("foodImage").files[0];
+  const name =
+    document.getElementById("foodName").value.trim();
+
+  const price =
+    document.getElementById("foodPrice").value.trim();
+
+  const emoji =
+    document.getElementById("foodEmoji").value.trim() ||
+    "🍽️";
+
+  const category =
+    document.getElementById("foodCategory").value;
+
+  const description =
+    document
+      .getElementById("foodDescription")
+      .value.trim();
+
+  const ingredients =
+    document
+      .getElementById("foodIngredients")
+      .value.trim();
+
+  const allergens =
+    document
+      .getElementById("foodAllergens")
+      .value.trim();
+
+  const weight =
+    document
+      .getElementById("foodWeight")
+      .value.trim();
+
+  const imageInput =
+    document.getElementById("foodImage");
+
+  const imageFile =
+    imageInput && imageInput.files
+      ? imageInput.files[0]
+      : null;
 
   if (!name || !price) {
     alert("Vyplň název i cenu.");
     return;
   }
 
-  let image_url = "";
+  let image_url = editingImageUrl || "";
 
-  if (imageFile) {
-    const fileExt = imageFile.name.split(".").pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+  try {
+    if (imageFile) {
+      const fileExt =
+        imageFile.name.split(".").pop();
 
-    const uploadRes = await fetch(
-      `${SUPABASE_URL}/storage/v1/object/food-images/${fileName}`,
-      {
-        method: "POST",
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          "Content-Type": imageFile.type,
-          "x-upsert": "true"
-        },
-        body: imageFile
+      const randomPart =
+        Math.random()
+          .toString(36)
+          .substring(2);
+
+      const fileName =
+        `${Date.now()}-${randomPart}.${fileExt}`;
+
+      const uploadRes = await fetch(
+        `${SUPABASE_URL}/storage/v1/object/food-images/${fileName}`,
+        {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": imageFile.type,
+            "x-upsert": "true"
+          },
+          body: imageFile
+        }
+      );
+
+      if (!uploadRes.ok) {
+        alert("Nepodařilo se nahrát fotku.");
+        console.error(await uploadRes.text());
+        return;
       }
-    );
 
-    if (!uploadRes.ok) {
-      alert("Nepodařilo se nahrát fotku.");
-      console.log(await uploadRes.text());
+      image_url =
+        `${SUPABASE_URL}/storage/v1/object/public/food-images/${fileName}`;
+    }
+
+    const foodData = {
+      name,
+      price: Number(price),
+      emoji,
+      image_url,
+      category,
+      description,
+      ingredients,
+      allergens,
+      weight
+    };
+
+    const editing = editingFoodId !== null;
+
+    const url = editing
+      ? `${SUPABASE_URL}/rest/v1/menu?id=eq.${editingFoodId}`
+      : `${SUPABASE_URL}/rest/v1/menu`;
+
+    const res = await fetch(url, {
+      method: editing ? "PATCH" : "POST",
+      headers,
+      body: JSON.stringify(foodData)
+    });
+
+    if (!res.ok) {
+      alert(
+        editing
+          ? "Nepodařilo se upravit jídlo."
+          : "Nepodařilo se uložit jídlo."
+      );
+
+      console.error(await res.text());
       return;
     }
 
-    image_url = `${SUPABASE_URL}/storage/v1/object/public/food-images/${fileName}`;
+    resetFoodForm();
+    await loadFoods();
+  } catch (error) {
+    alert("Při ukládání jídla nastala chyba.");
+    console.error(error);
   }
-
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/menu`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-  name,
-  price: Number(price),
-  emoji,
-  image_url,
-  category,
-  description,
-  ingredients,
-  allergens,
-  weight
-})
-  });
-
-  if (!res.ok) {
-    alert("Nepodařilo se uložit jídlo.");
-    console.log(await res.text());
-    return;
-  }
-
-  document.getElementById("foodName").value = "";
-document.getElementById("foodPrice").value = "";
-document.getElementById("foodEmoji").value = "";
-document.getElementById("foodDescription").value = "";
-document.getElementById("foodIngredients").value = "";
-document.getElementById("foodAllergens").value = "";
-document.getElementById("foodWeight").value = "";
-document.getElementById("foodImage").value = "";
-
-loadFoods();
 }
 
 function renderFoods() {
   const list = document.getElementById("foodList");
+
   if (!list) return;
 
   if (!foods.length) {
@@ -247,49 +422,173 @@ function renderFoods() {
     return;
   }
 
-  list.innerHTML = foods.map(food => `
-    <div class="foodItem">
-      ${food.image_url ? `<img src="${food.image_url}" class="foodPhoto">` : ""}
+  list.innerHTML = foods
+    .map(
+      food => `
+        <div class="foodItem">
+          ${
+            food.image_url
+              ? `
+                <img
+                  src="${food.image_url}"
+                  class="foodPhoto"
+                  alt="${food.name || "Jídlo"}"
+                >
+              `
+              : ""
+          }
 
-      <div class="foodInfo">
-        <b>${food.emoji || "🍽️"} ${food.name}</b>
-        <div class="foodPrice">${food.price} Kč</div>
-        <small>${food.category || "Bez kategorie"}</small>
-      </div>
+          <div class="foodInfo">
+            <b>
+              ${food.emoji || "🍽️"}
+              ${food.name || "Bez názvu"}
+            </b>
 
-      <div class="foodActions">
-  <button class="editBtn" onclick="editFood(${food.id})">✏️</button>
-  <button class="deleteBtn" onclick="deleteFood(${food.id})">🗑️</button>
-</div>
-    </div>
-  `).join("");
+            <div class="foodPrice">
+              ${food.price || 0} Kč
+            </div>
+
+            <small>
+              ${food.category || "Bez kategorie"}
+            </small>
+          </div>
+
+          <div class="foodActions">
+            <button
+              class="editBtn"
+              onclick="editFood(${food.id})"
+              title="Upravit jídlo"
+            >
+              ✏️
+            </button>
+
+            <button
+              class="deleteBtn"
+              onclick="deleteFood(${food.id})"
+              title="Smazat jídlo"
+            >
+              🗑️
+            </button>
+          </div>
+        </div>
+      `
+    )
+    .join("");
 }
+
 function editFood(id) {
-  const food = foods.find(item => item.id === id);
+  const food = foods.find(
+    item => item.id === id
+  );
 
   if (!food) return;
 
-  document.getElementById("foodName").value = food.name || "";
-  document.getElementById("foodPrice").value = food.price || "";
-  document.getElementById("foodEmoji").value = food.emoji || "";
-  document.getElementById("foodCategory").value = food.category || "Pizza";
-  document.getElementById("foodDescription").value = food.description || "";
-  document.getElementById("foodIngredients").value = food.ingredients || "";
-  document.getElementById("foodAllergens").value = food.allergens || "";
-  document.getElementById("foodWeight").value = food.weight || "";
+  editingFoodId = food.id;
+  editingImageUrl = food.image_url || "";
 
-  window.scrollTo({
-    top: document.getElementById("foodName").offsetTop - 40,
-    behavior: "smooth"
-  });
+  document.getElementById("foodName").value =
+    food.name || "";
+
+  document.getElementById("foodPrice").value =
+    food.price || "";
+
+  document.getElementById("foodEmoji").value =
+    food.emoji || "";
+
+  document.getElementById("foodCategory").value =
+    food.category || "Pizza";
+
+  document.getElementById("foodDescription").value =
+    food.description || "";
+
+  document.getElementById("foodIngredients").value =
+    food.ingredients || "";
+
+  document.getElementById("foodAllergens").value =
+    food.allergens || "";
+
+  document.getElementById("foodWeight").value =
+    food.weight || "";
+
+  const saveButton =
+    document.querySelector(
+      'button[onclick="saveFood()"]'
+    );
+
+  if (saveButton) {
+    saveButton.textContent = "Uložit změny";
+  }
+
+  const foodName =
+    document.getElementById("foodName");
+
+  if (foodName) {
+    foodName.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+
+    foodName.focus();
+  }
 }
+
+function resetFoodForm() {
+  editingFoodId = null;
+  editingImageUrl = "";
+
+  document.getElementById("foodName").value = "";
+  document.getElementById("foodPrice").value = "";
+  document.getElementById("foodEmoji").value = "";
+  document.getElementById("foodDescription").value = "";
+  document.getElementById("foodIngredients").value = "";
+  document.getElementById("foodAllergens").value = "";
+  document.getElementById("foodWeight").value = "";
+
+  const imageInput =
+    document.getElementById("foodImage");
+
+  if (imageInput) {
+    imageInput.value = "";
+  }
+
+  const saveButton =
+    document.querySelector(
+      'button[onclick="saveFood()"]'
+    );
+
+  if (saveButton) {
+    saveButton.textContent = "Přidat jídlo";
+  }
+}
+
 async function deleteFood(id) {
-  if (!confirm("Opravdu smazat jídlo?")) return;
+  const confirmed =
+    confirm("Opravdu smazat jídlo?");
 
-  await fetch(`${SUPABASE_URL}/rest/v1/menu?id=eq.${id}`, {
-    method: "DELETE",
-    headers
-  });
+  if (!confirmed) return;
 
-  loadFoods();
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/menu?id=eq.${id}`,
+      {
+        method: "DELETE",
+        headers
+      }
+    );
+
+    if (!res.ok) {
+      alert("Nepodařilo se smazat jídlo.");
+      console.error(await res.text());
+      return;
+    }
+
+    if (editingFoodId === id) {
+      resetFoodForm();
+    }
+
+    await loadFoods();
+  } catch (error) {
+    alert("Při mazání jídla nastala chyba.");
+    console.error(error);
+  }
 }
