@@ -162,6 +162,12 @@ async function saveFood() {
   const price = document.getElementById("foodPrice").value.trim();
   const emoji = document.getElementById("foodEmoji").value.trim() || "🍽️";
   const category = document.getElementById("foodCategory").value;
+  
+  const description = document.getElementById("foodDescription").value.trim();
+const ingredients = document.getElementById("foodIngredients").value.trim();
+const allergens = document.getElementById("foodAllergens").value.trim();
+const weight = document.getElementById("foodWeight").value.trim();
+  
   const imageFile = document.getElementById("foodImage").files[0];
 
   if (!name || !price) {
@@ -202,12 +208,16 @@ async function saveFood() {
     method: "POST",
     headers,
     body: JSON.stringify({
-      name,
-      price: Number(price),
-      emoji,
-      image_url,
-      category
-    })
+  name,
+  price: Number(price),
+  emoji,
+  image_url,
+  category,
+  description,
+  ingredients,
+  allergens,
+  weight
+})
   });
 
   if (!res.ok) {
