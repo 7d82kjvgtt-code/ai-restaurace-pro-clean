@@ -53,7 +53,7 @@ function renderPublicMenu() {
 
        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,260px));justify-content:center;gap:30px;">
           ${items.map(item => `
-            <div class="food-card">
+            <div class="food-card" onclick="openFoodDetail(${item.id})">
               ${
                 item.image_url
                   ? `<img src="${item.image_url}" style="width:100%;height:180px;object-fit:cover;border-radius:18px;margin-bottom:18px;display:block;">`
@@ -159,3 +159,16 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 loadMenu();
+function openFoodDetail(id) {
+  const item = menu.find(food => food.id === id);
+
+  if (!item) return;
+
+  alert(
+    `${item.name}\n\n` +
+    `Cena: ${item.price} Kč\n` +
+    `Popis: ${item.description || "Neuvedeno"}\n` +
+    `Ingredience: ${item.ingredients || "Neuvedeno"}\n` +
+    `Alergeny: ${item.allergens || "Neuvedeno"}`
+  );
+}
