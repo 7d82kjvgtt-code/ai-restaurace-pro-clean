@@ -169,6 +169,7 @@ function openFoodDetail(id) {
     `Cena: ${item.price} Kč\n` +
     `Popis: ${item.description || "Neuvedeno"}\n` +
     `Ingredience: ${item.ingredients || "Neuvedeno"}\n` +
+    `Gramáž: ${item.weight || "Neuvedeno"}\n` +
     `Alergeny: ${item.allergens || "Neuvedeno"}`
   );
 }
