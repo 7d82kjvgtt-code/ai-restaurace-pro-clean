@@ -181,3 +181,8 @@ function openFoodDetail(id) {
 function closeFoodDetail() {
   document.getElementById("foodModal").classList.remove("open");
 }
+document.getElementById("foodModal").addEventListener("click", function (event) {
+  if (event.target === this) {
+    closeFoodDetail();
+  }
+});
