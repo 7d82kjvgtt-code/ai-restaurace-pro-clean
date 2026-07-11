@@ -181,10 +181,14 @@ function openFoodDetail(id) {
 function closeFoodDetail() {
   document.getElementById("foodModal").classList.remove("open");
 }
-const foodModal = document.getElementById("foodModal");
+document.addEventListener("DOMContentLoaded", function () {
+  const foodModal = document.getElementById("foodModal");
 
-foodModal.addEventListener("click", function (event) {
-  if (event.target === foodModal) {
-    closeFoodDetail();
-  }
+  if (!foodModal) return;
+
+  foodModal.addEventListener("click", function (event) {
+    if (event.target === foodModal) {
+      closeFoodDetail();
+    }
+  });
 });
