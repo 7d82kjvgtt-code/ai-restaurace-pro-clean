@@ -257,7 +257,10 @@ function renderFoods() {
         <small>${food.category || "Bez kategorie"}</small>
       </div>
 
-      <button class="deleteBtn" onclick="deleteFood(${food.id})">🗑️</button>
+      <div class="foodActions">
+  <button class="editBtn" onclick="editFood(${food.id})">✏️</button>
+  <button class="deleteBtn" onclick="deleteFood(${food.id})">🗑️</button>
+</div>
     </div>
   `).join("");
 }
