@@ -265,6 +265,20 @@ Praha • +420 777 123 456 • info@restaurace.cz
 </section>
 
 <script src="script.js"></script>
+  
+<div id="foodModal" class="food-modal">
+  <div class="food-modal-content">
+    <button class="food-modal-close" onclick="closeFoodDetail()">×</button>
 
+    <h2 id="modalFoodName"></h2>
+
+    <p><strong>Cena:</strong> <span id="modalFoodPrice"></span></p>
+    <p><strong>Popis:</strong> <span id="modalFoodDescription"></span></p>
+    <p><strong>Ingredience:</strong> <span id="modalFoodIngredients"></span></p>
+    <p><strong>Gramáž:</strong> <span id="modalFoodWeight"></span></p>
+    <p><strong>Alergeny:</strong> <span id="modalFoodAllergens"></span></p>
+  </div>
+</div>
+  
 </body>
 </html>
