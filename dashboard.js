@@ -227,11 +227,15 @@ const weight = document.getElementById("foodWeight").value.trim();
   }
 
   document.getElementById("foodName").value = "";
-  document.getElementById("foodPrice").value = "";
-  document.getElementById("foodEmoji").value = "";
-  document.getElementById("foodImage").value = "";
+document.getElementById("foodPrice").value = "";
+document.getElementById("foodEmoji").value = "";
+document.getElementById("foodDescription").value = "";
+document.getElementById("foodIngredients").value = "";
+document.getElementById("foodAllergens").value = "";
+document.getElementById("foodWeight").value = "";
+document.getElementById("foodImage").value = "";
 
-  loadFoods();
+loadFoods();
 }
 
 function renderFoods() {
