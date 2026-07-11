@@ -264,7 +264,25 @@ function renderFoods() {
     </div>
   `).join("");
 }
+function editFood(id) {
+  const food = foods.find(item => item.id === id);
 
+  if (!food) return;
+
+  document.getElementById("foodName").value = food.name || "";
+  document.getElementById("foodPrice").value = food.price || "";
+  document.getElementById("foodEmoji").value = food.emoji || "";
+  document.getElementById("foodCategory").value = food.category || "Pizza";
+  document.getElementById("foodDescription").value = food.description || "";
+  document.getElementById("foodIngredients").value = food.ingredients || "";
+  document.getElementById("foodAllergens").value = food.allergens || "";
+  document.getElementById("foodWeight").value = food.weight || "";
+
+  window.scrollTo({
+    top: document.getElementById("foodName").offsetTop - 40,
+    behavior: "smooth"
+  });
+}
 async function deleteFood(id) {
   if (!confirm("Opravdu smazat jídlo?")) return;
 
