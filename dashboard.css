@@ -476,3 +476,14 @@ tbody tr:hover {
     height: 38px;
   }
 }
+.main {
+  max-width: 1500px;
+}
+
+.panel {
+  width: 100%;
+}
+
+.content-grid {
+  grid-template-columns: 1fr;
+}
