@@ -129,3 +129,137 @@ textarea::placeholder{
   .menu-category .grid{grid-template-columns:1fr!important}
   .food-card{width:100%}
 }
+.menu-toggle {
+  display: none;
+  width: 48px;
+  height: 44px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  font-size: 25px;
+  color: white;
+  background: #111827;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+@media (max-width: 760px) {
+  .navbar {
+    padding: 16px 5%;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .brand {
+    font-size: 19px;
+  }
+
+  .menu-toggle {
+    display: flex;
+    margin-left: auto;
+  }
+
+  .nav-links {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding-top: 16px;
+  }
+
+  .nav-links.open {
+    display: flex;
+  }
+
+  .nav-links a {
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 12px;
+    background: rgba(255,255,255,.04);
+  }
+
+  .admin-link {
+    text-align: center;
+  }
+
+  .hero {
+    display: block;
+    min-height: auto;
+    padding-top: 48px;
+    padding-bottom: 55px;
+  }
+
+  .hero-text {
+    margin-bottom: 35px;
+  }
+
+  .hero h1 {
+    font-size: clamp(36px, 11vw, 48px);
+    line-height: 1.08;
+  }
+
+  .subtitle {
+    font-size: 17px;
+    line-height: 1.6;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions .btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .section {
+    padding-top: 55px;
+    padding-bottom: 55px;
+  }
+
+  .section-head h2 {
+    font-size: 32px;
+  }
+
+  .assistant-card,
+  .reservation-box {
+    width: 100%;
+    padding: 20px;
+  }
+
+  .reservation-box input,
+  .reservation-box textarea,
+  .reservation-box button {
+    width: 100%;
+  }
+
+  #publicMenu .menu-category .grid,
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  #publicMenu .food-card,
+  .food-card {
+    width: 100%;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  #publicMenu .food-card img,
+  #publicMenu .foodPhoto,
+  #publicMenu .foodPlaceholder {
+    height: 210px !important;
+  }
+
+  .contact {
+    text-align: center;
+  }
+
+  .contact p {
+    line-height: 1.8;
+  }
+}
