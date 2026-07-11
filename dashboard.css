@@ -438,3 +438,41 @@ tbody tr:hover {
     height: 40px;
   }
 }
+/* OPRAVA TABULKY REZERVACÍ */
+
+.panel table button {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
+  margin-right: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.panel table td:last-child {
+  min-width: 145px;
+  white-space: nowrap;
+}
+
+.panel table th,
+.panel table td {
+  vertical-align: middle;
+}
+
+.panel table {
+  font-size: 14px;
+}
+
+@media (max-width: 760px) {
+  .panel table {
+    font-size: 14px;
+  }
+
+  .panel table button {
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+  }
+}
