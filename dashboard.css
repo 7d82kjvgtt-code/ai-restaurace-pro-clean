@@ -566,3 +566,12 @@ html {
     width: 100%;
   }
 }
+.contactLink {
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.contactLink:hover {
+  color: #ff5a1f;
+  text-decoration: underline;
+}
