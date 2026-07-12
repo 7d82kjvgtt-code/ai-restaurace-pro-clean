@@ -640,3 +640,60 @@ function resetFilters() {
 
   renderReservations(reservations);
 }
+function exportReservations() {
+  if (!reservations.length) {
+    alert("Nejsou žádné rezervace k exportu.");
+    return;
+  }
+
+  const columns = [
+    "Jméno",
+    "Počet osob",
+    "Datum",
+    "Čas",
+    "Telefon",
+    "E-mail",
+    "Poznámka",
+    "Stav"
+  ];
+
+  const rows = reservations.map(reservation => [
+    reservation.name || "",
+    reservation.people || "",
+    reservation.date || "",
+    reservation.time || "",
+    reservation.phone || "",
+    reservation.email || "",
+    reservation.note || "",
+    reservation.status || "Čeká"
+  ]);
+
+  const escapeValue = value => {
+    const text = String(value).replace(/"/g, '""');
+    return `"${text}"`;
+  };
+
+  const csv = [
+    columns.map(escapeValue).join(";"),
+    ...rows.map(row => row.map(escapeValue).join(";"))
+  ].join("\n");
+
+  const blob = new Blob(
+    ["\uFEFF" + csv],
+    { type: "text/csv;charset=utf-8;" }
+  );
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = `rezervace-${new Date()
+    .toISOString()
+    .split("T")[0]}.csv`;
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  URL.revokeObjectURL(url);
+}
