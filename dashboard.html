@@ -32,7 +32,10 @@
 <main class="main">
   <header class="topbar">
     <div><h1>Vítejte zpět 👋</h1><p>Přehled vašeho podniku</p></div>
-    <a class="logout" href="index.html">⬅️ Zpět na web</a>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+  <a class="logout" href="index.html">⬅️ Zpět na web</a>
+  <button class="logout" onclick="logoutDashboard()">Odhlásit</button>
+</div>
   </header>
 
   <section class="cards">
@@ -122,14 +125,29 @@
 </main>
 
 <script>
+document.addEventListener("DOMContentLoaded", function () {
+  const isLoggedIn = sessionStorage.getItem("dashboardLoggedIn");
+
+  if (isLoggedIn === "true") {
+    document.getElementById("loginScreen").style.display = "none";
+  }
+});
+
 function login() {
   const pass = document.getElementById("password").value;
 
   if (pass === "admin123") {
+    sessionStorage.setItem("dashboardLoggedIn", "true");
     document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("error").innerText = "";
   } else {
     document.getElementById("error").innerText = "Špatné heslo";
   }
+}
+
+function logoutDashboard() {
+  sessionStorage.removeItem("dashboardLoggedIn");
+  location.reload();
 }
 </script>
 
