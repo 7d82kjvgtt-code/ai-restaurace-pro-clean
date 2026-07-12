@@ -27,15 +27,29 @@ function renderPublicMenu() {
     return;
   }
 
-  const categories = [
-    "Pizza",
-    "Předkrm",
-    "Hlavní jídlo",
-    "Těstoviny",
-    "Dezert",
-    "Sladké jídla",
-    "Nápoj"
-  ];
+  const categoryOrder = [
+  "Pizza",
+  "Předkrm",
+  "Hlavní jídlo",
+  "Těstoviny",
+  "Dezert",
+  "Sladká jídla",
+  "Nápoj"
+];
+
+const categoriesFromMenu = menu
+  .map(item => (item.category || "Hlavní jídlo").trim())
+  .filter(Boolean);
+
+const categories = [
+  ...categoryOrder,
+  ...categoriesFromMenu.filter(
+    category => !categoryOrder.includes(category)
+  )
+].filter(
+  (category, index, array) =>
+    array.indexOf(category) === index
+);
 
   container.className = "";
   container.style.display = "block";
