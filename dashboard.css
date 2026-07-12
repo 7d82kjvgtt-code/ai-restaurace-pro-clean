@@ -551,3 +551,18 @@ html {
     text-align: center;
   }
 }
+.resetFiltersBtn {
+  width: auto;
+  min-width: 140px;
+  background: #475569;
+}
+
+.resetFiltersBtn:hover {
+  background: #64748b;
+}
+
+@media (max-width: 760px) {
+  .resetFiltersBtn {
+    width: 100%;
+  }
+}
