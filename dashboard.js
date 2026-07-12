@@ -558,7 +558,12 @@ function resetFoodForm() {
 
   if (saveButton) {
     saveButton.textContent = "Přidat jídlo";
-  }
+}
+    const cancelButton = document.getElementById("cancelEditBtn");
+  
+if (cancelButton) {
+  cancelButton.style.display = "none";
+}
 }
 
 async function deleteFood(id) {
