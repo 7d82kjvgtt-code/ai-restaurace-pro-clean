@@ -609,3 +609,17 @@ async function deleteFood(id) {
     console.error(error);
   }
 }
+function resetFilters() {
+  const searchInput = document.getElementById("search");
+  const statusInput = document.getElementById("statusFilter");
+
+  if (searchInput) {
+    searchInput.value = "";
+  }
+
+  if (statusInput) {
+    statusInput.value = "";
+  }
+
+  renderReservations(reservations);
+}
