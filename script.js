@@ -176,9 +176,40 @@ function openFoodDetail(id) {
 document.getElementById("modalWeightLabel").textContent = weightLabel;
   document.getElementById("modalFoodWeight").textContent =
     item.weight || "Neuvedeno";
-  document.getElementById("modalFoodAllergens").textContent =
-    item.allergens || "Neuvedeno";
+  const allergenNames = {
+  1: "obiloviny obsahující lepek",
+  2: "korýši",
+  3: "vejce",
+  4: "ryby",
+  5: "arašídy",
+  6: "sója",
+  7: "mléko",
+  8: "skořápkové plody",
+  9: "celer",
+  10: "hořčice",
+  11: "sezam",
+  12: "oxid siřičitý a siřičitany",
+  13: "vlčí bob",
+  14: "měkkýši"
+};
 
+let allergensText = item.allergens || "Neuvedeno";
+
+if (/^[\d,\s]+$/.test(allergensText)) {
+  allergensText = allergensText
+    .split(",")
+    .map(number => number.trim())
+    .filter(Boolean)
+    .map(number =>
+      allergenNames[number]
+        ? `${number} – ${allergenNames[number]}`
+        : number
+    )
+    .join(", ");
+}
+
+document.getElementById("modalFoodAllergens").textContent =
+  allergensText;
   document.getElementById("foodModal").classList.add("open");
 }
 
