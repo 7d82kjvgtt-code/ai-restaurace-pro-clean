@@ -41,8 +41,9 @@ function renderPublicMenu() {
   container.style.display = "block";
 
   container.innerHTML = categories.map(category => {
-    const items = menu.filter(item => (item.category || "Hlavní jídlo") === category);
-
+    const items = menu.filter(item =>
+  (item.category || "Hlavní jídlo").trim() === category.trim()
+);
     if (!items.length) return "";
 
     return `
