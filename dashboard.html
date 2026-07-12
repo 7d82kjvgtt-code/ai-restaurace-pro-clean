@@ -2,155 +2,507 @@
 <html lang="cs">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
   <title>AI Restaurace PRO Dashboard</title>
+
   <link rel="stylesheet" href="dashboard.css" />
 </head>
+
 <body>
 
-<div id="loginScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#111;display:flex;justify-content:center;align-items:center;z-index:9999;">
-  <div style="background:#222;padding:40px;border-radius:15px;text-align:center;color:white;width:320px;">
-    <h2>🔐 Přihlášení</h2>
-    <input id="password" type="password" placeholder="Heslo" style="width:100%;padding:12px;margin:20px 0;border-radius:8px;border:none;">
-    <button onclick="login()" style="width:100%;padding:12px;background:#ff5a1f;color:white;border:none;border-radius:8px;font-size:16px;">Přihlásit</button>
-    <p id="error" style="color:red;"></p>
+  <!-- PŘIHLÁŠENÍ -->
+
+  <div id="loginScreen">
+    <div class="login-box">
+      <h2>🔐 Přihlášení</h2>
+
+      <input
+        id="password"
+        type="password"
+        placeholder="Heslo"
+        autocomplete="current-password"
+      />
+
+      <button
+        type="button"
+        onclick="login()"
+      >
+        Přihlásit
+      </button>
+
+      <p id="error"></p>
+    </div>
   </div>
-</div>
 
-<aside class="sidebar">
-  <h2>🍽️ AI Restaurace<br><span>PRO</span></h2>
-  <nav>
-    <a class="active">🏠 Dashboard</a>
-    <a>📅 Rezervace</a>
-    <a>🍕 Menu</a>
-    <a>🤖 AI Asistent</a>
-    <a>📊 Statistiky</a>
-    <a>⚙️ Nastavení</a>
-  </nav>
-</aside>
 
-<main class="main">
-  <header class="topbar">
-    <div><h1>Vítejte zpět 👋</h1><p>Přehled vašeho podniku</p></div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-  <a class="logout" href="index.html">⬅️ Zpět na web</a>
-  <button class="logout" onclick="logoutDashboard()">Odhlásit</button>
-</div>
-  </header>
+  <!-- LEVÉ MENU -->
 
-  <section class="cards">
-    <div class="card"><p>Dnešní rezervace</p><h2 id="todayCount">0</h2></div>
-    <div class="card"><p>Celkem rezervací</p><h2 id="totalCount">0</h2></div>
-    <div class="card"><p>Jídla v menu</p><h2 id="foodCount">0</h2></div>
-    <div class="card"><p>Status</p><h2>Online</h2></div>
-  </section>
+  <aside class="sidebar">
 
-  <section class="content-grid">
-    <div class="panel">
-      <div class="panel-top">
-        <h2>📋 Seznam rezervací</h2>
-        <input id="search" placeholder="Hledat podle jména..." />
-        <select id="statusFilter">
-  <option value="">Všechny stavy</option>
-  <option value="Čeká">Čeká</option>
-  <option value="Potvrzeno">Potvrzeno</option>
-  <option value="Zrušeno">Zrušeno</option>
-</select>
+    <h2>
+      🍽️ AI Restaurace
+      <br />
+      <span>PRO</span>
+    </h2>
+
+    <nav>
+      <a class="active" href="#prehled">
+        🏠 Dashboard
+      </a>
+
+      <a href="#rezervace">
+        📅 Rezervace
+      </a>
+
+      <a href="#menu">
+        🍕 Menu
+      </a>
+    </nav>
+
+  </aside>
+
+
+  <!-- HLAVNÍ OBSAH -->
+
+  <main class="main">
+
+    <!-- HORNÍ LIŠTA -->
+
+    <header class="topbar">
+
+      <div>
+        <h1>Vítejte zpět 👋</h1>
+        <p>Přehled vašeho podniku</p>
       </div>
 
-    <table>
-  <thead>
-    <tr>
-      <th>Jméno</th>
-      <th>Osob</th>
-      <th>Datum</th>
-      <th>Čas</th>
-      <th>Telefon</th>
-      <th>E-mail</th>
-      <th>Poznámka</th>
-      <th>Stav</th>
-      <th>Akce</th>
-    </tr>
-  </thead>
+      <div class="topbar-actions">
 
-  <tbody id="reservationTable">
-    <tr>
-      <td colspan="9">Načítám...</td>
-    </tr>
-  </tbody>
-</table>
-</div>
-    
-    <div class="panel">
-      <h2>🍕 Správa menu</h2>
+        <a class="logout" href="index.html">
+          ⬅️ Zpět na web
+        </a>
 
-      <input id="foodName" placeholder="Název jídla" />
-      <input id="foodPrice" placeholder="Cena" type="number" />
-      <input id="foodEmoji" placeholder="Emoji např. 🍕" />
-      <input id="foodDescription" placeholder="Popis jídla" />
+        <button
+          type="button"
+          class="logout"
+          onclick="logoutDashboard()"
+        >
+          Odhlásit
+        </button>
 
-<input id="foodIngredients" placeholder="Ingredience" />
+      </div>
 
-<input id="foodAllergens" placeholder="Alergeny např. 1, 3, 7" />
+    </header>
 
-<input id="foodWeight" placeholder="Gramáž / objem např. 350 g nebo 0,5 l" />
-      
-      <select id="foodCategory">
-  <option value="Pizza">🍕 Pizza</option>
-  <option value="Předkrm">🥗 Předkrm</option>
-  <option value="Hlavní jídlo">🍔 Hlavní jídlo</option>
-  <option value="Těstoviny">🍝 Těstoviny</option>
-  <option value="Dezert">🍰 Dezert</option>
- <option value="Sladká jídla">🍰 Sladká jídla</option>
-  <option value="Nápoj">🥤 Nápoj</option>
-</select>
-      
-     <input
-    type="file"
-    id="foodImage"
-    accept="image/*">
-      <button onclick="saveFood()" id="foodBtn">Přidat jídlo</button>
-<button
-  id="cancelEditBtn"
-  type="button"
-  onclick="resetFoodForm()"
-  style="display:none; background:#475569; margin-top:10px;"
->
-  Zrušit úpravu
-</button>
-      <h3>🍽️ Jídelní lístek</h3>
-      <div id="foodList"></div>
-    </div>
-  </section>
-</main>
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const isLoggedIn = sessionStorage.getItem("dashboardLoggedIn");
+    <!-- STATISTIKY -->
 
-  if (isLoggedIn === "true") {
-    document.getElementById("loginScreen").style.display = "none";
-  }
-});
+    <section class="cards" id="prehled">
 
-function login() {
-  const pass = document.getElementById("password").value;
+      <div class="card">
+        <p>Dnešní rezervace</p>
+        <h2 id="todayCount">0</h2>
+      </div>
 
-  if (pass === "admin123") {
-    sessionStorage.setItem("dashboardLoggedIn", "true");
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("error").innerText = "";
-  } else {
-    document.getElementById("error").innerText = "Špatné heslo";
-  }
-}
+      <div class="card">
+        <p>Celkem rezervací</p>
+        <h2 id="totalCount">0</h2>
+      </div>
 
-function logoutDashboard() {
-  sessionStorage.removeItem("dashboardLoggedIn");
-  location.reload();
-}
-</script>
+      <div class="card">
+        <p>Jídla v menu</p>
+        <h2 id="foodCount">0</h2>
+      </div>
 
-<script src="dashboard.js"></script>
+      <div class="card">
+        <p>Status</p>
+        <h2>Online</h2>
+      </div>
+
+    </section>
+
+
+    <!-- HLAVNÍ PANELY -->
+
+    <section class="content-grid">
+
+      <!-- REZERVACE -->
+
+      <div class="panel" id="rezervace">
+
+        <div class="panel-top">
+
+          <h2>📋 Seznam rezervací</h2>
+
+          <input
+            id="search"
+            type="search"
+            placeholder="Hledat podle jména..."
+          />
+
+          <select id="statusFilter">
+            <option value="">
+              Všechny stavy
+            </option>
+
+            <option value="Čeká">
+              Čeká
+            </option>
+
+            <option value="Potvrzeno">
+              Potvrzeno
+            </option>
+
+            <option value="Zrušeno">
+              Zrušeno
+            </option>
+          </select>
+
+        </div>
+
+
+        <div class="table-wrapper">
+
+          <table>
+
+            <thead>
+              <tr>
+                <th>Jméno</th>
+                <th>Osob</th>
+                <th>Datum</th>
+                <th>Čas</th>
+                <th>Telefon</th>
+                <th>E-mail</th>
+                <th>Poznámka</th>
+                <th>Stav</th>
+                <th>Akce</th>
+              </tr>
+            </thead>
+
+            <tbody id="reservationTable">
+              <tr>
+                <td colspan="9">
+                  Načítám...
+                </td>
+              </tr>
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+
+      <!-- SPRÁVA MENU -->
+
+      <div class="panel" id="menu">
+
+        <h2>🍕 Správa menu</h2>
+
+        <input
+          id="foodName"
+          type="text"
+          placeholder="Název jídla"
+        />
+
+        <input
+          id="foodPrice"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="Cena"
+        />
+
+        <input
+          id="foodEmoji"
+          type="text"
+          placeholder="Emoji např. 🍕"
+        />
+
+        <input
+          id="foodDescription"
+          type="text"
+          placeholder="Popis jídla"
+        />
+
+        <input
+          id="foodIngredients"
+          type="text"
+          placeholder="Ingredience"
+        />
+
+        <input
+          id="foodAllergens"
+          type="text"
+          placeholder="Alergeny např. 1, 3, 7"
+        />
+
+        <input
+          id="foodWeight"
+          type="text"
+          placeholder="Gramáž / objem např. 350 g nebo 0,5 l"
+        />
+
+
+        <select id="foodCategory">
+
+          <option value="Pizza">
+            🍕 Pizza
+          </option>
+
+          <option value="Předkrm">
+            🥗 Předkrm
+          </option>
+
+          <option value="Hlavní jídlo">
+            🍔 Hlavní jídlo
+          </option>
+
+          <option value="Těstoviny">
+            🍝 Těstoviny
+          </option>
+
+          <option value="Dezert">
+            🍰 Dezert
+          </option>
+
+          <option value="Sladká jídla">
+            🧁 Sladká jídla
+          </option>
+
+          <option value="Nápoj">
+            🥤 Nápoj
+          </option>
+
+        </select>
+
+
+        <input
+          id="foodImage"
+          type="file"
+          accept="image/*"
+        />
+
+
+        <button
+          id="foodBtn"
+          type="button"
+          onclick="saveFood()"
+        >
+          Přidat jídlo
+        </button>
+
+
+        <button
+          id="cancelEditBtn"
+          type="button"
+          onclick="resetFoodForm()"
+          style="
+            display: none;
+            background: #475569;
+            margin-top: 10px;
+          "
+        >
+          Zrušit úpravu
+        </button>
+
+
+        <h3 class="food-list-title">
+          🍽️ Jídelní lístek
+        </h3>
+
+        <div id="foodList"></div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- PŘIHLÁŠENÍ A ODHLÁŠENÍ -->
+
+  <script>
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      function () {
+
+        const isLoggedIn =
+          sessionStorage.getItem(
+            "dashboardLoggedIn"
+          );
+
+        const loginScreen =
+          document.getElementById(
+            "loginScreen"
+          );
+
+        if (
+          isLoggedIn === "true" &&
+          loginScreen
+        ) {
+          loginScreen.style.display = "none";
+        }
+
+
+        const passwordInput =
+          document.getElementById(
+            "password"
+          );
+
+        if (passwordInput) {
+          passwordInput.addEventListener(
+            "keydown",
+            function (event) {
+
+              if (event.key === "Enter") {
+                login();
+              }
+
+            }
+          );
+        }
+
+      }
+    );
+
+
+    function login() {
+
+      const passwordInput =
+        document.getElementById(
+          "password"
+        );
+
+      const error =
+        document.getElementById(
+          "error"
+        );
+
+      const loginScreen =
+        document.getElementById(
+          "loginScreen"
+        );
+
+      const pass =
+        passwordInput
+          ? passwordInput.value
+          : "";
+
+
+      if (pass === "admin123") {
+
+        sessionStorage.setItem(
+          "dashboardLoggedIn",
+          "true"
+        );
+
+        if (loginScreen) {
+          loginScreen.style.display = "none";
+        }
+
+        if (error) {
+          error.textContent = "";
+        }
+
+        if (passwordInput) {
+          passwordInput.value = "";
+        }
+
+      } else {
+
+        if (error) {
+          error.textContent =
+            "Špatné heslo";
+        }
+
+      }
+
+    }
+
+
+    function logoutDashboard() {
+
+      sessionStorage.removeItem(
+        "dashboardLoggedIn"
+      );
+
+      location.reload();
+
+    }
+
+  </script>
+
+
+  <!-- DASHBOARD JAVASCRIPT -->
+
+  <script src="dashboard.js"></script>
+
 </body>
 </html>
+html {
+  scroll-behavior: smooth;
+}
+
+#prehled,
+#rezervace,
+#menu {
+  scroll-margin-top: 25px;
+}
+
+#loginScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #111827;
+}
+
+.login-box {
+  width: min(360px, 100%);
+  padding: 35px;
+  text-align: center;
+  color: white;
+  background: #1e293b;
+  border-radius: 18px;
+}
+
+.login-box input {
+  margin: 20px 0 12px;
+}
+
+.login-box #error {
+  min-height: 22px;
+  margin-top: 12px;
+  color: #ef4444;
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.food-list-title {
+  margin-top: 28px;
+}
+
+@media (max-width: 760px) {
+  .topbar-actions {
+    width: 100%;
+  }
+
+  .topbar-actions .logout {
+    flex: 1;
+    text-align: center;
+  }
+}
