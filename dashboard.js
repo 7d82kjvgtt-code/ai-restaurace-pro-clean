@@ -641,8 +641,39 @@ function resetFilters() {
   renderReservations(reservations);
 }
 function exportReservations() {
-  if (!reservations.length) {
-    alert("Nejsou žádné rezervace k exportu.");
+  const searchInput = document.getElementById("search");
+  const statusInput = document.getElementById("statusFilter");
+
+  const search = searchInput
+    ? searchInput.value.toLowerCase().trim()
+    : "";
+
+  const status = statusInput
+    ? statusInput.value
+    : "";
+
+  const filteredReservations = reservations.filter(reservation => {
+    const name = (reservation.name || "").toLowerCase();
+    const phone = (reservation.phone || "").toLowerCase();
+    const email = (reservation.email || "").toLowerCase();
+
+    const matchSearch =
+      name.includes(search) ||
+      phone.includes(search) ||
+      email.includes(search);
+
+    const reservationStatus =
+      reservation.status || "Čeká";
+
+    const matchStatus =
+      status === "" ||
+      reservationStatus === status;
+
+    return matchSearch && matchStatus;
+  });
+
+  if (!filteredReservations.length) {
+    alert("Nejsou žádné filtrované rezervace ke stažení.");
     return;
   }
 
@@ -657,7 +688,7 @@ function exportReservations() {
     "Stav"
   ];
 
-  const rows = reservations.map(reservation => [
+  const rows = filteredReservations.map(reservation => [
     reservation.name || "",
     reservation.people || "",
     reservation.date || "",
@@ -675,7 +706,9 @@ function exportReservations() {
 
   const csv = [
     columns.map(escapeValue).join(";"),
-    ...rows.map(row => row.map(escapeValue).join(";"))
+    ...rows.map(row =>
+      row.map(escapeValue).join(";")
+    )
   ].join("\n");
 
   const blob = new Blob(
@@ -687,9 +720,10 @@ function exportReservations() {
   const link = document.createElement("a");
 
   link.href = url;
-  link.download = `rezervace-${new Date()
-    .toISOString()
-    .split("T")[0]}.csv`;
+  link.download =
+    `rezervace-${new Date()
+      .toISOString()
+      .split("T")[0]}.csv`;
 
   document.body.appendChild(link);
   link.click();
