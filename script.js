@@ -170,6 +170,10 @@ function openFoodDetail(id) {
     item.description || "Neuvedeno";
   document.getElementById("modalFoodIngredients").textContent =
     item.ingredients || "Neuvedeno";
+  const weightLabel =
+  item.category === "Nápoj" ? "Objem:" : "Gramáž:";
+
+document.getElementById("modalWeightLabel").textContent = weightLabel;
   document.getElementById("modalFoodWeight").textContent =
     item.weight || "Neuvedeno";
   document.getElementById("modalFoodAllergens").textContent =
