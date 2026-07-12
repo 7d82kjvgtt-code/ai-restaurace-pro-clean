@@ -441,7 +441,17 @@
 
 
   <!-- DASHBOARD JAVASCRIPT -->
+<script>
+document.querySelectorAll(".sidebar nav a").forEach(link => {
+  link.addEventListener("click", function () {
+    document
+      .querySelectorAll(".sidebar nav a")
+      .forEach(item => item.classList.remove("active"));
 
+    this.classList.add("active");
+  });
+});
+</script>
   <script src="dashboard.js"></script>
 
 </body>
