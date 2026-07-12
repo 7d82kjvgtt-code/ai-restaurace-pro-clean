@@ -518,7 +518,11 @@ function editFood(id) {
   if (saveButton) {
     saveButton.textContent = "Uložit změny";
   }
+ const cancelButton = document.getElementById("cancelEditBtn");
 
+if (cancelButton) {
+  cancelButton.style.display = "block";
+}
   const foodName =
     document.getElementById("foodName");
 
