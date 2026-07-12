@@ -61,7 +61,15 @@ async function loadReservations() {
     }
 
     reservations = Array.isArray(data) ? data : [];
+const pendingReservations = reservations.filter(
+  reservation => (reservation.status || "Čeká") === "Čeká"
+);
 
+const pendingCount = document.getElementById("pendingCount");
+
+if (pendingCount) {
+  pendingCount.innerText = pendingReservations.length;
+}
     const totalCount = document.getElementById("totalCount");
 
     if (totalCount) {
