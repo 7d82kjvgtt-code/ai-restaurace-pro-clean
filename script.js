@@ -182,8 +182,15 @@ document.getElementById("modalFoodIngredients").textContent =
   item.category === "Nápoj" ? "Objem:" : "Gramáž:";
 
 document.getElementById("modalWeightLabel").textContent = weightLabel;
-  document.getElementById("modalFoodWeight").textContent =
-    item.weight || "Neuvedeno";
+  let weightText = item.weight || "Neuvedeno";
+
+weightText = weightText
+  .replace(/(\d)(g|kg|ml|l)\b/gi, "$1 $2")
+  .replace(/\s+/g, " ")
+  .trim();
+
+document.getElementById("modalFoodWeight").textContent =
+  weightText;
   const allergenNames = {
   1: "obiloviny obsahující lepek",
   2: "korýši",
