@@ -28,12 +28,12 @@ function renderPublicMenu() {
   }
 
   const categories = [
-    "Předkrm",
     "Pizza",
+    "Předkrm",
     "Hlavní jídlo",
     "Těstoviny",
-    "Sladké pokrmy",
     "Dezert",
+    "Sladké jídla",
     "Nápoj"
   ];
 
