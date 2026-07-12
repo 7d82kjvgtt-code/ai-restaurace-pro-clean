@@ -575,3 +575,18 @@ html {
   color: #ff5a1f;
   text-decoration: underline;
 }
+.exportBtn {
+  width: auto;
+  min-width: 170px;
+  background: #16a34a;
+}
+
+.exportBtn:hover {
+  background: #15803d;
+}
+
+@media (max-width: 760px) {
+  .exportBtn {
+    width: 100%;
+  }
+}
