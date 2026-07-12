@@ -168,8 +168,16 @@ function openFoodDetail(id) {
   document.getElementById("modalFoodPrice").textContent = `${item.price} Kč`;
   document.getElementById("modalFoodDescription").textContent =
     item.description || "Neuvedeno";
-  document.getElementById("modalFoodIngredients").textContent =
-    item.ingredients || "Neuvedeno";
+  const ingredientsText = item.ingredients
+  ? item.ingredients
+      .split(",")
+      .map(ingredient => ingredient.trim())
+      .filter(Boolean)
+      .join(", ")
+  : "Neuvedeno";
+
+document.getElementById("modalFoodIngredients").textContent =
+  ingredientsText;
   const weightLabel =
   item.category === "Nápoj" ? "Objem:" : "Gramáž:";
 
