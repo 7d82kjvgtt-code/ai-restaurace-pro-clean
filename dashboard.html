@@ -105,7 +105,14 @@
     id="foodImage"
     accept="image/*">
       <button onclick="saveFood()" id="foodBtn">Přidat jídlo</button>
-
+<button
+  id="cancelEditBtn"
+  type="button"
+  onclick="resetFoodForm()"
+  style="display:none; background:#475569; margin-top:10px;"
+>
+  Zrušit úpravu
+</button>
       <h3>🍽️ Jídelní lístek</h3>
       <div id="foodList"></div>
     </div>
