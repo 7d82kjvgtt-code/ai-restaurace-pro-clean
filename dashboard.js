@@ -137,8 +137,25 @@ function renderReservations(data) {
           <td>${reservation.people || "-"}</td>
           <td>${formatDate(reservation.date)}</td>
           <td>${reservation.time || "-"}</td>
-          <td>${reservation.phone || "-"}</td>
-          <td>${reservation.email || "-"}</td>
+          <td>
+  ${
+    reservation.phone
+      ? `<a class="contactLink" href="tel:${reservation.phone}">
+          ${reservation.phone}
+        </a>`
+      : "-"
+  }
+</td>
+
+<td>
+  ${
+    reservation.email
+      ? `<a class="contactLink" href="mailto:${reservation.email}">
+          ${reservation.email}
+        </a>`
+      : "-"
+  }
+</td>
           <td>${reservation.note || "-"}</td>
 
           <td>
