@@ -133,6 +133,13 @@ if (time < openingTime || time > closingTime) {
   document.getElementById("cas").value = "";
   return;
 }
+  const peopleNumber = Number(people);
+
+if (peopleNumber < 1 || peopleNumber > 20) {
+  alert("Počet osob musí být od 1 do 20.");
+  document.getElementById("osoby").value = "";
+  return;
+}
   if (!name || !people || !date || !time || !phone || !email) {
     alert("Vyplň jméno, počet osob, datum, čas, telefon a e-mail.");
     return;
