@@ -111,7 +111,13 @@ async function ulozitRezervaci() {
   const phone = document.getElementById("telefon").value.trim();
   const email = document.getElementById("email").value.trim();
   const note = document.getElementById("poznamka").value.trim();
-  
+  const namePattern = /^[A-Za-zÁ-Žá-ž\s'-]{2,50}$/;
+
+if (!namePattern.test(name)) {
+  alert("Zadej platné jméno alespoň o 2 písmenech.");
+  document.getElementById("jmeno").value = "";
+  return;
+}
 const today = new Date();
 
 const localToday = new Date(
