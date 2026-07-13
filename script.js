@@ -155,7 +155,22 @@ if (time < openingTime || time > closingTime) {
   document.getElementById("cas").value = "";
   return;
 }
+  if (date === localToday) {
+  const now = new Date();
+
+  const currentTime =
+    String(now.getHours()).padStart(2, "0") +
+    ":" +
+    String(now.getMinutes()).padStart(2, "0");
+
+  if (time <= currentTime) {
+    alert("Na dnešek nelze rezervovat čas, který už proběhl.");
+    document.getElementById("cas").value = "";
+    return;
+  }
+}
   const peopleNumber = Number(people);
+  
 
 if (peopleNumber < 1 || peopleNumber > 20) {
   alert("Počet osob musí být od 1 do 20.");
