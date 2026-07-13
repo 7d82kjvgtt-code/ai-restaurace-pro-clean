@@ -123,6 +123,13 @@ if (date < localToday) {
   alert("Nelze vytvořit rezervaci na minulý den.");
   document.getElementById("datum").value = "";
   return;
+}const openingTime = "10:00";
+const closingTime = "22:00";
+
+if (time < openingTime || time > closingTime) {
+  alert("Rezervace je možná pouze mezi 10:00 a 22:00.");
+  document.getElementById("cas").value = "";
+  return;
 }
   if (!name || !people || !date || !time || !phone || !email) {
     alert("Vyplň jméno, počet osob, datum, čas, telefon a e-mail.");
