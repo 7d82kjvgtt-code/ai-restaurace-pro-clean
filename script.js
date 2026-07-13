@@ -123,7 +123,9 @@ if (date < localToday) {
   alert("Nelze vytvořit rezervaci na minulý den.");
   document.getElementById("datum").value = "";
   return;
-}const openingTime = "10:00";
+  }
+  
+const openingTime = "10:00";
 const closingTime = "22:00";
 
 if (time < openingTime || time > closingTime) {
