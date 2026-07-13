@@ -113,17 +113,24 @@ async function ulozitRezervaci() {
   const note = document.getElementById("poznamka").value.trim();
   
 const today = new Date();
+
 const localToday = new Date(
   today.getTime() - today.getTimezoneOffset() * 60000
 )
   .toISOString()
   .split("T")[0];
 
+if (!date) {
+  alert("Zadej platné datum rezervace.");
+  document.getElementById("datum").value = "";
+  return;
+}
+
 if (date < localToday) {
   alert("Nelze vytvořit rezervaci na minulý den.");
   document.getElementById("datum").value = "";
   return;
-  }
+}
   
   const maxDate = new Date();
 maxDate.setFullYear(maxDate.getFullYear() + 1);
