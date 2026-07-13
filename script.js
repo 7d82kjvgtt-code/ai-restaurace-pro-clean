@@ -111,7 +111,19 @@ async function ulozitRezervaci() {
   const phone = document.getElementById("telefon").value.trim();
   const email = document.getElementById("email").value.trim();
   const note = document.getElementById("poznamka").value.trim();
+  
+const today = new Date();
+const localToday = new Date(
+  today.getTime() - today.getTimezoneOffset() * 60000
+)
+  .toISOString()
+  .split("T")[0];
 
+if (date < localToday) {
+  alert("Nelze vytvořit rezervaci na minulý den.");
+  document.getElementById("datum").value = "";
+  return;
+}
   if (!name || !people || !date || !time || !phone || !email) {
     alert("Vyplň jméno, počet osob, datum, čas, telefon a e-mail.");
     return;
