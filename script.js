@@ -140,13 +140,7 @@ if (peopleNumber < 1 || peopleNumber > 20) {
   document.getElementById("osoby").value = "";
   return;
 }
-  const phoneClean = phone.replace(/\s+/g, "");
-
-if (!/^\+?\d{9,15}$/.test(phoneClean)) {
-  alert("Zadej platné telefonní číslo.");
-  document.getElementById("telefon").value = "";
-  return;
-}
+ 
   if (!name || !people || !date || !time || !phone || !email) {
     alert("Vyplň jméno, počet osob, datum, čas, telefon a e-mail.");
     return;
