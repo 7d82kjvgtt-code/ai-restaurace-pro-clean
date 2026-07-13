@@ -131,8 +131,7 @@ Zeptejte se asistenta.
 
     <input id="osoby" type="number" min="1" placeholder="Počet osob">
 
-    <input id="datum" type="date">
-
+    <input id="datum" type="date" required>
     <input id="cas" type="time">
 
     <input id="telefon" placeholder="Telefon">
@@ -263,7 +262,22 @@ Praha • +420 777 123 456 • info@restaurace.cz
 </p>
 
 </section>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const dateInput = document.getElementById("datum");
 
+  if (dateInput) {
+    const today = new Date();
+    const localToday = new Date(
+      today.getTime() - today.getTimezoneOffset() * 60000
+    )
+      .toISOString()
+      .split("T")[0];
+
+    dateInput.min = localToday;
+  }
+});
+</script>
 <script src="script.js"></script>
   
 <div id="foodModal" class="food-modal">
