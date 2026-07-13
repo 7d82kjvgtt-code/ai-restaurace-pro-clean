@@ -147,6 +147,13 @@ if (!/^\+?\d{9,15}$/.test(phoneClean)) {
   document.getElementById("telefon").value = "";
   return;
 }
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+if (!emailPattern.test(email)) {
+  alert("Zadej platnou e-mailovou adresu.");
+  document.getElementById("email").value = "";
+  return;
+}
   if (!name || !people || !date || !time || !phone || !email) {
     alert("Vyplň jméno, počet osob, datum, čas, telefon a e-mail.");
     return;
