@@ -125,6 +125,21 @@ if (date < localToday) {
   return;
   }
   
+  const maxDate = new Date();
+maxDate.setFullYear(maxDate.getFullYear() + 1);
+
+const localMaxDate = new Date(
+  maxDate.getTime() - maxDate.getTimezoneOffset() * 60000
+)
+  .toISOString()
+  .split("T")[0];
+
+if (date > localMaxDate) {
+  alert("Rezervaci lze vytvořit maximálně 1 rok dopředu.");
+  document.getElementById("datum").value = "";
+  return;
+}
+  
 const openingTime = "10:00";
 const closingTime = "22:00";
 
