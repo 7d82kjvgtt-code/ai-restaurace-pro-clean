@@ -316,3 +316,47 @@ textarea::placeholder{
 .food-card {
   cursor: pointer;
 }
+@media (max-width: 760px) {
+  #rezervace {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  #rezervace h2 {
+    font-size: 38px;
+    line-height: 1.1;
+  }
+
+  #jmeno,
+  #osoby,
+  #datum,
+  #cas,
+  #telefon,
+  #email,
+  #poznamka {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    margin: 0 0 16px !important;
+    font-size: 16px !important;
+  }
+
+  #datum,
+  #cas {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 58px;
+  }
+
+  #poznamka {
+    min-height: 110px;
+    resize: vertical;
+  }
+
+  #rezervace button {
+    width: 100%;
+    max-width: 100%;
+  }
+}
