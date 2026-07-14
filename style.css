@@ -404,3 +404,16 @@ textarea::placeholder{
     max-width: 100% !important;
   }
 }
+@media screen and (max-width: 760px) {
+  #rezervace input[type="date"],
+  #rezervace input[type="time"] {
+    -webkit-appearance: auto !important;
+    appearance: auto !important;
+    color-scheme: dark;
+    color: white !important;
+  }
+
+  #rezervace {
+    padding-bottom: 100px !important;
+  }
+}
