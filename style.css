@@ -413,29 +413,35 @@ textarea::placeholder{
   }
 
   #rezervace input[type="date"],
-  #rezervace input[type="time"] {
-    display: block !important;
-    width: 100% !important;
-    height: 58px !important;
-    min-height: 58px !important;
-    max-height: 58px !important;
+#rezervace input[type="time"] {
+  display: block !important;
+  width: 100% !important;
 
-    margin: 0 0 18px !important;
-    padding: 0 16px !important;
+  height: 58px !important;
+  min-height: 58px !important;
+  max-height: 58px !important;
 
-    box-sizing: border-box !important;
-    overflow: hidden !important;
+  block-size: 58px !important;
+  min-block-size: 58px !important;
+  max-block-size: 58px !important;
 
-    font-size: 16px !important;
-    line-height: 58px !important;
+  margin: 0 0 18px !important;
+  padding: 0 16px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 
-    color: #ffffff !important;
-    background: #020617 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 
-    -webkit-appearance: none !important;
-    appearance: none !important;
-  }
+  font-size: 16px !important;
+  line-height: normal !important;
 
+  color: #ffffff !important;
+  background: #020617 !important;
+
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
   #rezervace input[type="date"]::-webkit-date-and-time-value,
   #rezervace input[type="time"]::-webkit-date-and-time-value {
     display: block !important;
