@@ -165,24 +165,31 @@ function renderReservations(data) {
           </td>
 
           <td>
-            <button
-              onclick="updateStatus(${reservation.id}, 'Potvrzeno')"
-            >
-              ✅
-            </button>
+          <button
+  class="editBtn"
+  onclick="editReservation(${reservation.id})"
+>
+  ✏️
+</button>
 
-            <button
-              onclick="updateStatus(${reservation.id}, 'Zrušeno')"
-            >
-              ❌
-            </button>
+<button
+  onclick="updateStatus(${reservation.id}, 'Potvrzeno')"
+>
+  ✅
+</button>
 
-            <button
-              class="deleteBtn"
-              onclick="deleteReservation(${reservation.id})"
-            >
-              🗑️
-            </button>
+<button
+  onclick="updateStatus(${reservation.id}, 'Zrušeno')"
+>
+  ❌
+</button>
+
+<button
+  class="deleteBtn"
+  onclick="deleteReservation(${reservation.id})"
+>
+  🗑️
+</button>
           </td>
         </tr>
       `
