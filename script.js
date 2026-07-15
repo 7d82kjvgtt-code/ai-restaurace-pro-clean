@@ -201,7 +201,27 @@ if (!emailPattern.test(email)) {
     alert("Vyplň jméno, počet osob, datum, čas, telefon a e-mail.");
     return;
   }
+  
+const checkRes = await fetch(
+  `${SUPABASE_URL}/rest/v1/reservations?date=eq.${date}&time=eq.${time}&status=neq.Zrušeno&select=id`,
+  {
+    method: "GET",
+    headers
+  }
+);
 
+if (!checkRes.ok) {
+  alert("Nepodařilo se ověřit dostupnost termínu.");
+  console.error(await checkRes.text());
+  return;
+}
+
+const existingReservations = await checkRes.json();
+
+if (existingReservations.length >= 7) {
+  alert("Tento termín je už plně obsazený. Vyber jiný čas.");
+  return;
+}
   const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations`, {
     method: "POST",
     headers: {
