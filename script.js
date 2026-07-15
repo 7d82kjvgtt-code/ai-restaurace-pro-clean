@@ -218,7 +218,7 @@ if (!checkRes.ok) {
 
 const existingReservations = await checkRes.json();
 
-if (existingReservations.length >= 1) {
+if (existingReservations.length >= 7) {
   alert("Tento termín je už plně obsazený. Vyber jiný čas.");
   return;
 }
