@@ -531,3 +531,31 @@ textarea::placeholder{
     margin-right: auto !important;
   }
 }
+@media screen and (min-width: 761px) {
+  #rezervace > div,
+  #rezervace form {
+    width: 100% !important;
+    max-width: 900px !important;
+    margin: 0 auto !important;
+    padding: 28px 36px !important;
+  }
+
+  #rezervace input,
+  #rezervace select {
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+    margin-bottom: 14px !important;
+    padding: 10px 16px !important;
+  }
+
+  #rezervace textarea {
+    height: 90px !important;
+    min-height: 90px !important;
+    margin-bottom: 14px !important;
+  }
+
+  #rezervace label {
+    margin: 2px 0 6px !important;
+  }
+}
