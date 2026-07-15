@@ -392,59 +392,58 @@
     );
 
 
-    function login() {
+    async function login() {
+  const emailInput = document.getElementById("loginEmail");
+  const passwordInput = document.getElementById("password");
+  const loginScreen = document.getElementById("loginScreen");
+  const error = document.getElementById("error");
 
-      const passwordInput =
-        document.getElementById(
-          "password"
-        );
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
 
-      const error =
-        document.getElementById(
-          "error"
-        );
+  if (!email || !password) {
+    error.textContent = "Vyplň e-mail a heslo.";
+    return;
+  }
 
-      const loginScreen =
-        document.getElementById(
-          "loginScreen"
-        );
+  error.textContent = "Přihlašuji...";
 
-      const pass =
-        passwordInput
-          ? passwordInput.value
-          : "";
-
-
-      if (pass === "admin123") {
-
-        sessionStorage.setItem(
-          "dashboardLoggedIn",
-          "true"
-        );
-
-        if (loginScreen) {
-          loginScreen.style.display = "none";
-        }
-
-        if (error) {
-          error.textContent = "";
-        }
-
-        if (passwordInput) {
-          passwordInput.value = "";
-        }
-
-      } else {
-
-        if (error) {
-          error.textContent =
-            "Špatné heslo";
-        }
-
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_KEY
+        },
+        body: JSON.stringify({
+          email,
+          password
+        })
       }
+    );
 
+    const data = await response.json();
+
+    if (!response.ok) {
+      error.textContent = "Nesprávný e-mail nebo heslo.";
+      passwordInput.value = "";
+      return;
     }
 
+    sessionStorage.setItem("dashboardLoggedIn", "true");
+    sessionStorage.setItem("supabaseAccessToken", data.access_token);
+    sessionStorage.setItem("supabaseRefreshToken", data.refresh_token);
+
+    loginScreen.style.display = "none";
+    error.textContent = "";
+    passwordInput.value = "";
+  } catch (loginError) {
+    console.error(loginError);
+    error.textContent = "Přihlášení se nepodařilo. Zkus to znovu.";
+  }
+}
 
     function logoutDashboard() {
 
