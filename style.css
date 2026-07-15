@@ -489,3 +489,13 @@ textarea::placeholder{
     max-width: none !important;
     overflow: visible !important;
   }
+@media screen and (min-width: 761px) {
+  #rezervace .reservation-form,
+  #rezervace form,
+  #rezervace > div {
+    width: 100% !important;
+    max-width: 760px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
