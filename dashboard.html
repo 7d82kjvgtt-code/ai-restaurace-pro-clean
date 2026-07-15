@@ -445,16 +445,12 @@
   }
 }
 
-    function logoutDashboard() {
-
-      sessionStorage.removeItem(
-        "dashboardLoggedIn"
-      );
-
-      location.reload();
-
-    }
-
+   function logoutDashboard() {
+  sessionStorage.removeItem("dashboardLoggedIn");
+  sessionStorage.removeItem("supabaseAccessToken");
+  sessionStorage.removeItem("supabaseRefreshToken");
+  location.reload();
+}
   </script>
 
 
