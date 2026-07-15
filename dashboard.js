@@ -738,3 +738,97 @@ function exportReservations() {
 
   URL.revokeObjectURL(url);
 }
+function editReservation(id) {
+  const reservation = reservations.find(
+    item => item.id === id
+  );
+
+  if (!reservation) {
+    alert("Rezervace nebyla nalezena.");
+    return;
+  }
+
+  const newName = prompt(
+    "Jméno:",
+    reservation.name || ""
+  );
+
+  if (newName === null) return;
+
+  const newPeople = prompt(
+    "Počet osob:",
+    reservation.people || ""
+  );
+
+  if (newPeople === null) return;
+
+  const newDate = prompt(
+    "Datum ve formátu RRRR-MM-DD:",
+    reservation.date || ""
+  );
+
+  if (newDate === null) return;
+
+  const newTime = prompt(
+    "Čas ve formátu HH:MM:",
+    reservation.time || ""
+  );
+
+  if (newTime === null) return;
+
+  const newPhone = prompt(
+    "Telefon:",
+    reservation.phone || ""
+  );
+
+  if (newPhone === null) return;
+
+  const newEmail = prompt(
+    "E-mail:",
+    reservation.email || ""
+  );
+
+  if (newEmail === null) return;
+
+  const newNote = prompt(
+    "Poznámka:",
+    reservation.note || ""
+  );
+
+  if (newNote === null) return;
+
+  updateReservation(id, {
+    name: newName.trim(),
+    people: Number(newPeople),
+    date: newDate,
+    time: newTime,
+    phone: newPhone.trim(),
+    email: newEmail.trim(),
+    note: newNote.trim()
+  });
+}
+
+async function updateReservation(id, updatedData) {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify(updatedData)
+      }
+    );
+
+    if (!res.ok) {
+      alert("Nepodařilo se upravit rezervaci.");
+      console.error(await res.text());
+      return;
+    }
+
+    alert("Rezervace byla upravena.");
+    loadReservations();
+  } catch (error) {
+    console.error(error);
+    alert("Nastala chyba při úpravě rezervace.");
+  }
+}
