@@ -797,18 +797,16 @@ async function saveFood() {
         }
       );
 
-      if (!uploadRes.ok) {
-        alert(
-          "Nepodařilo se nahrát fotku."
-        );
+     if (!uploadRes.ok) {
+  const errorText = await uploadRes.text();
 
-        console.error(
-          await uploadRes.text()
-        );
+  alert(
+    "Nepodařilo se nahrát fotku.\n\n" + errorText
+  );
 
-        return;
-      }
-
+  console.error("Chyba nahrávání:", errorText);
+  return;
+}
       image_url =
         `${SUPABASE_URL}/storage/v1/object/public/food-images/${fileName}`;
     }
