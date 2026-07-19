@@ -434,6 +434,10 @@
 
     sessionStorage.setItem("dashboardLoggedIn", "true");
     sessionStorage.setItem("supabaseAccessToken", data.access_token);
+    sessionStorage.setItem(
+  "supabaseRefreshToken",
+  data.refresh_token
+);
     sessionStorage.setItem("supabaseRefreshToken", data.refresh_token);
 
     loginScreen.style.display = "none";
