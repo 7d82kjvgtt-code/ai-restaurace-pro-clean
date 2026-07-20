@@ -247,7 +247,40 @@ if (existingReservations.length >= 7) {
     return;
   }
 
-  alert("✅ Rezervace uložena!");
+  let emailSent = false;
+
+  try {
+    const emailRes = await fetch("/api/send-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name,
+        people: Number(people),
+        date,
+        time,
+        phone,
+        email,
+        note
+      })
+    });
+
+    const emailData = await emailRes.json().catch(() => ({}));
+    emailSent = emailRes.ok;
+
+    if (!emailRes.ok) {
+      console.error("E-mail se nepodařilo odeslat:", emailData);
+    }
+  } catch (emailError) {
+    console.error("E-mail se nepodařilo odeslat:", emailError);
+  }
+
+  alert(
+    emailSent
+      ? "✅ Rezervace uložena a potvrzení bylo odesláno e-mailem!"
+      : "✅ Rezervace uložena! Potvrzovací e-mail se ale nepodařilo odeslat."
+  );
 
   document.getElementById("jmeno").value = "";
   document.getElementById("osoby").value = "";
