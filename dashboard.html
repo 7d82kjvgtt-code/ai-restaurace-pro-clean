@@ -6,91 +6,342 @@
   <title>AI Restaurace PRO Dashboard</title>
   <link rel="stylesheet" href="dashboard.css">
 </head>
+
 <body>
+
   <div id="loginScreen">
     <form class="login-box" onsubmit="login(event)">
       <div class="login-icon">🔐</div>
+
       <h2>Přihlášení do administrace</h2>
-      <p>Správa rezervací a jídelního lístku</p>
+      <p>Správa rezervací, stolů a jídelního lístku</p>
+
       <label for="loginEmail">E-mail</label>
-      <input id="loginEmail" type="email" placeholder="admin@restaurace.cz" autocomplete="username" required>
+      <input
+        id="loginEmail"
+        type="email"
+        placeholder="admin@restaurace.cz"
+        autocomplete="username"
+        required
+      >
+
       <label for="password">Heslo</label>
-      <input id="password" type="password" placeholder="Heslo" autocomplete="current-password" required>
-      <button id="loginButton" type="submit">Přihlásit</button>
+      <input
+        id="password"
+        type="password"
+        placeholder="Heslo"
+        autocomplete="current-password"
+        required
+      >
+
+      <button id="loginButton" type="submit">
+        Přihlásit
+      </button>
+
       <p id="error" role="alert"></p>
     </form>
   </div>
 
   <aside class="sidebar">
-    <h2>🍽️ AI Restaurace<br><span>PRO</span></h2>
+
+    <h2>
+      🍽️ AI Restaurace<br>
+      <span>PRO</span>
+    </h2>
+
     <nav>
       <a class="active" href="#prehled">🏠 Přehled</a>
       <a href="#grafy">📊 Statistiky</a>
       <a href="#rezervace">📅 Rezervace</a>
+      <a href="#stoly">🪑 Stoly</a>
       <a href="#menu">🍕 Menu</a>
     </nav>
+
   </aside>
 
   <main class="main">
+
     <header class="topbar">
+
       <div>
         <h1>Vítejte zpět 👋</h1>
         <p>Přehled provozu restaurace</p>
       </div>
+
       <div class="topbar-actions">
-        <a class="secondaryButton" href="index.html">⬅️ Zpět na web</a>
-        <button type="button" class="dangerButton" onclick="logoutDashboard()">Odhlásit</button>
+        <a class="secondaryButton" href="index.html">
+          ⬅️ Zpět na web
+        </a>
+
+        <button
+          type="button"
+          class="dangerButton"
+          onclick="logoutDashboard()"
+        >
+          Odhlásit
+        </button>
       </div>
+
     </header>
 
     <section class="cards" id="prehled">
-      <article class="card"><div class="cardIcon">📅</div><div><p>Dnešní rezervace</p><h2 id="todayCount">0</h2></div></article>
-      <article class="card"><div class="cardIcon">📋</div><div><p>Celkem rezervací</p><h2 id="totalCount">0</h2></div></article>
-      <article class="card"><div class="cardIcon">🍽️</div><div><p>Jídla v menu</p><h2 id="foodCount">0</h2></div></article>
-      <article class="card"><div class="cardIcon">⏳</div><div><p>Čekající rezervace</p><h2 id="pendingCount">0</h2></div></article>
+
+      <article class="card">
+        <div class="cardIcon">📅</div>
+        <div>
+          <p>Dnešní rezervace</p>
+          <h2 id="todayCount">0</h2>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="cardIcon">📋</div>
+        <div>
+          <p>Celkem rezervací</p>
+          <h2 id="totalCount">0</h2>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="cardIcon">🍽️</div>
+        <div>
+          <p>Jídla v menu</p>
+          <h2 id="foodCount">0</h2>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="cardIcon">⏳</div>
+        <div>
+          <p>Čekající rezervace</p>
+          <h2 id="pendingCount">0</h2>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="cardIcon">🪑</div>
+        <div>
+          <p>Aktivní stoly</p>
+          <h2 id="tableCount">0</h2>
+        </div>
+      </article>
+
     </section>
 
     <section class="charts-grid" id="grafy">
+
       <article class="panel chart-panel">
-        <div class="section-heading"><span class="eyebrow">Posledních 7 dní</span><h2>📊 Vývoj rezervací</h2></div>
-        <div class="chart-wrap"><canvas id="reservationChart"></canvas></div>
+
+        <div class="section-heading">
+          <span class="eyebrow">Posledních 7 dní</span>
+          <h2>📊 Vývoj rezervací</h2>
+        </div>
+
+        <div class="chart-wrap">
+          <canvas id="reservationChart"></canvas>
+        </div>
+
       </article>
+
       <article class="panel chart-panel">
-        <div class="section-heading"><span class="eyebrow">Aktuální přehled</span><h2>✅ Stavy rezervací</h2></div>
-        <div class="chart-wrap"><canvas id="statusChart"></canvas></div>
+
+        <div class="section-heading">
+          <span class="eyebrow">Aktuální přehled</span>
+          <h2>✅ Stavy rezervací</h2>
+        </div>
+
+        <div class="chart-wrap">
+          <canvas id="statusChart"></canvas>
+        </div>
+
       </article>
+
     </section>
 
     <section class="panel reservations-panel" id="rezervace">
+
       <div class="section-heading panel-top">
-        <div><span class="eyebrow">Správa rezervací</span><h2>📋 Seznam rezervací</h2></div>
+
+        <div>
+          <span class="eyebrow">Správa rezervací</span>
+          <h2>📋 Seznam rezervací</h2>
+        </div>
+
         <div class="filter-actions">
-          <input id="search" type="search" placeholder="Jméno, telefon nebo e-mail">
+
+          <input
+            id="search"
+            type="search"
+            placeholder="Jméno, telefon nebo e-mail"
+          >
+
           <select id="statusFilter">
             <option value="">Všechny stavy</option>
             <option value="Čeká">Čeká</option>
             <option value="Potvrzeno">Potvrzeno</option>
             <option value="Zrušeno">Zrušeno</option>
           </select>
-          <button type="button" class="neutralButton" onclick="resetFilters()">Vyčistit</button>
-          <button type="button" class="successButton" onclick="exportReservations()">Stáhnout CSV</button>
+
+          <button
+            type="button"
+            class="neutralButton"
+            onclick="resetFilters()"
+          >
+            Vyčistit
+          </button>
+
+          <button
+            type="button"
+            class="successButton"
+            onclick="exportReservations()"
+          >
+            Stáhnout CSV
+          </button>
+
         </div>
+
       </div>
+
       <div class="table-wrapper">
+
         <table>
-          <thead><tr><th>Jméno</th><th>Osob</th><th>Datum</th><th>Čas</th><th>Telefon</th><th>E-mail</th><th>Poznámka</th><th>Stav</th><th>Akce</th></tr></thead>
-          <tbody id="reservationTable"><tr><td colspan="9">Načítám...</td></tr></tbody>
+
+          <thead>
+            <tr>
+              <th>Jméno</th>
+              <th>Osob</th>
+              <th>Datum</th>
+              <th>Čas</th>
+              <th>Stůl</th>
+              <th>Telefon</th>
+              <th>E-mail</th>
+              <th>Poznámka</th>
+              <th>Stav</th>
+              <th>Akce</th>
+            </tr>
+          </thead>
+
+          <tbody id="reservationTable">
+            <tr>
+              <td colspan="10">Načítám...</td>
+            </tr>
+          </tbody>
+
         </table>
+
       </div>
+
+    </section>
+
+    <section class="tables-grid" id="stoly">
+
+      <article class="panel table-form-panel">
+
+        <div class="section-heading">
+          <span class="eyebrow">Rozložení restaurace</span>
+          <h2>🪑 Přidat nebo upravit stůl</h2>
+        </div>
+
+        <div class="form-grid">
+
+          <input
+            id="tableName"
+            type="text"
+            maxlength="50"
+            placeholder="Název, například Stůl 1"
+          >
+
+          <input
+            id="tableCapacity"
+            type="number"
+            min="1"
+            max="30"
+            placeholder="Počet míst"
+          >
+
+        </div>
+
+        <textarea
+          id="tableNote"
+          rows="3"
+          maxlength="200"
+          placeholder="Poznámka, například u okna nebo terasa"
+        ></textarea>
+
+        <label class="switch-row">
+          <input id="tableActive" type="checkbox" checked>
+          <span>Stůl je aktivní a lze ho přiřazovat</span>
+        </label>
+
+        <div class="form-actions">
+
+          <button
+            id="tableBtn"
+            type="button"
+            onclick="saveTable()"
+          >
+            Přidat stůl
+          </button>
+
+          <button
+            id="cancelTableEditBtn"
+            type="button"
+            class="neutralButton"
+            onclick="resetTableForm()"
+          >
+            Zrušit úpravu
+          </button>
+
+        </div>
+
+      </article>
+
+      <article class="panel table-list-panel">
+
+        <div class="section-heading">
+          <span class="eyebrow">Aktuální kapacita</span>
+          <h2>📋 Seznam stolů</h2>
+        </div>
+
+        <div id="tableList">
+          <p>Načítám stoly...</p>
+        </div>
+
+      </article>
+
     </section>
 
     <section class="menu-grid" id="menu">
+
       <article class="panel food-form-panel">
-        <div class="section-heading"><span class="eyebrow">Jídelní lístek</span><h2>🍕 Přidat nebo upravit jídlo</h2></div>
+
+        <div class="section-heading">
+          <span class="eyebrow">Jídelní lístek</span>
+          <h2>🍕 Přidat nebo upravit jídlo</h2>
+        </div>
+
         <div class="form-grid">
-          <input id="foodName" type="text" placeholder="Název jídla">
-          <input id="foodPrice" type="number" min="0" step="1" placeholder="Cena">
-          <input id="foodEmoji" type="text" placeholder="Emoji např. 🍕">
+
+          <input
+            id="foodName"
+            type="text"
+            placeholder="Název jídla"
+          >
+
+          <input
+            id="foodPrice"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="Cena"
+          >
+
+          <input
+            id="foodEmoji"
+            type="text"
+            placeholder="Emoji např. 🍕"
+          >
+
           <select id="foodCategory">
             <option value="Pizza">🍕 Pizza</option>
             <option value="Předkrm">🥗 Předkrm</option>
@@ -100,29 +351,87 @@
             <option value="Sladká jídla">🧁 Sladká jídla</option>
             <option value="Nápoj">🥤 Nápoj</option>
           </select>
+
         </div>
-        <textarea id="foodDescription" rows="3" placeholder="Popis jídla"></textarea>
-        <textarea id="foodIngredients" rows="3" placeholder="Ingredience"></textarea>
+
+        <textarea
+          id="foodDescription"
+          rows="3"
+          placeholder="Popis jídla"
+        ></textarea>
+
+        <textarea
+          id="foodIngredients"
+          rows="3"
+          placeholder="Ingredience"
+        ></textarea>
+
         <div class="form-grid">
-          <input id="foodAllergens" type="text" placeholder="Alergeny např. 1, 3, 7">
-          <input id="foodWeight" type="text" placeholder="Gramáž / objem">
+
+          <input
+            id="foodAllergens"
+            type="text"
+            placeholder="Alergeny např. 1, 3, 7"
+          >
+
+          <input
+            id="foodWeight"
+            type="text"
+            placeholder="Gramáž / objem"
+          >
+
         </div>
-        <label class="file-label" for="foodImage">Fotografie jídla</label>
-        <input id="foodImage" type="file" accept="image/*">
+
+        <label class="file-label" for="foodImage">
+          Fotografie jídla
+        </label>
+
+        <input
+          id="foodImage"
+          type="file"
+          accept="image/*"
+        >
+
         <div class="form-actions">
-          <button id="foodBtn" type="button" onclick="saveFood()">Přidat jídlo</button>
-          <button id="cancelEditBtn" type="button" class="neutralButton" onclick="resetFoodForm()">Zrušit úpravu</button>
+
+          <button
+            id="foodBtn"
+            type="button"
+            onclick="saveFood()"
+          >
+            Přidat jídlo
+          </button>
+
+          <button
+            id="cancelEditBtn"
+            type="button"
+            class="neutralButton"
+            onclick="resetFoodForm()"
+          >
+            Zrušit úpravu
+          </button>
+
         </div>
+
       </article>
 
       <article class="panel food-list-panel">
-        <div class="section-heading"><span class="eyebrow">Aktuální nabídka</span><h2>🍽️ Jídelní lístek</h2></div>
+
+        <div class="section-heading">
+          <span class="eyebrow">Aktuální nabídka</span>
+          <h2>🍽️ Jídelní lístek</h2>
+        </div>
+
         <div id="foodList"></div>
+
       </article>
+
     </section>
+
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="dashboard.js"></script>
+
 </body>
 </html>
