@@ -518,17 +518,26 @@ function renderReservations(data) {
           <td>
             <div class="tableActions">
 
-              <button
-                class="editBtn"
-                type="button"
-                title="Upravit rezervaci"
-                onclick="editReservation(
-                  ${Number(reservation.id)}
-                )"
-              >
-                ✏️
-              </button>
+  <button
+    type="button"
+    title="Automaticky doporučit stůl"
+    onclick="autoAssignTable(
+      ${Number(reservation.id)}
+    )"
+  >
+    🪄
+  </button>
 
+  <button
+    class="editBtn"
+    type="button"
+    title="Upravit rezervaci"
+    onclick="editReservation(
+      ${Number(reservation.id)}
+    )"
+  >
+    ✏️
+  </button>
               <button
                 type="button"
                 title="Potvrdit rezervaci"
@@ -1450,6 +1459,162 @@ function renderTableSelect(reservation) {
   `;
 }
 
+function timeToMinutes(time) {
+  if (!time || !String(time).includes(":")) {
+    return 0;
+  }
+
+  const [hours, minutes] = String(time)
+    .split(":")
+    .map(Number);
+
+  return hours * 60 + minutes;
+}
+
+function reservationsOverlap(first, second) {
+  if (
+    !first ||
+    !second ||
+    first.date !== second.date
+  ) {
+    return false;
+  }
+
+  const reservationDuration = 120;
+
+  const firstStart =
+    timeToMinutes(first.time);
+
+  const firstEnd =
+    firstStart + reservationDuration;
+
+  const secondStart =
+    timeToMinutes(second.time);
+
+  const secondEnd =
+    secondStart + reservationDuration;
+
+  return (
+    firstStart < secondEnd &&
+    secondStart < firstEnd
+  );
+}
+
+function hasTableConflict(
+  tableId,
+  reservation,
+  ignoredReservationId = null
+) {
+  return reservations.some(item => {
+    if (
+      ignoredReservationId !== null &&
+      Number(item.id) ===
+        Number(ignoredReservationId)
+    ) {
+      return false;
+    }
+
+    if (
+      Number(item.table_id) !==
+      Number(tableId)
+    ) {
+      return false;
+    }
+
+    if (
+      (item.status || "Čeká") ===
+      "Zrušeno"
+    ) {
+      return false;
+    }
+
+    return reservationsOverlap(
+      reservation,
+      item
+    );
+  });
+}
+
+function findBestAvailableTable(reservation) {
+  return (
+    restaurantTables
+      .filter(table => {
+        return (
+          table.active &&
+          Number(table.capacity) >=
+            Number(reservation.people) &&
+          !hasTableConflict(
+            table.id,
+            reservation,
+            reservation.id
+          )
+        );
+      })
+      .sort((first, second) => {
+        return (
+          Number(first.capacity) -
+          Number(second.capacity)
+        );
+      })[0] || null
+  );
+}
+
+async function autoAssignTable(reservationId) {
+  const reservation =
+    reservations.find(item => {
+      return (
+        Number(item.id) ===
+        Number(reservationId)
+      );
+    });
+
+  if (!reservation) {
+    alert("Rezervace nebyla nalezena.");
+    return;
+  }
+
+  if (
+    (reservation.status || "Čeká") ===
+    "Zrušeno"
+  ) {
+    alert(
+      "Zrušené rezervaci nelze přiřadit stůl."
+    );
+
+    return;
+  }
+
+  const bestTable =
+    findBestAvailableTable(reservation);
+
+  if (!bestTable) {
+    alert(
+      `Pro rezervaci na ${formatDate(
+        reservation.date
+      )} v ${reservation.time || "-"} není volný vhodný stůl.\n\n` +
+      "Každá rezervace blokuje stůl na 2 hodiny."
+    );
+
+    return;
+  }
+
+  const confirmed = confirm(
+    `Doporučený stůl: ${bestTable.name}\n` +
+    `Kapacita: ${bestTable.capacity} míst\n` +
+    `Rezervace: ${reservation.people} osob\n\n` +
+    "Přiřadit tento stůl?"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  await assignTable(
+    reservationId,
+    bestTable.id
+  );
+}
+
 async function assignTable(
   reservationId,
   value
@@ -1457,52 +1622,97 @@ async function assignTable(
   const tableId =
     value ? Number(value) : null;
 
-  const reservation = reservations.find(
-    item =>
-      Number(item.id) ===
-      Number(reservationId)
-  );
+  const reservation =
+    reservations.find(item => {
+      return (
+        Number(item.id) ===
+        Number(reservationId)
+      );
+    });
+
+  if (!reservation) {
+    alert("Rezervace nebyla nalezena.");
+    return;
+  }
 
   const selectedTable =
-    restaurantTables.find(
-      item =>
+    restaurantTables.find(item => {
+      return (
         Number(item.id) ===
         Number(tableId)
-    );
+      );
+    });
 
   if (
     selectedTable &&
-    reservation &&
+    selectedTable.active === false
+  ) {
+    alert(
+      `${selectedTable.name} je neaktivní.`
+    );
+
+    renderReservations(
+      getFilteredReservations()
+    );
+
+    return;
+  }
+
+  if (
+    selectedTable &&
     Number(reservation.people) >
       Number(selectedTable.capacity)
   ) {
-    const proceed = confirm(
-      `Rezervace je pro ${reservation.people} osob, ale ${selectedTable.name} má pouze ${selectedTable.capacity} míst. Přesto stůl přiřadit?`
+    alert(
+      `${selectedTable.name} má pouze ` +
+      `${selectedTable.capacity} míst, ale ` +
+      `rezervace je pro ${reservation.people} osob.`
     );
 
-    if (!proceed) {
-      renderReservations(
-        getFilteredReservations()
-      );
+    renderReservations(
+      getFilteredReservations()
+    );
 
-      return;
-    }
+    return;
+  }
+
+  if (
+    selectedTable &&
+    hasTableConflict(
+      selectedTable.id,
+      reservation,
+      reservation.id
+    )
+  ) {
+    alert(
+      `${selectedTable.name} je v tomto čase již obsazený.\n\n` +
+      "Každá rezervace blokuje stůl na 2 hodiny."
+    );
+
+    renderReservations(
+      getFilteredReservations()
+    );
+
+    return;
   }
 
   try {
-    const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${reservationId}`,
-      {
-        method: "PATCH",
-        headers: getHeaders(),
-        body: JSON.stringify({
-          table_id: tableId
-        })
-      }
-    );
+    const response =
+      await authorizedFetch(
+        `${SUPABASE_URL}/rest/v1/reservations?id=eq.${reservationId}`,
+        {
+          method: "PATCH",
+          headers: getHeaders(),
+          body: JSON.stringify({
+            table_id: tableId
+          })
+        }
+      );
 
     if (!response.ok) {
-      throw new Error(await response.text());
+      throw new Error(
+        await response.text()
+      );
     }
 
     await loadReservations();
