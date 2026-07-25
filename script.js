@@ -236,7 +236,8 @@ if (existingReservations.length >= 7) {
       phone,
       email,
       note,
-      status: "Čeká"
+      status: "Čeká",
+      restaurant_id: 1
     })
   });
 
