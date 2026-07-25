@@ -773,3 +773,40 @@ tbody tr:hover {
     flex-direction: column;
   }
 }
+.floor-map{
+    display:grid;
+    grid-template-columns:repeat(4,80px);
+    gap:20px;
+    justify-content:center;
+    padding:25px;
+}
+
+.table{
+    width:80px;
+    height:80px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    font-weight:bold;
+    font-size:20px;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.table:hover{
+    transform:scale(1.08);
+}
+
+.table.free{
+    background:#22c55e;
+}
+
+.table.busy{
+    background:#f59e0b;
+}
+
+.table.occupied{
+    background:#ef4444;
+}
