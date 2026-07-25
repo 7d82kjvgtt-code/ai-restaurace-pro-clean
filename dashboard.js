@@ -412,9 +412,8 @@ async function loadReservations() {
 
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/reservations?select=*&order=id.desc`
-    );
-
+  `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${currentRestaurantId}&select=*&order=id.desc`
+);
     const data = await response.json();
 
     if (!response.ok) {
