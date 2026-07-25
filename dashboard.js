@@ -1786,7 +1786,7 @@ async function assignTable(
 async function loadFoods() {
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/menu?select=*&order=id.desc`
+      `${SUPABASE_URL}/rest/v1/menu?restaurant_id=eq.${currentRestaurantId}&select=*&order=id.desc`
     );
 
     const data = await response.json();
