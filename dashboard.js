@@ -1086,7 +1086,7 @@ async function loadTables() {
 
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/restaurant_tables?select=*&order=name.asc`
+      `${SUPABASE_URL}/rest/v1/restaurant_tables?restaurant_id=eq.${currentRestaurantId}&select=*&order=name.asc`
     );
 
     const data = await response.json();
