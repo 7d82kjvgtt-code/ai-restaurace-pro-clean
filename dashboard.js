@@ -5,6 +5,9 @@ let reservations = [];
 let foods = [];
 let restaurantTables = [];
 
+let currentRestaurantId = null;
+let currentUserRole = null;
+
 let editingFoodId = null;
 let editingImageUrl = "";
 let editingTableId = null;
@@ -24,11 +27,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     ?.addEventListener("change", applyFilters);
 
   if (await ensureValidSession()) {
+  const restaurantLoaded = await loadRestaurantContext();
+
+  if (restaurantLoaded) {
     hideLogin();
     await loadDashboardData();
   } else {
+    clearSession();
     showLogin();
+    alert("Účet není přiřazený k žádné restauraci.");
   }
+} else {
+  showLogin();
+}
 });
 
 async function loadDashboardData() {
@@ -114,7 +125,47 @@ function parseJwt(token) {
     return null;
   }
 }
+async function loadRestaurantContext() {
+  const token = getAccessToken();
+  const payload = parseJwt(token);
 
+  if (!payload?.sub) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(payload.sub)}&select=restaurant_id,role`,
+      {
+        method: "GET",
+        headers: getHeaders()
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    const profiles = await response.json();
+    const profile = profiles[0];
+
+    if (!profile?.restaurant_id) {
+      console.error("Uživatel není přiřazený k restauraci.");
+      return false;
+    }
+
+    currentRestaurantId = profile.restaurant_id;
+    currentUserRole = profile.role;
+
+    console.log("Aktivní restaurace:", currentRestaurantId);
+    console.log("Role uživatele:", currentUserRole);
+
+    return true;
+  } catch (error) {
+    console.error("Nepodařilo se načíst restauraci:", error);
+    return false;
+  }
+}
 function tokenNeedsRefresh() {
   const token = getAccessToken();
 
