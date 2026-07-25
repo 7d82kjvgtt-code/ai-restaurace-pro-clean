@@ -1923,7 +1923,7 @@ async function saveFood() {
       ingredients,
       allergens,
       weight
-      restaurant_id: currentRestaurantId,
+      restaurant_id: currentRestaurantId
     };
 
     const editing =
