@@ -1922,7 +1922,7 @@ async function saveFood() {
       description,
       ingredients,
       allergens,
-      weight
+      weight,
       restaurant_id: currentRestaurantId
     };
 
