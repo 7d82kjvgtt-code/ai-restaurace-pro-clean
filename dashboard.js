@@ -1112,6 +1112,7 @@ async function loadTables() {
     ).length;
 
     renderTables();
+    renderFloorMap();
   } catch (error) {
     console.error(error);
 
@@ -1130,7 +1131,36 @@ async function loadTables() {
     }
   }
 }
+function renderFloorMap() {
+    const floorMap = document.getElementById("floorMap");
 
+    if (!floorMap) return;
+
+    const activeTables = restaurantTables.filter(
+        table => table.active
+    );
+
+    if (activeTables.length === 0) {
+        floorMap.innerHTML = `
+            <div class="emptyState">
+                Zatím nejsou vytvořené žádné aktivní stoly.
+            </div>
+        `;
+        return;
+    }
+
+    floorMap.innerHTML = activeTables
+        .map(table => `
+            <div
+                class="table free"
+                data-table-id="${table.id}"
+                title="${table.name || `Stůl ${table.id}`}"
+            >
+                ${table.name || table.id}
+            </div>
+        `)
+        .join("");
+}
 function renderTables() {
   const list =
     document.getElementById("tableList");
