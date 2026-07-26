@@ -153,9 +153,16 @@ async function loadRestaurantContext() {
       console.error("Uživatel není přiřazený k restauraci.");
       return false;
     }
+    
+    const userRole = String(profile.role || "").toLowerCase().trim();
 
+if (userRole !== "owner") {
+    console.error("Uživatel nemá oprávnění otevřít Dashboard.");
+    alert("Do administrace má přístup pouze majitel restaurace.");
+    return false;
+}
     currentRestaurantId = profile.restaurant_id;
-    currentUserRole = profile.role;
+    currentUserRole = userRole;
 
     console.log("Aktivní restaurace:", currentRestaurantId);
     console.log("Role uživatele:", currentUserRole);
