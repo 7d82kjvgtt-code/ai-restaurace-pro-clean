@@ -446,7 +446,25 @@
     </section>
 
   </main>
+  
+<div id="tableModal" class="table-modal">
+    <div class="table-modal-content">
+        <button class="table-modal-close" onclick="closeTableModal()">×</button>
 
+        <h2 id="tableModalTitle">Stůl</h2>
+
+        <div class="table-modal-info">
+            <p>👥 Kapacita: <strong id="tableModalCapacity">-</strong></p>
+            <p>📌 Stav: <strong id="tableModalStatus">Volný</strong></p>
+        </div>
+
+        <div class="table-modal-actions">
+            <button class="primary-btn">➕ Nová rezervace</button>
+            <button class="secondary-btn" onclick="closeTableModal()">Zavřít</button>
+        </div>
+    </div>
+</div>
+  
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="dashboard.js"></script>
 
