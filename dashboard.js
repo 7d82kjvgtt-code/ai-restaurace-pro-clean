@@ -1152,15 +1152,27 @@ function renderFloorMap() {
     floorMap.innerHTML = activeTables
         .map(table => `
             <div
-                class="table free"
-                data-table-id="${table.id}"
-                title="${table.name || `Stůl ${table.id}`}"
-            >
+                <div
+    class="table free"
+    data-table-id="${table.id}"
+    title="${table.name || `Stůl ${table.id}`}"
+    onclick="openTable(${table.id})"
+>
                 ${table.name || table.id}
             </div>
         `)
         .join("");
 }
+function openTable(tableId) {
+    const table = restaurantTables.find(t => t.id === tableId);
+
+    if (!table) return;
+
+    alert(
+        `🍽️ ${table.name}\n\nKapacita: ${table.capacity}\nAktivní: ${table.active ? "Ano" : "Ne"}`
+    );
+}
+
 function renderTables() {
   const list =
     document.getElementById("tableList");
