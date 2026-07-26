@@ -1168,9 +1168,16 @@ function openTable(tableId) {
 
     if (!table) return;
 
-    alert(
-        `🍽️ ${table.name}\n\nKapacita: ${table.capacity}\nAktivní: ${table.active ? "Ano" : "Ne"}`
-    );
+    document.getElementById("tableModalTitle").textContent = table.name;
+document.getElementById("tableModalCapacity").textContent = table.capacity;
+document.getElementById("tableModalStatus").textContent =
+    table.active ? "Volný" : "Neaktivní";
+
+document.getElementById("tableModal").classList.add("show");
+}
+
+function closeTableModal() {
+    document.getElementById("tableModal").classList.remove("show");
 }
 
 function renderTables() {
