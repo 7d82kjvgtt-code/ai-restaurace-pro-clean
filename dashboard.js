@@ -1211,6 +1211,98 @@ function createReservationFromTable() {
         block: "start"
     });
 }
+async function saveNewReservation() {
+    const name = document.getElementById("newName").value.trim();
+    const people = Number(document.getElementById("newPeople").value);
+    const date = document.getElementById("newDate").value;
+    const time = document.getElementById("newTime").value;
+    const tableId = Number(document.getElementById("newTable").value);
+    const phone = document.getElementById("newPhone").value.trim();
+    const email = document.getElementById("newEmail").value.trim();
+    const note = document.getElementById("newNote").value.trim();
+
+    if (!name || !date || !time || !Number.isInteger(people) || people < 1) {
+        alert("Vyplň jméno, počet osob, datum a čas.");
+        return;
+    }
+
+    const selectedTable = restaurantTables.find(
+        table => Number(table.id) === tableId
+    );
+
+    if (!selectedTable) {
+        alert("Vyber platný stůl.");
+        return;
+    }
+
+    if (people > Number(selectedTable.capacity)) {
+        alert(
+            `${selectedTable.name} má pouze ${selectedTable.capacity} míst.`
+        );
+        return;
+    }
+
+    const newReservation = {
+        name,
+        people,
+        date,
+        time,
+        table_id: tableId,
+        phone,
+        email,
+        note,
+        status: "Čeká",
+        restaurant_id: currentRestaurantId
+    };
+
+    if (hasTableConflict(tableId, newReservation)) {
+        alert(
+            `${selectedTable.name} je v tomto čase už rezervovaný.\n\n` +
+            "Každá rezervace blokuje stůl na 2 hodiny."
+        );
+        return;
+    }
+
+    try {
+        const response = await authorizedFetch(
+            `${SUPABASE_URL}/rest/v1/reservations`,
+            {
+                method: "POST",
+                headers: getHeaders({
+                    Prefer: "return=minimal"
+                }),
+                body: JSON.stringify(newReservation)
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+
+        document.getElementById("novaRezervace").style.display = "none";
+
+        [
+            "newName",
+            "newPeople",
+            "newDate",
+            "newTime",
+            "newPhone",
+            "newEmail",
+            "newNote"
+        ].forEach(id => {
+            document.getElementById(id).value = "";
+        });
+
+        selectedTableId = null;
+
+        await loadReservations();
+
+        alert("Rezervace byla úspěšně uložena.");
+    } catch (error) {
+        console.error(error);
+        alert("Rezervaci se nepodařilo uložit.");
+    }
+}
 function renderTables() {
   const list =
     document.getElementById("tableList");
