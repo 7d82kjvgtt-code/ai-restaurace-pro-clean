@@ -1184,6 +1184,19 @@ function closeTableModal() {
     document.getElementById("tableModal").classList.remove("show");
 }
 
+function createReservationFromTable() {
+    closeTableModal();
+
+    const reservationLink = document.querySelector(
+        '.sidebar a[href="#reservations"], .sidebar [data-section="reservations"]'
+    );
+
+    if (reservationLink) {
+        reservationLink.click();
+    }
+
+    console.log("Vybraný stůl:", selectedTableId);
+}
 function renderTables() {
   const list =
     document.getElementById("tableList");
