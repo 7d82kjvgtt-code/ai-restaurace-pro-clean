@@ -1187,19 +1187,29 @@ function closeTableModal() {
 function createReservationFromTable() {
     closeTableModal();
 
-    const links = [...document.querySelectorAll(".sidebar a")];
+    const reservationSection = document.getElementById("novaRezervace");
+    const tableSelect = document.getElementById("newTable");
 
-    const reservationLink = links.find(link =>
-        link.textContent.trim().toLowerCase().includes("rezervace")
-    );
-
-    if (reservationLink) {
-        reservationLink.click();
-    } else {
-        alert("Sekci Rezervace se nepodařilo najít.");
+    if (!reservationSection || !tableSelect) {
+        alert("Formulář rezervace se nepodařilo otevřít.");
+        return;
     }
 
-    console.log("Vybraný stůl:", selectedTableId);
+    tableSelect.innerHTML = restaurantTables
+        .filter(table => table.active)
+        .map(table => `
+            <option value="${table.id}">
+                ${table.name} (${table.capacity} míst)
+            </option>
+        `)
+        .join("");
+
+    tableSelect.value = String(selectedTableId);
+    reservationSection.style.display = "block";
+    reservationSection.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
 }
 function renderTables() {
   const list =
