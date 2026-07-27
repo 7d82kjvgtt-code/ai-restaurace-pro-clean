@@ -249,7 +249,34 @@
       </div>
 
     </section>
+<section id="novaRezervace" class="panel" style="display:none;">
+    <div class="section-heading">
+        <span class="eyebrow">Nová rezervace</span>
+        <h2>➕ Vytvořit rezervaci</h2>
+    </div>
 
+    <div class="form-grid">
+        <input id="newName" type="text" placeholder="Jméno">
+
+        <input id="newPeople" type="number" placeholder="Počet osob">
+
+        <input id="newDate" type="date">
+
+        <input id="newTime" type="time">
+
+        <select id="newTable"></select>
+
+        <input id="newPhone" type="text" placeholder="Telefon">
+
+        <input id="newEmail" type="email" placeholder="E-mail">
+
+        <textarea id="newNote" placeholder="Poznámka"></textarea>
+
+        <button onclick="saveNewReservation()" class="successButton">
+            Uložit rezervaci
+        </button>
+    </div>
+</section>
     <section class="tables-grid" id="stoly">
 
       <article class="panel table-form-panel">
