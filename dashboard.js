@@ -1163,9 +1163,13 @@ function renderFloorMap() {
         `)
         .join("");
 }
+let selectedTableId = null;
+
 function openTable(tableId) {
     const table = restaurantTables.find(t => t.id === tableId);
-
+  
+selectedTableId = tableId;
+  
     if (!table) return;
 
     document.getElementById("tableModalTitle").textContent = table.name;
