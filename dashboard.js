@@ -1187,12 +1187,16 @@ function closeTableModal() {
 function createReservationFromTable() {
     closeTableModal();
 
-    const reservationLink = document.querySelector(
-        '.sidebar a[href="#reservations"], .sidebar [data-section="reservations"]'
+    const links = [...document.querySelectorAll(".sidebar a")];
+
+    const reservationLink = links.find(link =>
+        link.textContent.trim().toLowerCase().includes("rezervace")
     );
 
     if (reservationLink) {
         reservationLink.click();
+    } else {
+        alert("Sekci Rezervace se nepodařilo najít.");
     }
 
     console.log("Vybraný stůl:", selectedTableId);
