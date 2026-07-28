@@ -493,7 +493,93 @@
         </div>
     </div>
 </div>
-  
+  <div id="reservationModal" class="table-modal">
+    <div class="table-modal-content reservation-modal-content">
+
+        <button
+            class="table-modal-close"
+            onclick="closeReservationModal()"
+        >
+            ×
+        </button>
+
+        <h2>Upravit rezervaci</h2>
+
+        <input type="hidden" id="editReservationId">
+
+        <div class="reservation-modal-grid">
+
+            <label>
+                Jméno
+                <input id="editReservationName" type="text">
+            </label>
+
+            <label>
+                Počet osob
+                <input id="editReservationPeople" type="number" min="1" max="30">
+            </label>
+
+            <label>
+                Datum
+                <input id="editReservationDate" type="date">
+            </label>
+
+            <label>
+                Čas
+                <input id="editReservationTime" type="time">
+            </label>
+
+            <label>
+                Stůl
+                <select id="editReservationTable"></select>
+            </label>
+
+            <label>
+                Stav
+                <select id="editReservationStatus">
+                    <option value="Čeká">Čeká</option>
+                    <option value="Potvrzeno">Potvrzeno</option>
+                    <option value="Zrušeno">Zrušeno</option>
+                </select>
+            </label>
+
+            <label>
+                Telefon
+                <input id="editReservationPhone" type="tel">
+            </label>
+
+            <label>
+                E-mail
+                <input id="editReservationEmail" type="email">
+            </label>
+
+            <label class="reservation-modal-full">
+                Poznámka
+                <textarea id="editReservationNote"></textarea>
+            </label>
+
+        </div>
+
+        <div class="table-modal-actions">
+
+            <button
+                class="primary-btn"
+                onclick="saveReservationChanges()"
+            >
+                Uložit změny
+            </button>
+
+            <button
+                class="secondary-btn"
+                onclick="closeReservationModal()"
+            >
+                Zavřít
+            </button>
+
+        </div>
+
+    </div>
+</div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="dashboard.js"></script>
 
