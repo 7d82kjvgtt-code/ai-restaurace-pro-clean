@@ -1316,10 +1316,21 @@ function renderFloorMap() {
         .join("");
 }
 let selectedTableId = null;
-
+let selectedTableReservationId = null;
 function openTable(tableId) {
     const table = restaurantTables.find(t => t.id === tableId);
-  
+  selectedTableReservationId = reservation
+    ? Number(reservation.id)
+    : null;
+
+const primaryButton =
+    document.getElementById("tableModalPrimaryButton");
+
+if (reservation) {
+    primaryButton.textContent = "✏️ Upravit rezervaci";
+} else {
+    primaryButton.textContent = "+ Nová rezervace";
+}
 selectedTableId = tableId;
   
     if (!table) return;
@@ -1353,7 +1364,23 @@ document.getElementById("tableModal").classList.add("show");
 }
 
 function closeTableModal() {
-    document.getElementById("tableModal").classList.remove("show");
+    document
+        .getElementById("tableModal")
+        .classList.remove("show");
+
+    selectedTableReservationId = null;
+}
+
+function handleTableModalPrimaryAction() {
+    if (selectedTableReservationId !== null) {
+        const reservationId = selectedTableReservationId;
+
+        closeTableModal();
+        editReservation(reservationId);
+        return;
+    }
+
+    createReservationFromTable();
 }
 
 function createReservationFromTable() {
