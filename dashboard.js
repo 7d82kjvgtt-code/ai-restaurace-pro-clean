@@ -1197,9 +1197,16 @@ selectedTableId = tableId;
 
     document.getElementById("tableModalTitle").textContent = table.name;
 document.getElementById("tableModalCapacity").textContent = table.capacity;
-document.getElementById("tableModalStatus").textContent =
-    table.active ? "Volný" : "Neaktivní";
+  
+const occupied = isTableOccupied(table.id);
 
+document.getElementById("tableModalStatus").textContent =
+    !table.active
+        ? "Neaktivní"
+        : occupied
+            ? "Obsazený"
+            : "Volný";
+  
 document.getElementById("tableModal").classList.add("show");
 }
 
