@@ -1211,14 +1211,15 @@ selectedTableId = tableId;
     document.getElementById("tableModalTitle").textContent = table.name;
 document.getElementById("tableModalCapacity").textContent = table.capacity;
   
-const occupied = isTableOccupied(table.id);
-
+const tableStatus = getTableStatus(table.id);
 document.getElementById("tableModalStatus").textContent =
     !table.active
         ? "Neaktivní"
-        : occupied
+        : tableStatus === "occupied"
             ? "Obsazený"
-            : "Volný";
+            : tableStatus === "busy"
+                ? "Brzy obsazený"
+                : "Volný";
   
 document.getElementById("tableModal").classList.add("show");
 }
