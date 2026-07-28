@@ -1132,27 +1132,40 @@ async function loadTables() {
     }
   }
 }
-function isTableOccupied(tableId) {
+function getTableStatus(tableId) {
     const now = new Date();
 
-    return reservations.some(reservation => {
+    const relevantReservations = reservations.filter(reservation => {
+        return (
+            Number(reservation.table_id) === Number(tableId) &&
+            (reservation.status || "Čeká") !== "Zrušeno"
+        );
+    });
 
-        if (Number(reservation.table_id) !== Number(tableId))
-            return false;
-
-        if ((reservation.status || "Čeká") === "Zrušeno")
-            return false;
-
+    for (const reservation of relevantReservations) {
         const start = new Date(
             `${reservation.date}T${reservation.time}`
         );
 
         const end = new Date(start);
-
         end.setHours(end.getHours() + 2);
 
-        return now >= start && now <= end;
-    });
+        const minutesUntilStart =
+            (start.getTime() - now.getTime()) / 60000;
+
+        if (now >= start && now <= end) {
+            return "occupied";
+        }
+
+        if (
+            minutesUntilStart > 0 &&
+            minutesUntilStart <= 30
+        ) {
+            return "busy";
+        }
+    }
+
+    return "free";
 }
 function renderFloorMap() {
     const floorMap = document.getElementById("floorMap");
@@ -1176,7 +1189,7 @@ function renderFloorMap() {
         .map(table => `
             <div
                 <div
-   class="table ${isTableOccupied(table.id) ? "occupied" : "free"}"
+  class="table ${getTableStatus(table.id)}"
     data-table-id="${table.id}"
     title="${table.name || `Stůl ${table.id}`}"
     onclick="openTable(${table.id})"
