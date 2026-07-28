@@ -433,6 +433,7 @@ async function loadReservations() {
     updateStatistics();
     renderReservations(reservations);
     renderCharts();
+    renderFloorMap();
   } catch (error) {
     console.error(error);
 
