@@ -951,10 +951,15 @@ async function saveReservationChanges() {
             throw new Error(await response.text());
         }
 
-        closeReservationModal();
-        await loadReservations();
+       closeReservationModal();
+      
+closeTableModal();
+      
+await loadReservations();
 
-        alert("Rezervace byla úspěšně upravena.");
+renderTables();
+
+alert("Rezervace byla úspěšně upravena.");
     } catch (error) {
         console.error(error);
         alert("Rezervaci se nepodařilo upravit.");
