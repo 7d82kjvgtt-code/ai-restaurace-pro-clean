@@ -749,100 +749,216 @@ function resetFilters() {
 }
 
 function editReservation(id) {
-  const reservation = reservations.find(
-    item => Number(item.id) === Number(id)
-  );
-
-  if (!reservation) {
-    return;
-  }
-
-  const name = prompt(
-    "Jméno:",
-    reservation.name || ""
-  );
-
-  if (name === null) {
-    return;
-  }
-
-  const people = prompt(
-    "Počet osob:",
-    reservation.people || ""
-  );
-
-  if (people === null) {
-    return;
-  }
-
-  const date = prompt(
-    "Datum RRRR-MM-DD:",
-    reservation.date || ""
-  );
-
-  if (date === null) {
-    return;
-  }
-
-  const time = prompt(
-    "Čas HH:MM:",
-    reservation.time || ""
-  );
-
-  if (time === null) {
-    return;
-  }
-
-  const phone = prompt(
-    "Telefon:",
-    reservation.phone || ""
-  );
-
-  if (phone === null) {
-    return;
-  }
-
-  const email = prompt(
-    "E-mail:",
-    reservation.email || ""
-  );
-
-  if (email === null) {
-    return;
-  }
-
-  const note = prompt(
-    "Poznámka:",
-    reservation.note || ""
-  );
-
-  if (note === null) {
-    return;
-  }
-
-  const peopleNumber = Number(people);
-
-  if (
-    !Number.isInteger(peopleNumber) ||
-    peopleNumber < 1 ||
-    peopleNumber > 30
-  ) {
-    alert(
-      "Počet osob musí být od 1 do 30."
+    const reservation = reservations.find(
+        item => Number(item.id) === Number(id)
     );
 
-    return;
-  }
+    if (!reservation) {
+        alert("Rezervace nebyla nalezena.");
+        return;
+    }
 
-  updateReservation(id, {
-    name: name.trim(),
-    people: peopleNumber,
-    date: date.trim(),
-    time: time.trim(),
-    phone: phone.trim(),
-    email: email.trim(),
-    note: note.trim()
-  });
+    document.getElementById("editReservationId").value =
+        reservation.id;
+
+    document.getElementById("editReservationName").value =
+        reservation.name || "";
+
+    document.getElementById("editReservationPeople").value =
+        reservation.people || "";
+
+    document.getElementById("editReservationDate").value =
+        reservation.date || "";
+
+    document.getElementById("editReservationTime").value =
+        reservation.time || "";
+
+    document.getElementById("editReservationPhone").value =
+        reservation.phone || "";
+
+    document.getElementById("editReservationEmail").value =
+        reservation.email || "";
+
+    document.getElementById("editReservationNote").value =
+        reservation.note || "";
+
+    document.getElementById("editReservationStatus").value =
+        reservation.status || "Čeká";
+
+    const tableSelect =
+        document.getElementById("editReservationTable");
+
+    tableSelect.innerHTML = `
+        <option value="">Bez stolu</option>
+        ${restaurantTables
+            .filter(table => {
+                return (
+                    table.active ||
+                    Number(table.id) === Number(reservation.table_id)
+                );
+            })
+            .map(table => `
+                <option value="${table.id}">
+                    ${table.name} (${table.capacity} míst)
+                </option>
+            `)
+            .join("")}
+    `;
+
+    tableSelect.value =
+        reservation.table_id === null ||
+        reservation.table_id === undefined
+            ? ""
+            : String(reservation.table_id);
+
+    document
+        .getElementById("reservationModal")
+        .classList.add("show");
+}
+
+function closeReservationModal() {
+    document
+        .getElementById("reservationModal")
+        .classList.remove("show");
+}
+
+async function saveReservationChanges() {
+    const id = Number(
+        document.getElementById("editReservationId").value
+    );
+
+    const name =
+        document
+            .getElementById("editReservationName")
+            .value
+            .trim();
+
+    const people = Number(
+        document.getElementById("editReservationPeople").value
+    );
+
+    const date =
+        document.getElementById("editReservationDate").value;
+
+    const time =
+        document.getElementById("editReservationTime").value;
+
+    const tableValue =
+        document.getElementById("editReservationTable").value;
+
+    const tableId =
+        tableValue ? Number(tableValue) : null;
+
+    const status =
+        document.getElementById("editReservationStatus").value;
+
+    const phone =
+        document
+            .getElementById("editReservationPhone")
+            .value
+            .trim();
+
+    const email =
+        document
+            .getElementById("editReservationEmail")
+            .value
+            .trim();
+
+    const note =
+        document
+            .getElementById("editReservationNote")
+            .value
+            .trim();
+
+    if (
+        !name ||
+        !date ||
+        !time ||
+        !Number.isInteger(people) ||
+        people < 1 ||
+        people > 30
+    ) {
+        alert("Vyplň správně jméno, počet osob, datum a čas.");
+        return;
+    }
+
+    const updatedReservation = {
+        id,
+        name,
+        people,
+        date,
+        time,
+        table_id: tableId,
+        phone,
+        email,
+        note,
+        status
+    };
+
+    if (tableId !== null) {
+        const selectedTable = restaurantTables.find(
+            table => Number(table.id) === Number(tableId)
+        );
+
+        if (!selectedTable) {
+            alert("Vybraný stůl nebyl nalezen.");
+            return;
+        }
+
+        if (people > Number(selectedTable.capacity)) {
+            alert(
+                `${selectedTable.name} má jen ` +
+                `${selectedTable.capacity} míst.`
+            );
+            return;
+        }
+
+        if (
+            status !== "Zrušeno" &&
+            hasTableConflict(tableId, updatedReservation, id)
+        ) {
+            alert(
+                `${selectedTable.name} je v tomto čase obsazený.\n\n` +
+                "Každá rezervace blokuje stůl na 2 hodiny."
+            );
+            return;
+        }
+    }
+
+    try {
+        const response = await authorizedFetch(
+            `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`,
+            {
+                method: "PATCH",
+                headers: getHeaders({
+                    Prefer: "return=minimal"
+                }),
+                body: JSON.stringify({
+                    name,
+                    people,
+                    date,
+                    time,
+                    table_id: tableId,
+                    phone,
+                    email,
+                    note,
+                    status
+                })
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+
+        closeReservationModal();
+        await loadReservations();
+
+        alert("Rezervace byla úspěšně upravena.");
+    } catch (error) {
+        console.error(error);
+        alert("Rezervaci se nepodařilo upravit.");
+    }
 }
 
 async function updateReservation(id, data) {
