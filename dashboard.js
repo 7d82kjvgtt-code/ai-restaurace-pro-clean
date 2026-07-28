@@ -1131,6 +1131,28 @@ async function loadTables() {
     }
   }
 }
+function isTableOccupied(tableId) {
+    const now = new Date();
+
+    return reservations.some(reservation => {
+
+        if (Number(reservation.table_id) !== Number(tableId))
+            return false;
+
+        if ((reservation.status || "Čeká") === "Zrušeno")
+            return false;
+
+        const start = new Date(
+            `${reservation.date}T${reservation.time}`
+        );
+
+        const end = new Date(start);
+
+        end.setHours(end.getHours() + 2);
+
+        return now >= start && now <= end;
+    });
+}
 function renderFloorMap() {
     const floorMap = document.getElementById("floorMap");
 
@@ -1153,7 +1175,7 @@ function renderFloorMap() {
         .map(table => `
             <div
                 <div
-    class="table free"
+   class="table ${isTableOccupied(table.id) ? "occupied" : "free"}"
     data-table-id="${table.id}"
     title="${table.name || `Stůl ${table.id}`}"
     onclick="openTable(${table.id})"
