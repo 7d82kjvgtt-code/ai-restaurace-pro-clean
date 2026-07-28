@@ -1318,51 +1318,80 @@ function renderFloorMap() {
 let selectedTableId = null;
 let selectedTableReservationId = null;
 function openTable(tableId) {
-    const table = restaurantTables.find(t => t.id === tableId);
-  selectedTableReservationId = reservation
-    ? Number(reservation.id)
-    : null;
+    const table = restaurantTables.find(
+        t => Number(t.id) === Number(tableId)
+    );
 
-const primaryButton =
-    document.getElementById("tableModalPrimaryButton");
-
-if (reservation) {
-    primaryButton.textContent = "✏️ Upravit rezervaci";
-} else {
-    primaryButton.textContent = "+ Nová rezervace";
-}
-selectedTableId = tableId;
-  
     if (!table) return;
-const reservation = reservations.find(r =>
-    Number(r.table_id) === Number(tableId) &&
-    r.status !== "Zrušeno"
-);
-    document.getElementById("tableModalTitle").textContent = table.name;
-document.getElementById("tableModalCapacity").textContent = table.capacity;
-  
-const tableStatus = getTableStatus(table.id);
-document.getElementById("tableModalStatus").textContent =
-    !table.active
-        ? "Neaktivní"
-        : tableStatus === "occupied"
-            ? "Obsazený"
-            : tableStatus === "busy"
-                ? "Brzy obsazený"
-                : "Volný";
-  if (reservation) {
-    document.getElementById("tableModalCapacity").innerHTML =
-        `👤 ${reservation.name}<br>
-         👥 ${reservation.people} osoby<br>
-         🕒 ${reservation.time}<br>
-         📞 ${reservation.phone || "-"}`;
+
+    selectedTableId = tableId;
+
+    const tableStatus = getTableStatus(tableId);
+
+    const reservation = reservations.find(r => {
+        if (Number(r.table_id) !== Number(tableId)) {
+            return false;
+        }
+
+        if ((r.status || "Čeká") === "Zrušeno") {
+            return false;
+        }
+
+        const start = new Date(`${r.date}T${r.time}`);
+        const end = new Date(start);
+        end.setHours(end.getHours() + 2);
+
+        const now = new Date();
+        const minutesUntilStart =
+            (start.getTime() - now.getTime()) / 60000;
+
+        return (
+            (now >= start && now <= end) ||
+            (minutesUntilStart > 0 && minutesUntilStart <= 30)
+        );
+    });
+
+    selectedTableReservationId = reservation
+        ? Number(reservation.id)
+        : null;
+
+    const primaryButton =
+        document.getElementById("tableModalPrimaryButton");
+
+    primaryButton.textContent = reservation
+        ? "✏️ Upravit rezervaci"
+        : "+ Nová rezervace";
+
+    document.getElementById("tableModalTitle").textContent =
+        table.name;
+
+    document.getElementById("tableModalCapacity").textContent =
+        table.capacity;
 
     document.getElementById("tableModalStatus").textContent =
-        reservation.status;
-}
-document.getElementById("tableModal").classList.add("show");
-}
+        !table.active
+            ? "Neaktivní"
+            : tableStatus === "occupied"
+                ? "Obsazený"
+                : tableStatus === "busy"
+                    ? "Brzy obsazený"
+                    : "Volný";
 
+    if (reservation) {
+        document.getElementById("tableModalCapacity").innerHTML =
+            `👤 ${reservation.name || "-"}<br>
+             👥 ${reservation.people || "-"} osoby<br>
+             🕒 ${reservation.time || "-"}<br>
+             📞 ${reservation.phone || "-"}`;
+
+        document.getElementById("tableModalStatus").textContent =
+            reservation.status || "Čeká";
+    }
+
+    document
+        .getElementById("tableModal")
+        .classList.add("show");
+}
 function closeTableModal() {
     document
         .getElementById("tableModal")
