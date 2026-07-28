@@ -1323,7 +1323,10 @@ function openTable(tableId) {
 selectedTableId = tableId;
   
     if (!table) return;
-
+const reservation = reservations.find(r =>
+    Number(r.table_id) === Number(tableId) &&
+    r.status !== "Zrušeno"
+);
     document.getElementById("tableModalTitle").textContent = table.name;
 document.getElementById("tableModalCapacity").textContent = table.capacity;
   
@@ -1336,7 +1339,16 @@ document.getElementById("tableModalStatus").textContent =
             : tableStatus === "busy"
                 ? "Brzy obsazený"
                 : "Volný";
-  
+  if (reservation) {
+    document.getElementById("tableModalCapacity").innerHTML =
+        `👤 ${reservation.name}<br>
+         👥 ${reservation.people} osoby<br>
+         🕒 ${reservation.time}<br>
+         📞 ${reservation.phone || "-"}`;
+
+    document.getElementById("tableModalStatus").textContent =
+        reservation.status;
+}
 document.getElementById("tableModal").classList.add("show");
 }
 
