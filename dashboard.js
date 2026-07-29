@@ -2740,3 +2740,57 @@ function getCalendarStatusLabel(status) {
 
     return "Čeká";
 }
+function showDashboardSection(sectionId) {
+    const sectionIds = [
+        "prehled",
+        "grafy",
+        "rezervace",
+        "novaRezervace",
+        "kalendar",
+        "stoly",
+        "mapa",
+        "menu"
+    ];
+
+    sectionIds.forEach(id => {
+        const section = document.getElementById(id);
+
+        if (!section) return;
+
+        if (sectionId === "rezervace" && id === "novaRezervace") {
+            section.style.display = "none";
+            return;
+        }
+
+        section.style.display =
+            id === sectionId ? "" : "none";
+    });
+
+    document
+        .querySelectorAll(".sidebar nav a")
+        .forEach(link => {
+            link.classList.toggle(
+                "active",
+                link.dataset.section === sectionId
+            );
+        });
+
+    history.replaceState(null, "", `#${sectionId}`);
+}
+
+document
+    .querySelectorAll(".sidebar nav a[data-section]")
+    .forEach(link => {
+        link.addEventListener("click", event => {
+            event.preventDefault();
+
+            const sectionId = link.dataset.section;
+
+            showDashboardSection(sectionId);
+        });
+    });
+
+const initialDashboardSection =
+    window.location.hash.replace("#", "") || "prehled";
+
+showDashboardSection(initialDashboardSection);
