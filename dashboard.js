@@ -430,10 +430,11 @@ async function loadReservations() {
     reservations =
       Array.isArray(data) ? data : [];
 
-    updateStatistics();
-    renderReservations(reservations);
-    renderCharts();
-    renderFloorMap();
+   updateStatistics();
+renderReservations(reservations);
+renderCalendar();
+renderCharts();
+renderFloorMap();
   } catch (error) {
     console.error(error);
 
@@ -2606,3 +2607,75 @@ async function deleteFood(id) {
     );
   }
 }
+function renderCalendar() {
+
+    const container =
+        document.getElementById("calendarReservations");
+
+    if (!container) return;
+
+    const selectedDate =
+        document.getElementById("calendarDate")?.value
+        || getLocalDateString();
+
+    const todayReservations =
+        reservations.filter(r => r.date === selectedDate);
+
+    if (todayReservations.length === 0) {
+
+        container.innerHTML = `
+            <p class="emptyCalendar">
+                Pro tento den nejsou žádné rezervace.
+            </p>
+        `;
+
+        return;
+    }
+
+    container.innerHTML =
+        todayReservations
+        .sort((a,b)=>a.time.localeCompare(b.time))
+        .map(r=>`
+
+        <div class="calendar-reservation"
+             onclick="editReservation('${r.id}')">
+
+            <div class="calendar-time">
+                ${r.time}
+            </div>
+
+            <div class="calendar-info">
+
+                <h3>${r.name}</h3>
+
+                <p>
+
+                    👥 ${r.people} osob
+
+                    ${r.table_name ? " • 🪑 "+r.table_name : ""}
+
+                </p>
+
+            </div>
+
+            <div class="calendar-status ${r.status}">
+                ${r.status}
+            </div>
+
+        </div>
+
+        `).join("");
+
+}
+
+const calendarDateInput =
+    document.getElementById("calendarDate");
+
+if (calendarDateInput && !calendarDateInput.value) {
+    calendarDateInput.value = getLocalDateString();
+}
+
+calendarDateInput?.addEventListener(
+    "change",
+    renderCalendar
+);
