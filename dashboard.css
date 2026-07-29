@@ -1009,3 +1009,24 @@ tbody tr:hover {
         width: 100%;
     }
 }
+.calendar-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.calendar-controls .neutralButton {
+    min-height: 44px;
+}
+
+@media (max-width: 700px) {
+    .calendar-controls {
+        width: 100%;
+    }
+
+    .calendar-controls .neutralButton,
+    .calendar-controls #calendarDate {
+        width: 100%;
+    }
+}
