@@ -286,10 +286,28 @@
             <h2>🗓️ Denní přehled</h2>
         </div>
 
-        <input
-            type="date"
-            id="calendarDate"
-        >
+       <div class="calendar-controls">
+    <button
+        type="button"
+        class="neutralButton"
+        onclick="changeCalendarDay(-1)"
+    >
+        ← Předchozí den
+    </button>
+
+    <input
+        type="date"
+        id="calendarDate"
+    >
+
+    <button
+        type="button"
+        class="neutralButton"
+        onclick="changeCalendarDay(1)"
+    >
+        Další den →
+    </button>
+</div>
     </div>
 
     <div id="calendarReservations" class="calendar-list">
