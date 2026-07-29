@@ -2658,9 +2658,9 @@ function renderCalendar() {
 
             </div>
 
-            <div class="calendar-status ${r.status}">
-                ${r.status}
-            </div>
+            <div class="calendar-status ${getCalendarStatusClass(r.status)}">
+    ${getCalendarStatusLabel(r.status)}
+</div>
 
         </div>
 
@@ -2679,3 +2679,64 @@ calendarDateInput?.addEventListener(
     "change",
     renderCalendar
 );
+function changeCalendarDay(days) {
+    const input = document.getElementById("calendarDate");
+
+    if (!input) return;
+
+    const currentValue =
+        input.value || getLocalDateString();
+
+    const date = new Date(`${currentValue}T12:00:00`);
+
+    date.setDate(date.getDate() + days);
+
+    input.value = date.toISOString().split("T")[0];
+
+    renderCalendar();
+}
+function getCalendarStatusClass(status) {
+    const normalizedStatus =
+        String(status || "").toLowerCase();
+
+    if (
+        normalizedStatus === "potvrzeno" ||
+        normalizedStatus === "confirmed"
+    ) {
+        return "confirmed";
+    }
+
+    if (
+        normalizedStatus === "zrušeno" ||
+        normalizedStatus === "zruseno" ||
+        normalizedStatus === "cancelled" ||
+        normalizedStatus === "canceled"
+    ) {
+        return "cancelled";
+    }
+
+    return "pending";
+}
+
+function getCalendarStatusLabel(status) {
+    const normalizedStatus =
+        String(status || "").toLowerCase();
+
+    if (
+        normalizedStatus === "potvrzeno" ||
+        normalizedStatus === "confirmed"
+    ) {
+        return "Potvrzeno";
+    }
+
+    if (
+        normalizedStatus === "zrušeno" ||
+        normalizedStatus === "zruseno" ||
+        normalizedStatus === "cancelled" ||
+        normalizedStatus === "canceled"
+    ) {
+        return "Zrušeno";
+    }
+
+    return "Čeká";
+}
