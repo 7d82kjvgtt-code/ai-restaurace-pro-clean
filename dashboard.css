@@ -272,6 +272,26 @@ th,
 }
 
 .panel-top {
+  #kalendar {
+    width: 100%;
+}
+
+#kalendar .panel {
+    width: 100%;
+    max-width: none;
+}
+
+#kalendar .section-heading {
+    width: 100%;
+}
+
+#kalendar .calendar-container {
+    width: 100%;
+}
+
+#kalendar .calendar-list {
+    width: 100%;
+}
   display: flex;
   justify-content: space-between;
   gap: 18px;
