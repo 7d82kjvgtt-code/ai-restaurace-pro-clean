@@ -893,3 +893,119 @@ tbody tr:hover {
     background: rgba(255, 255, 255, 0.1);
     color: white;
 }
+/* =========================
+   KALENDÁŘ REZERVACÍ
+========================= */
+
+#kalendar {
+    scroll-margin-top: 24px;
+}
+
+#calendarDate {
+    min-width: 180px;
+    padding: 12px 14px;
+    border: 1px solid #dfe3ea;
+    border-radius: 12px;
+    background: #ffffff;
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    transition: 0.2s ease;
+}
+
+#calendarDate:focus {
+    border-color: #111827;
+    box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
+}
+
+.calendar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.calendar-reservation {
+    display: grid;
+    grid-template-columns: 95px 1fr auto;
+    align-items: center;
+    gap: 18px;
+    padding: 16px 18px;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.calendar-reservation:hover {
+    transform: translateY(-2px);
+    border-color: #cbd5e1;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.calendar-time {
+    font-size: 20px;
+    font-weight: 800;
+    color: #111827;
+}
+
+.calendar-info h3 {
+    margin: 0 0 5px;
+    font-size: 17px;
+    color: #111827;
+}
+
+.calendar-info p {
+    margin: 0;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.calendar-status {
+    padding: 8px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.calendar-status.pending {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.calendar-status.confirmed {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.calendar-status.cancelled {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.emptyCalendar {
+    margin: 0;
+    padding: 28px;
+    border: 1px dashed #d1d5db;
+    border-radius: 16px;
+    text-align: center;
+    color: #6b7280;
+    background: #f9fafb;
+}
+
+@media (max-width: 700px) {
+    .calendar-reservation {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .calendar-status {
+        width: fit-content;
+    }
+
+    #calendarDate {
+        width: 100%;
+    }
+}
