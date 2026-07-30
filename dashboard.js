@@ -1333,7 +1333,7 @@ function renderFloorMap() {
                 </span>
 
                 <span class="table-map-capacity">
-                    👥 ${capacity} míst
+                    👥 ${capacity} 
                 </span>
 
                 <span class="table-map-status">
