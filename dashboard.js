@@ -265,7 +265,10 @@ async function authorizedFetch(url, options = {}) {
 
   let response = await fetch(url, {
     ...options,
-    headers: options.headers || getHeaders()
+   headers: {
+    ...getHeaders(),
+    ...(options.headers || {})
+}
   });
 
   if (
@@ -274,7 +277,10 @@ async function authorizedFetch(url, options = {}) {
   ) {
     response = await fetch(url, {
       ...options,
-      headers: options.headers || getHeaders()
+     headers: {
+    ...getHeaders(),
+    ...(options.headers || {})
+}
     });
   }
 
