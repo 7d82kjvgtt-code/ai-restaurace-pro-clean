@@ -1079,3 +1079,39 @@ tbody tr:hover {
     grid-column: 1 / -1;
     box-sizing: border-box;
 }
+.table{
+    flex-direction:column;
+    gap:5px;
+    padding:12px;
+    text-align:center;
+    box-sizing:border-box;
+}
+
+.table-map-name{
+    font-size:16px;
+    font-weight:800;
+}
+
+.table-map-capacity{
+    font-size:12px;
+    font-weight:600;
+    opacity:.9;
+}
+
+.table-map-status{
+    font-size:11px;
+    font-weight:700;
+    opacity:.85;
+}
+
+.table.free{
+    background:#22c55e;
+}
+
+.table.busy{
+    background:#f59e0b;
+}
+
+.table.occupied{
+    background:#ef4444;
+}
