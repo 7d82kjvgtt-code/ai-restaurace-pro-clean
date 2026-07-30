@@ -1119,3 +1119,15 @@ tbody tr:hover {
 .table.occupied{
     background:#ef4444;
 }
+.table.dragging {
+    cursor: grabbing;
+    transform: scale(1.05);
+    z-index: 20;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+.floor-map .table {
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+}
