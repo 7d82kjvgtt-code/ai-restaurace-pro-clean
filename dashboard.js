@@ -2818,3 +2818,93 @@ const initialDashboardSection =
     window.location.hash.replace("#", "") || "prehled";
 
 showDashboardSection(initialDashboardSection);
+let draggedTable = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
+document.addEventListener("mousedown", event => {
+    const tableElement = event.target.closest(".table");
+
+    if (!tableElement) return;
+
+    const floorMap = tableElement.closest(".floor-map");
+
+    if (!floorMap) return;
+
+    draggedTable = tableElement;
+
+    const tableRect = tableElement.getBoundingClientRect();
+
+    dragOffsetX = event.clientX - tableRect.left;
+    dragOffsetY = event.clientY - tableRect.top;
+
+    tableElement.classList.add("dragging");
+
+    event.preventDefault();
+});
+
+document.addEventListener("mousemove", event => {
+    if (!draggedTable) return;
+
+    const floorMap = draggedTable.closest(".floor-map");
+
+    if (!floorMap) return;
+
+    const mapRect = floorMap.getBoundingClientRect();
+
+    let x = event.clientX - mapRect.left - dragOffsetX;
+    let y = event.clientY - mapRect.top - dragOffsetY;
+
+    const maxX = floorMap.clientWidth - draggedTable.offsetWidth;
+    const maxY = floorMap.clientHeight - draggedTable.offsetHeight;
+
+    x = Math.max(0, Math.min(x, maxX));
+    y = Math.max(0, Math.min(y, maxY));
+
+    draggedTable.style.left = `${Math.round(x)}px`;
+    draggedTable.style.top = `${Math.round(y)}px`;
+});
+
+document.addEventListener("mouseup", async () => {
+    if (!draggedTable) return;
+
+    const tableElement = draggedTable;
+    draggedTable = null;
+
+    tableElement.classList.remove("dragging");
+
+    const tableId = tableElement.dataset.tableId;
+    const x = Math.round(parseFloat(tableElement.style.left) || 0);
+    const y = Math.round(parseFloat(tableElement.style.top) || 0);
+
+    try {
+        const response = await authorizedFetch(
+            `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${tableId}&restaurant_id=eq.${currentRestaurantId}`,
+            {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    Prefer: "return=minimal"
+                },
+                body: JSON.stringify({ x, y })
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+
+        const table = restaurantTables.find(
+            item => Number(item.id) === Number(tableId)
+        );
+
+        if (table) {
+            table.x = x;
+            table.y = y;
+        }
+    } catch (error) {
+        console.error("Nepodařilo se uložit pozici stolu:", error);
+        alert("Pozici stolu se nepodařilo uložit.");
+        await loadRestaurantTables();
+    }
+});
