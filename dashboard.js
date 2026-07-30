@@ -1323,10 +1323,11 @@ function renderFloorMap() {
 
         return `
             <div
-                class="table ${statusClass}"
-                data-table-id="${table.id}"
-                title="${table.name || `Stůl ${table.id}`} • ${capacity} míst • ${statusLabel}"
-                onclick="openTable(${table.id})"
+               class="table ${statusClass}"
+               data-table-id="${table.id}"
+               style="left:${table.x}px; top:${table.y}px;"
+               title="${table.name || `Stůl ${table.id}`} • ${capacity} míst • ${statusLabel}"
+              onclick="openTable(${table.id})"
             >
                 <span class="table-map-name">
                     ${table.name || `Stůl ${table.id}`}
