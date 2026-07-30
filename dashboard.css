@@ -794,16 +794,27 @@ tbody tr:hover {
   }
 }
 .floor-map{
+    width:100%;
+    min-height:650px;
+
     display:grid;
-    grid-template-columns:repeat(4,80px);
-    gap:20px;
-    justify-content:center;
-    padding:25px;
+    grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+
+    gap:40px;
+
+    padding:40px;
+
+    align-content:start;
+    justify-items:center;
+
+    background:#0f172a;
+    border-radius:18px;
+    border:1px solid rgba(255,255,255,.06);
 }
 
 .table{
-    width:80px;
-    height:80px;
+    width:120px;
+    height:120px;
     border-radius:50%;
     display:flex;
     align-items:center;
