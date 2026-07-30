@@ -794,6 +794,8 @@ tbody tr:hover {
   }
 }
 .floor-map{
+  position: relative;
+  
     width:100%;
     min-height:650px;
 
@@ -813,6 +815,8 @@ tbody tr:hover {
 }
 
 .table{
+  position:absolute;
+  
     width:120px;
     height:120px;
     border-radius:50%;
