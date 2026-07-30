@@ -1307,19 +1307,42 @@ function renderFloorMap() {
         return;
     }
 
-    floorMap.innerHTML = activeTables
-        .map(table => `
+   floorMap.innerHTML = activeTables
+    .map(table => {
+        const statusClass = getTableStatus(table.id);
+
+        const statusLabel =
+            statusClass === "occupied"
+                ? "Obsazený"
+                : statusClass === "busy"
+                    ? "Rezervace brzy"
+                    : "Volný";
+
+        const capacity =
+            table.capacity || table.seats || 0;
+
+        return `
             <div
-                <div
-  class="table ${getTableStatus(table.id)}"
-    data-table-id="${table.id}"
-    title="${table.name || `Stůl ${table.id}`}"
-    onclick="openTable(${table.id})"
->
-                ${table.name || table.id}
+                class="table ${statusClass}"
+                data-table-id="${table.id}"
+                title="${table.name || `Stůl ${table.id}`} • ${capacity} míst • ${statusLabel}"
+                onclick="openTable(${table.id})"
+            >
+                <span class="table-map-name">
+                    ${table.name || `Stůl ${table.id}`}
+                </span>
+
+                <span class="table-map-capacity">
+                    👥 ${capacity} míst
+                </span>
+
+                <span class="table-map-status">
+                    ${statusLabel}
+                </span>
             </div>
-        `)
-        .join("");
+        `;
+    })
+    .join("");
 }
 let selectedTableId = null;
 let selectedTableReservationId = null;
