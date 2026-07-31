@@ -326,6 +326,56 @@
         <div id="floorMap" class="floor-map"></div>
     </div>
 </section>
+    <div id="quickTableModal" class="modal" style="display:none;">
+    <div class="modal-content quick-table-modal">
+        <button
+            type="button"
+            class="modal-close"
+            onclick="closeQuickTableModal()"
+        >
+            ×
+        </button>
+
+        <span class="eyebrow">Nový stůl</span>
+        <h2>Přidat stůl na mapu</h2>
+
+        <div class="form-grid">
+            <input
+                id="quickTableName"
+                type="text"
+                maxlength="50"
+                placeholder="Název, například Stůl 5"
+            >
+
+            <input
+                id="quickTableCapacity"
+                type="number"
+                min="1"
+                max="50"
+                value="2"
+                placeholder="Počet míst"
+            >
+        </div>
+
+        <div class="modal-actions">
+            <button
+                type="button"
+                class="secondary-button"
+                onclick="closeQuickTableModal()"
+            >
+                Zrušit
+            </button>
+
+            <button
+                type="button"
+                class="primary-button"
+                onclick="createTableFromMap()"
+            >
+                Přidat stůl
+            </button>
+        </div>
+    </div>
+</div>
     <section class="tables-grid" id="stoly">
 
       <article class="panel table-form-panel">
