@@ -2914,3 +2914,41 @@ document.addEventListener("mouseup", async () => {
         await loadRestaurantTables();
     }
 });
+let floorMapZoom = 1;
+
+function updateFloorMapZoom() {
+    const floorMap = document.getElementById("floorMap");
+    const zoomValue = document.getElementById("zoomValue");
+
+    if (!floorMap || !zoomValue) return;
+
+    floorMap.style.transform = `scale(${floorMapZoom})`;
+    zoomValue.textContent = `${Math.round(floorMapZoom * 100)}%`;
+}
+
+function zoomIn() {
+    if (floorMapZoom >= 1.8) return;
+
+    floorMapZoom += 0.1;
+    floorMapZoom = Math.round(floorMapZoom * 10) / 10;
+
+    updateFloorMapZoom();
+}
+
+function zoomOut() {
+    if (floorMapZoom <= 0.5) return;
+
+    floorMapZoom -= 0.1;
+    floorMapZoom = Math.round(floorMapZoom * 10) / 10;
+
+    updateFloorMapZoom();
+}
+
+function resetZoom() {
+    floorMapZoom = 1;
+    updateFloorMapZoom();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    updateFloorMapZoom();
+});
