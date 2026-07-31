@@ -1131,3 +1131,72 @@ tbody tr:hover {
     user-select: none;
     touch-action: none;
 }
+/* Ovládání mapy stolů */
+
+.map-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    width: 100%;
+}
+
+.map-toolbar h2 {
+    margin: 0;
+}
+
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.zoom-controls button {
+    min-width: 42px;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    color: white;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.zoom-controls button:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+}
+
+#zoomValue {
+    min-width: 58px;
+    text-align: center;
+    font-weight: 700;
+    color: white;
+}
+
+#floorMapWrapper {
+    width: 100%;
+    overflow: auto;
+    margin-top: 20px;
+    border-radius: 18px;
+}
+
+#floorMap {
+    transform-origin: top left;
+    transition: transform 0.2s ease;
+}
+
+@media (max-width: 700px) {
+    .map-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .zoom-controls {
+        width: 100%;
+    }
+}
