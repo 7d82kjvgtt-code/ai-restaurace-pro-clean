@@ -303,13 +303,28 @@
     </div>
 
 </section>
-    <section id="mapa" class="panel" style="display:none;">
+   <section id="mapa" class="panel" style="display:none;">
     <div class="section-heading">
         <span class="eyebrow">Mapa restaurace</span>
-        <h2>🪑 Mapa stolů</h2>
+
+        <div class="map-toolbar">
+            <h2>🍽 Mapa stolů</h2>
+
+            <div class="zoom-controls">
+                <button onclick="zoomOut()">−</button>
+
+                <span id="zoomValue">100%</span>
+
+                <button onclick="zoomIn()">+</button>
+
+                <button onclick="resetZoom()">Reset</button>
+            </div>
+        </div>
     </div>
 
-    <div id="floorMap" class="floor-map"></div>
+    <div id="floorMapWrapper">
+        <div id="floorMap" class="floor-map"></div>
+    </div>
 </section>
     <section class="tables-grid" id="stoly">
 
