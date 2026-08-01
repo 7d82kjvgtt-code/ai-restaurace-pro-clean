@@ -1200,3 +1200,87 @@ tbody tr:hover {
         width: 100%;
     }
 }
+#quickTableModal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+#quickTableModal .quick-table-modal {
+  position: relative;
+
+  width: min(420px, 100%);
+  padding: 26px;
+
+  color: #ffffff;
+  background: linear-gradient(
+    145deg,
+    #1e293b,
+    #111827
+  );
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
+}
+
+#quickTableModal .quick-table-modal h2 {
+  margin: 6px 0 20px;
+}
+
+#quickTableModal .modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+
+  padding: 0;
+  border-radius: 10px;
+
+  font-size: 20px;
+  line-height: 1;
+
+  background: rgba(255, 255, 255, 0.08);
+}
+
+#quickTableModal .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+#quickTableModal .secondary-button {
+  background: #475569;
+}
+
+#quickTableModal .primary-button {
+  background: var(--primary);
+}
+
+@media (max-width: 520px) {
+  #quickTableModal .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #quickTableModal .modal-actions {
+    flex-direction: column;
+  }
+
+  #quickTableModal .modal-actions button {
+    width: 100%;
+  }
+}
