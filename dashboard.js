@@ -1336,7 +1336,7 @@ function renderFloorMap() {
                data-table-id="${table.id}"
                style="left:${table.x}px; top:${table.y}px;"
                title="${table.name || `Stůl ${table.id}`} • ${capacity} míst • ${statusLabel}"
-              onclick="openTable(${table.id})"
+              onclick="handleTableClick(event, ${table.id})"
             >
                 <span class="table-map-name">
                     ${table.name || `Stůl ${table.id}`}
@@ -1356,6 +1356,15 @@ function renderFloorMap() {
 }
 let selectedTableId = null;
 let selectedTableReservationId = null;
+function handleTableClick(event, tableId) {
+  const tableElement = event.currentTarget;
+
+  if (tableElement.dataset.skipOpen === "true") {
+    return;
+  }
+
+  openTable(tableId);
+}
 function openTable(tableId) {
     const table = restaurantTables.find(
         t => Number(t.id) === Number(tableId)
