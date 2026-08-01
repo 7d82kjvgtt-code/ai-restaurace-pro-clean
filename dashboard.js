@@ -2955,3 +2955,46 @@ function resetZoom() {
 document.addEventListener("DOMContentLoaded", () => {
     updateFloorMapZoom();
 });
+document.addEventListener("click", event => {
+  const floorMap = document.getElementById("floorMap");
+
+  if (!floorMap) return;
+
+  const clickedInsideMap = event.target.closest("#floorMap");
+
+  if (!clickedInsideMap) return;
+
+  const clickedTable = event.target.closest(".table");
+
+  if (clickedTable) return;
+
+  const mapRect = floorMap.getBoundingClientRect();
+
+  pendingTableX =
+    (event.clientX - mapRect.left) / floorMapZoom;
+
+  pendingTableY =
+    (event.clientY - mapRect.top) / floorMapZoom;
+
+  const modal =
+    document.getElementById("quickTableModal");
+
+  const nameInput =
+    document.getElementById("quickTableName");
+
+  const capacityInput =
+    document.getElementById("quickTableCapacity");
+
+  if (!modal || !nameInput || !capacityInput) {
+    return;
+  }
+
+  nameInput.value = "";
+  capacityInput.value = "2";
+
+  modal.style.display = "flex";
+
+  setTimeout(() => {
+    nameInput.focus();
+  }, 50);
+});
