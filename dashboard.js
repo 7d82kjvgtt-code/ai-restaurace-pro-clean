@@ -2830,7 +2830,7 @@ showDashboardSection(initialDashboardSection);
 let draggedTable = null;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
-
+let tableWasDragged = false;
 document.addEventListener("mousedown", event => {
     const tableElement = event.target.closest(".table");
 
@@ -2841,7 +2841,7 @@ document.addEventListener("mousedown", event => {
     if (!floorMap) return;
 
     draggedTable = tableElement;
-
+    tableWasDragged = false;
     const tableRect = tableElement.getBoundingClientRect();
 
     dragOffsetX = event.clientX - tableRect.left;
@@ -2869,7 +2869,8 @@ document.addEventListener("mousemove", event => {
 
     x = Math.max(0, Math.min(x, maxX));
     y = Math.max(0, Math.min(y, maxY));
-
+    tableWasDragged = true;
+  
     draggedTable.style.left = `${Math.round(x)}px`;
     draggedTable.style.top = `${Math.round(y)}px`;
 });
@@ -2879,7 +2880,14 @@ document.addEventListener("mouseup", async () => {
 
     const tableElement = draggedTable;
     draggedTable = null;
+  
+if (tableWasDragged) {
+  tableElement.dataset.skipOpen = "true";
 
+  setTimeout(() => {
+    delete tableElement.dataset.skipOpen;
+  }, 100);
+}
     tableElement.classList.remove("dragging");
 
     const tableId = tableElement.dataset.tableId;
