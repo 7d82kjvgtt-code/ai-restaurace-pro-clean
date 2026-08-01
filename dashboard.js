@@ -12,6 +12,9 @@ let editingFoodId = null;
 let editingImageUrl = "";
 let editingTableId = null;
 
+let pendingTableX = null;
+let pendingTableY = null;
+
 let reservationChart = null;
 let statusChart = null;
 
