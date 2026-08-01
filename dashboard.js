@@ -2998,3 +2998,28 @@ document.addEventListener("click", event => {
     nameInput.focus();
   }, 50);
 });
+function closeQuickTableModal() {
+  const modal =
+    document.getElementById("quickTableModal");
+
+  const nameInput =
+    document.getElementById("quickTableName");
+
+  const capacityInput =
+    document.getElementById("quickTableCapacity");
+
+  if (modal) {
+    modal.style.display = "none";
+  }
+
+  if (nameInput) {
+    nameInput.value = "";
+  }
+
+  if (capacityInput) {
+    capacityInput.value = "2";
+  }
+
+  pendingTableX = null;
+  pendingTableY = null;
+}
