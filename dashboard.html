@@ -592,6 +592,12 @@
 >
     + Nová rezervace
 </button>
+          <button
+    class="danger-btn"
+    onclick="deleteCurrentTable()"
+>
+    🗑️ Smazat stůl
+</button>
             <button class="secondary-btn" onclick="closeTableModal()">Zavřít</button>
         </div>
     </div>
@@ -688,3 +694,11 @@
 
 </body>
 </html>
+.danger-btn {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.danger-btn:hover {
+  background: #ef4444;
+}
