@@ -3042,19 +3042,21 @@ async function createTableFromMap() {
 
   const capacityInput =
     document.getElementById("quickTableCapacity");
-
+  
+const roomInput =
+  document.getElementById("quickTableRoom");
   const addButton =
     document.querySelector(
       "#quickTableModal .primary-button"
     );
 
-  if (!nameInput || !capacityInput) {
-    return;
-  }
+  if (!nameInput || !capacityInput || !roomInput) {
+  return;
+}
 
   const name = nameInput.value.trim();
   const capacity = Number(capacityInput.value);
-
+  const room = roomInput.value;
   if (name.length < 2) {
     alert("Zadej název stolu.");
     nameInput.focus();
@@ -3123,6 +3125,7 @@ async function createTableFromMap() {
           restaurant_id: currentRestaurantId,
           name,
           capacity,
+          room,
           note: "",
           active: true,
           x,
