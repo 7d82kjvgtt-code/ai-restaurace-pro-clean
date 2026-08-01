@@ -1357,12 +1357,9 @@ function renderFloorMap() {
 let selectedTableId = null;
 let selectedTableReservationId = null;
 function handleTableClick(event, tableId) {
-  const tableElement = event.currentTarget;
-
-  if (tableElement.dataset.skipOpen === "true") {
+  if (tableWasDragged) {
     return;
-  }
-
+}
   openTable(tableId);
 }
 function openTable(tableId) {
@@ -2891,11 +2888,9 @@ document.addEventListener("mouseup", async () => {
     draggedTable = null;
   
 if (tableWasDragged) {
-  tableElement.dataset.skipOpen = "true";
-
   setTimeout(() => {
-    delete tableElement.dataset.skipOpen;
-  }, 100);
+    tableWasDragged = false;
+  }, 0);
 }
     tableElement.classList.remove("dragging");
 
