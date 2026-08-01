@@ -1284,3 +1284,11 @@ tbody tr:hover {
     width: 100%;
   }
 }
+.danger-btn {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.danger-btn:hover {
+  background: #ef4444;
+}
