@@ -3023,3 +3023,124 @@ function closeQuickTableModal() {
   pendingTableX = null;
   pendingTableY = null;
 }
+
+async function createTableFromMap() {
+  const nameInput =
+    document.getElementById("quickTableName");
+
+  const capacityInput =
+    document.getElementById("quickTableCapacity");
+
+  const addButton =
+    document.querySelector(
+      "#quickTableModal .primary-button"
+    );
+
+  if (!nameInput || !capacityInput) {
+    return;
+  }
+
+  const name = nameInput.value.trim();
+  const capacity = Number(capacityInput.value);
+
+  if (name.length < 2) {
+    alert("Zadej název stolu.");
+    nameInput.focus();
+    return;
+  }
+
+  if (
+    !Number.isInteger(capacity) ||
+    capacity < 1 ||
+    capacity > 30
+  ) {
+    alert("Počet míst musí být od 1 do 30.");
+    capacityInput.focus();
+    return;
+  }
+
+  if (
+    pendingTableX === null ||
+    pendingTableY === null
+  ) {
+    alert("Nejdříve klikni do mapy.");
+    closeQuickTableModal();
+    return;
+  }
+
+  const duplicate = restaurantTables.some(table => {
+    return (
+      String(table.name || "")
+        .trim()
+        .toLowerCase() === name.toLowerCase()
+    );
+  });
+
+  if (duplicate) {
+    alert("Stůl s tímto názvem už existuje.");
+    nameInput.focus();
+    return;
+  }
+
+  const x = Math.max(
+    0,
+    Math.round(pendingTableX - 45)
+  );
+
+  const y = Math.max(
+    0,
+    Math.round(pendingTableY - 45)
+  );
+
+  try {
+    if (addButton) {
+      addButton.disabled = true;
+      addButton.textContent = "Ukládám...";
+    }
+
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/restaurant_tables`,
+      {
+        method: "POST",
+
+        headers: getHeaders({
+          Prefer: "return=minimal"
+        }),
+
+        body: JSON.stringify({
+          restaurant_id: currentRestaurantId,
+          name,
+          capacity,
+          note: "",
+          active: true,
+          x,
+          y
+        })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    closeQuickTableModal();
+
+    await loadTables();
+
+    renderReservations(
+      getFilteredReservations()
+    );
+  } catch (error) {
+    console.error(
+      "Nepodařilo se vytvořit stůl:",
+      error
+    );
+
+    alert("Stůl se nepodařilo přidat.");
+  } finally {
+    if (addButton) {
+      addButton.disabled = false;
+      addButton.textContent = "Přidat stůl";
+    }
+  }
+}
