@@ -1533,9 +1533,8 @@ function renderFloorMap() {
         item.capacity || item.seats || 0;
 
       const clickAction = item.isGroup
-        ? ""
-        : `onclick="handleTableClick(event, ${item.id})"`;
-
+  ? `onclick="openTableGroup(${item.id})"`
+  : `onclick="handleTableClick(event, ${item.id})"`;
       const groupClass = item.isGroup
         ? " table-group"
         : "";
@@ -1614,6 +1613,75 @@ function handleTableClick(event, tableId) {
   return;
 }
   openTable(tableId);
+}
+function openTableGroup(groupId) {
+  const group = tableGroups.find(
+    (item) => Number(item.id) === Number(groupId)
+  );
+
+  if (!group) return;
+
+  const primaryButton = document.getElementById(
+    "tableModalPrimaryButton"
+  );
+
+  const deleteButton = document.getElementById(
+    "deleteTableButton"
+  );
+
+  document.getElementById("tableModalTitle").textContent =
+    group.name || "Spojené stoly";
+
+  document.getElementById("tableModalCapacity").textContent =
+    group.total_capacity || 0;
+
+  document.getElementById("tableModalStatus").textContent =
+    "Spojená skupina stolů";
+
+  if (primaryButton) {
+    primaryButton.textContent = "Rozpojit stoly";
+    primaryButton.onclick = () => unmergeTableGroup(group.id);
+  }
+
+  if (deleteButton) {
+    deleteButton.style.display = "none";
+  }
+
+  document
+    .getElementById("tableModal")
+    .classList.add("show");
+}
+
+  async function unmergeTableGroup(groupId) {
+  const confirmed = confirm(
+    "Opravdu chcete tyto stoly rozpojit?"
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/table_groups?id=eq.${groupId}&restaurant_id=eq.${currentRestaurantId}`,
+      {
+        method: "DELETE",
+        headers: getHeaders({
+          Prefer: "return=minimal"
+        })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    closeTableModal();
+    await loadTables();
+
+    alert("Stoly byly úspěšně rozpojeny.");
+  } catch (error) {
+    console.error(error);
+    alert("Stoly se nepodařilo rozpojit.");
+  }
 }
 function openTable(tableId) {
     const table = restaurantTables.find(
