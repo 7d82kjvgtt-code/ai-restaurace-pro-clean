@@ -1326,14 +1326,14 @@ function renderFloorMap() {
   );
 });
 
-    if (activeTables.length === 0) {
-        floorMap.innerHTML = `
-            <div class="emptyState">
-                Zatím nejsou vytvořené žádné aktivní stoly.
-            </div>
-        `;
-        return;
-    }
+   if (activeTables.length === 0) {
+    floorMap.innerHTML = `
+        <div class="emptyState">
+            V místnosti <strong>${selectedRoom}</strong> zatím nejsou žádné stoly.
+        </div>
+    `;
+    return;
+}
 
    floorMap.innerHTML = activeTables
     .map(table => {
