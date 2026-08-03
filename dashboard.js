@@ -115,7 +115,7 @@ function toggleMergeMode() {
       info.textContent = "Vybráno: 0 stolů";
     }
 
-    renderFloorMap();
+   await loadTables();
   } catch (error) {
     console.error(error);
     alert("Spojení stolů se nepodařilo uložit.");
