@@ -22,7 +22,19 @@ let statusChart = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
   setupNavigation();
+document.querySelectorAll(".room-switch").forEach((button) => {
+    button.addEventListener("click", () => {
+        selectedRoom = button.dataset.room;
 
+        document
+            .querySelectorAll(".room-switch")
+            .forEach((b) => b.classList.remove("active"));
+
+        button.classList.add("active");
+
+        renderFloorMap();
+    });
+});
   document
     .getElementById("search")
     ?.addEventListener("input", applyFilters);
