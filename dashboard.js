@@ -35,30 +35,7 @@ document.querySelectorAll(".room-switch").forEach((button) => {
         renderFloorMap();
     });
 });
-  document
-    .getElementById("search")
-    ?.addEventListener("input", applyFilters);
-
-  document
-    .getElementById("statusFilter")
-    ?.addEventListener("change", applyFilters);
-
-  if (await ensureValidSession()) {
-  const restaurantLoaded = await loadRestaurantContext();
-
-  if (restaurantLoaded) {
-    hideLogin();
-    await loadDashboardData();
-  } else {
-    clearSession();
-    showLogin();
-    alert("Účet není přiřazený k žádné restauraci.");
-  }
-} else {
-  showLogin();
-}
-});
-const mergeModeButton =
+  const mergeModeButton =
   document.getElementById("mergeModeButton");
 
 const confirmMergeButton =
@@ -92,6 +69,30 @@ if (mergeModeButton) {
     renderFloorMap();
   });
 }
+  document
+    .getElementById("search")
+    ?.addEventListener("input", applyFilters);
+
+  document
+    .getElementById("statusFilter")
+    ?.addEventListener("change", applyFilters);
+
+  if (await ensureValidSession()) {
+  const restaurantLoaded = await loadRestaurantContext();
+
+  if (restaurantLoaded) {
+    hideLogin();
+    await loadDashboardData();
+  } else {
+    clearSession();
+    showLogin();
+    alert("Účet není přiřazený k žádné restauraci.");
+  }
+} else {
+  showLogin();
+}
+});
+
 async function loadDashboardData() {
   await Promise.all([
     loadTables(),
