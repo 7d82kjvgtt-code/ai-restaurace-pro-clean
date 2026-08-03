@@ -1343,3 +1343,8 @@ tbody tr:hover {
 .danger-btn:hover {
   background: #ef4444;
 }
+.table.merge-selected {
+  outline: 4px solid #ff5a1f;
+  outline-offset: 4px;
+  box-shadow: 0 0 24px rgba(255, 90, 31, 0.8);
+}
