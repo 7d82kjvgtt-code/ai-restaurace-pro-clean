@@ -58,7 +58,40 @@ document.querySelectorAll(".room-switch").forEach((button) => {
   showLogin();
 }
 });
+const mergeModeButton =
+  document.getElementById("mergeModeButton");
 
+const confirmMergeButton =
+  document.getElementById("confirmMergeButton");
+
+const mergeSelectionInfo =
+  document.getElementById("mergeSelectionInfo");
+
+if (mergeModeButton) {
+  mergeModeButton.addEventListener("click", () => {
+    mergeModeActive = !mergeModeActive;
+    selectedTablesForMerge = [];
+
+    mergeModeButton.classList.toggle(
+      "active",
+      mergeModeActive
+    );
+
+    mergeModeButton.textContent = mergeModeActive
+      ? "✕ Zrušit spojování"
+      : "🔗 Spojit stoly";
+
+    if (confirmMergeButton) {
+      confirmMergeButton.style.display = "none";
+    }
+
+    if (mergeSelectionInfo) {
+      mergeSelectionInfo.textContent = "Vybráno: 0 stolů";
+    }
+
+    renderFloorMap();
+  });
+}
 async function loadDashboardData() {
   await Promise.all([
     loadTables(),
