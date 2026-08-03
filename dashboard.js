@@ -15,6 +15,8 @@ let editingTableId = null;
 let pendingTableX = null;
 let pendingTableY = null;
 
+let selectedRoom = "Hlavní sál";
+
 let reservationChart = null;
 let statusChart = null;
 
@@ -1303,9 +1305,14 @@ function renderFloorMap() {
 
     if (!floorMap) return;
 
-    const activeTables = restaurantTables.filter(
-        table => table.active
-    );
+   const activeTables = restaurantTables.filter(table => {
+  const tableRoom = table.room || "Hlavní sál";
+
+  return (
+    table.active &&
+    tableRoom === selectedRoom
+  );
+});
 
     if (activeTables.length === 0) {
         floorMap.innerHTML = `
