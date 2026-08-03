@@ -17,6 +17,22 @@ let pendingTableY = null;
 
 let selectedRoom = "Hlavní sál";
 
+let mergeModeActive = false;
+let selectedTablesForMerge = [];
+
+function toggleMergeMode() {
+  mergeModeActive = !mergeModeActive;
+
+  const btn = document.getElementById("mergeModeButton");
+
+  if (btn) {
+    btn.textContent = mergeModeActive
+      ? "✕ Zrušit spojování"
+      : "🔗 Spojit stoly";
+  }
+
+  renderFloorMap();
+}
 let reservationChart = null;
 let statusChart = null;
 
@@ -35,40 +51,7 @@ document.querySelectorAll(".room-switch").forEach((button) => {
         renderFloorMap();
     });
 });
-  const mergeModeButton =
-  document.getElementById("mergeModeButton");
-
-const confirmMergeButton =
-  document.getElementById("confirmMergeButton");
-
-const mergeSelectionInfo =
-  document.getElementById("mergeSelectionInfo");
-
-if (mergeModeButton) {
-  mergeModeButton.addEventListener("click", () => {
-    mergeModeActive = !mergeModeActive;
-    selectedTablesForMerge = [];
-
-    mergeModeButton.classList.toggle(
-      "active",
-      mergeModeActive
-    );
-
-    mergeModeButton.textContent = mergeModeActive
-      ? "✕ Zrušit spojování"
-      : "🔗 Spojit stoly";
-
-    if (confirmMergeButton) {
-      confirmMergeButton.style.display = "none";
-    }
-
-    if (mergeSelectionInfo) {
-      mergeSelectionInfo.textContent = "Vybráno: 0 stolů";
-    }
-
-    renderFloorMap();
-  });
-}
+  
   document
     .getElementById("search")
     ?.addEventListener("input", applyFilters);
