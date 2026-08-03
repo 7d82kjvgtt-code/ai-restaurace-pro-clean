@@ -1347,16 +1347,23 @@ async function loadTables() {
     const response = await authorizedFetch(
       `${SUPABASE_URL}/rest/v1/restaurant_tables?restaurant_id=eq.${currentRestaurantId}&select=*&order=name.asc`
     );
-
+const groupsResponse = await authorizedFetch(
+  `${SUPABASE_URL}/rest/v1/table_groups?restaurant_id=eq.${currentRestaurantId}&select=*&order=id.asc`
+);
     const data = await response.json();
-
+const groupsData = await groupsResponse.json();
     if (!response.ok) {
       throw new Error(JSON.stringify(data));
     }
-
+if (!groupsResponse.ok) {
+  throw new Error(JSON.stringify(groupsData));
+}
     restaurantTables =
       Array.isArray(data) ? data : [];
-
+    
+tableGroups =
+  Array.isArray(groupsData) ? groupsData : [];
+    
     document.getElementById(
       "tableCount"
     ).textContent = restaurantTables.filter(
@@ -1369,7 +1376,7 @@ async function loadTables() {
     console.error(error);
 
     restaurantTables = [];
-
+    tableGroups = [];
     document.getElementById(
       "tableCount"
     ).textContent = "–";
