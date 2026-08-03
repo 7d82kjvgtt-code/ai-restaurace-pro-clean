@@ -3216,8 +3216,16 @@ if (tableWasDragged) {
     tableElement.classList.remove("dragging");
 
     const tableId = tableElement.dataset.tableId;
-    const x = Math.round(parseFloat(tableElement.style.left) || 0);
-    const y = Math.round(parseFloat(tableElement.style.top) || 0);
+  
+  if (!tableId) {
+  return;
+}
+    const x = Math.round(
+      parseFloat(tableElement.style.left) || 0
+    );
+    const y = Math.round(
+      parseFloat(tableElement.style.top) || 0
+    );
 
     try {
         const response = await authorizedFetch(
