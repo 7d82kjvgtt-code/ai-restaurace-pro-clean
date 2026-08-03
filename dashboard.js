@@ -33,6 +33,96 @@ function toggleMergeMode() {
 
   renderFloorMap();
 }
+
+async function confirmTableMerge() {
+  async function confirmTableMerge() {
+  if (selectedTablesForMerge.length < 2) {
+    alert("Vyber alespoň 2 stoly.");
+    return;
+  }
+
+  const selectedTables = restaurantTables.filter((table) =>
+    selectedTablesForMerge.includes(Number(table.id))
+  );
+
+  if (selectedTables.length < 2) {
+    alert("Vybrané stoly se nepodařilo najít.");
+    return;
+  }
+
+  const rooms = [...new Set(
+    selectedTables.map((table) => table.room || "Hlavní sál")
+  )];
+
+  if (rooms.length > 1) {
+    alert("Spojit lze pouze stoly ze stejné místnosti.");
+    return;
+  }
+
+  const totalCapacity = selectedTables.reduce(
+    (sum, table) => sum + Number(table.capacity || 0),
+    0
+  );
+
+  const groupName = selectedTables
+    .map((table) => table.name || `Stůl ${table.id}`)
+    .join(" + ");
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/table_groups`,
+      {
+        method: "POST",
+        headers: getHeaders({
+          Prefer: "return=minimal"
+        }),
+        body: JSON.stringify({
+          restaurant_id: currentRestaurantId,
+          room: rooms[0],
+          name: groupName,
+          table_ids: selectedTablesForMerge,
+          total_capacity: totalCapacity
+        })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    alert("Stoly byly úspěšně spojeny.");
+
+    selectedTablesForMerge = [];
+    mergeModeActive = false;
+
+    const mergeButton =
+      document.getElementById("mergeModeButton");
+
+    const confirmButton =
+      document.getElementById("confirmMergeButton");
+
+    const info =
+      document.getElementById("mergeSelectionInfo");
+
+    if (mergeButton) {
+      mergeButton.textContent = "🔗 Spojit stoly";
+    }
+
+    if (confirmButton) {
+      confirmButton.style.display = "none";
+    }
+
+    if (info) {
+      info.textContent = "Vybráno: 0 stolů";
+    }
+
+    renderFloorMap();
+  } catch (error) {
+    console.error(error);
+    alert("Spojení stolů se nepodařilo uložit.");
+  }
+}
+  
 let reservationChart = null;
 let statusChart = null;
 
