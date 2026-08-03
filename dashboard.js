@@ -34,7 +34,6 @@ function toggleMergeMode() {
   renderFloorMap();
 }
 
-async function confirmTableMerge() {
   async function confirmTableMerge() {
   if (selectedTablesForMerge.length < 2) {
     alert("Vyber alespoň 2 stoly.");
