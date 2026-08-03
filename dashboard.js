@@ -1426,63 +1426,145 @@ function getTableStatus(tableId) {
     return "free";
 }
 function renderFloorMap() {
-    const floorMap = document.getElementById("floorMap");
+  const floorMap = document.getElementById("floorMap");
 
-    if (!floorMap) return;
+  if (!floorMap) return;
 
-   const activeTables = restaurantTables.filter(table => {
-  const tableRoom = table.room || "Hlavní sál";
+  const activeTables = restaurantTables.filter((table) => {
+    const tableRoom = table.room || "Hlavní sál";
 
-  return (
-    table.active &&
-    tableRoom === selectedRoom
+    return table.active && tableRoom === selectedRoom;
+  });
+
+  const activeGroups = tableGroups.filter((group) => {
+    const groupRoom = group.room || "Hlavní sál";
+    return groupRoom === selectedRoom;
+  });
+
+  const groupedTableIds = new Set(
+    activeGroups.flatMap((group) =>
+      Array.isArray(group.table_ids)
+        ? group.table_ids.map(Number)
+        : []
+    )
   );
-});
 
-   if (activeTables.length === 0) {
+  const separateTables = activeTables.filter(
+    (table) => !groupedTableIds.has(Number(table.id))
+  );
+
+  const groupTables = activeGroups
+    .map((group) => {
+      const memberIds = Array.isArray(group.table_ids)
+        ? group.table_ids.map(Number)
+        : [];
+
+      const members = activeTables.filter((table) =>
+        memberIds.includes(Number(table.id))
+      );
+
+      if (members.length === 0) return null;
+
+      const x =
+        members.reduce(
+          (sum, table) => sum + Number(table.x || 100),
+          0
+        ) / members.length;
+
+      const y =
+        members.reduce(
+          (sum, table) => sum + Number(table.y || 100),
+          0
+        ) / members.length;
+
+      const statuses = members.map((table) =>
+        getTableStatus(table.id)
+      );
+
+      const statusClass = statuses.includes("occupied")
+        ? "occupied"
+        : statuses.includes("busy")
+          ? "busy"
+          : "free";
+
+      return {
+        id: group.id,
+        name: group.name || "Spojené stoly",
+        capacity: Number(group.total_capacity || 0),
+        x,
+        y,
+        statusClass,
+        isGroup: true
+      };
+    })
+    .filter(Boolean);
+
+  const renderItems = [
+    ...separateTables.map((table) => ({
+      ...table,
+      isGroup: false
+    })),
+    ...groupTables
+  ];
+
+  if (renderItems.length === 0) {
     floorMap.innerHTML = `
-        <div class="emptyState">
-            V místnosti <strong>${selectedRoom}</strong> zatím nejsou žádné stoly.
-        </div>
+      <div class="emptyState">
+        V místnosti <strong>${selectedRoom}</strong> zatím nejsou žádné stoly.
+      </div>
     `;
     return;
-}
+  }
 
-   floorMap.innerHTML = activeTables
-    .map(table => {
-        const statusClass = getTableStatus(table.id);
+  floorMap.innerHTML = renderItems
+    .map((item) => {
+      const statusClass = item.isGroup
+        ? item.statusClass
+        : getTableStatus(item.id);
 
-        const statusLabel =
-            statusClass === "occupied"
-                ? "Obsazený"
-                : statusClass === "busy"
-                    ? "Rezervace brzy"
-                    : "Volný";
+      const statusLabel =
+        statusClass === "occupied"
+          ? "Obsazený"
+          : statusClass === "busy"
+            ? "Rezervace brzy"
+            : "Volný";
 
-        const capacity =
-            table.capacity || table.seats || 0;
+      const capacity =
+        item.capacity || item.seats || 0;
 
-        return `
-            <div
-               class="table ${statusClass}"
-               data-table-id="${table.id}"
-               style="left:${table.x}px; top:${table.y}px;"
-               title="${table.name || `Stůl ${table.id}`} • ${capacity} míst • ${statusLabel}"
-              onclick="handleTableClick(event, ${table.id})"
-            >
-                <span class="table-map-name">
-                    ${table.name || `Stůl ${table.id}`}
-                </span>
+      const clickAction = item.isGroup
+        ? ""
+        : `onclick="handleTableClick(event, ${item.id})"`;
 
-                <span class="table-map-capacity">
-                    👥 ${capacity} 
-                </span>
+      const groupClass = item.isGroup
+        ? " table-group"
+        : "";
 
-                <span class="table-map-status">
-                    ${statusLabel}
-                </span>
-            </div>
-        `;
+      return `
+        <div
+          class="table ${statusClass}${groupClass}"
+          ${
+            item.isGroup
+              ? `data-group-id="${item.id}"`
+              : `data-table-id="${item.id}"`
+          }
+          style="left:${item.x}px; top:${item.y}px;"
+          title="${item.name || `Stůl ${item.id}`} • ${capacity} míst • ${statusLabel}"
+          ${clickAction}
+        >
+          <span class="table-map-name">
+            ${item.name || `Stůl ${item.id}`}
+          </span>
+
+          <span class="table-map-capacity">
+            👥 ${capacity}
+          </span>
+
+          <span class="table-map-status">
+            ${statusLabel}
+          </span>
+        </div>
+      `;
     })
     .join("");
 }
