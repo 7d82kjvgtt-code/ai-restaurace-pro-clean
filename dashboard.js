@@ -1396,6 +1396,45 @@ function handleTableClick(event, tableId) {
   if (tableWasDragged) {
     return;
 }
+  if (mergeModeActive) {
+  const numericTableId = Number(tableId);
+  const tableElement = event.currentTarget;
+
+  const alreadySelected =
+    selectedTablesForMerge.includes(numericTableId);
+
+  if (alreadySelected) {
+    selectedTablesForMerge =
+      selectedTablesForMerge.filter(
+        id => id !== numericTableId
+      );
+
+    tableElement.classList.remove("merge-selected");
+  } else {
+    selectedTablesForMerge.push(numericTableId);
+    tableElement.classList.add("merge-selected");
+  }
+
+  const mergeSelectionInfo =
+    document.getElementById("mergeSelectionInfo");
+
+  const confirmMergeButton =
+    document.getElementById("confirmMergeButton");
+
+  if (mergeSelectionInfo) {
+    mergeSelectionInfo.textContent =
+      `Vybráno: ${selectedTablesForMerge.length} stolů`;
+  }
+
+  if (confirmMergeButton) {
+    confirmMergeButton.style.display =
+      selectedTablesForMerge.length >= 2
+        ? "inline-block"
+        : "none";
+  }
+
+  return;
+}
   openTable(tableId);
 }
 function openTable(tableId) {
