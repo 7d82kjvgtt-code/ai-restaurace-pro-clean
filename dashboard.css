@@ -960,21 +960,6 @@ tbody tr:hover {
     margin-top: 20px;
 }
 
-.calendar-reservation {
-  display: grid;
-  grid-template-columns: 95px 1fr auto;
-  align-items: start;
-  gap: 18px;
-  padding: 6px 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  background: #ffffff;
-  cursor: pointer;
-  transition: 0.2s ease;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
 .calendar-reservation:hover {
     transform: translateY(-2px);
     border-color: #cbd5e1;
@@ -1351,6 +1336,7 @@ tbody tr:hover {
   box-shadow: 0 0 24px rgba(255, 90, 31, 0.8);
 }
 .calendarTimeline {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -1396,13 +1382,18 @@ tbody tr:hover {
 
 .calendar-reservation {
   position: absolute;
-  left: 90px;
-  right: 20px;
-  min-height: 52px;
+  left: 95px;
+  right: 12px;
+  display: grid;
+  grid-template-columns: 95px 1fr auto;
+  align-items: start;
+  gap: 18px;
+  min-height: 30px;
+  overflow: hidden;
   z-index: 5;
   background: linear-gradient(135deg, #ff5a1f, #ff7a18);
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 6px 12px;
   box-sizing: border-box;
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(255, 90, 31, 0.25);
