@@ -1383,3 +1383,25 @@ tbody tr:hover {
 .calendarHour:last-child .calendarLine {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
+#calendarReservations {
+  position: relative;
+}
+
+.calendarTimeline {
+  position: relative;
+  z-index: 1;
+}
+
+.calendar-reservation {
+  position: absolute;
+  left: 90px;
+  right: 20px;
+  min-height: 52px;
+  z-index: 5;
+  background: linear-gradient(135deg, #ff5a1f, #ff7a18);
+  border-radius: 12px;
+  padding: 10px 14px;
+  box-sizing: border-box;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(255, 90, 31, 0.25);
+}
