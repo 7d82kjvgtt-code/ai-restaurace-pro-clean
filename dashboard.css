@@ -1348,3 +1348,38 @@ tbody tr:hover {
   outline-offset: 4px;
   box-shadow: 0 0 24px rgba(255, 90, 31, 0.8);
 }
+.calendarTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  min-height: 780px;
+  padding: 10px 0;
+}
+
+.calendarHour {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  min-height: 60px;
+  align-items: start;
+}
+
+.calendarHour span {
+  padding-top: 6px;
+  padding-right: 14px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.calendarLine {
+  height: 100%;
+  min-height: 60px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+
+.calendarHour:last-child .calendarLine {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
