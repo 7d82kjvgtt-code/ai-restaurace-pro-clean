@@ -2990,9 +2990,15 @@ function renderCalendar() {
   createCalendarTimeline() +
   todayReservations
     .sort((a, b) => a.time.localeCompare(b.time))
-    .map(r => `
+   .map(r => {
+  const [hours, minutes] = (r.time || "10:00").split(":").map(Number);
+  const top = ((hours - 10) * 60) + minutes;
+
+  return `
     
-      <div class="calendar-reservation"
+     <div
+  class="calendar-reservation"
+  style="top: ${top}px;"
            onclick="editReservation('${r.id}')">
 
             <div class="calendar-time">
@@ -3019,8 +3025,9 @@ function renderCalendar() {
 
         </div>
 
-        `)
-     .join("");
+         `;
+})
+.join("");
 
 }
 
