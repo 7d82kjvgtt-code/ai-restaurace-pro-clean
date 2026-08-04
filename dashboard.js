@@ -2967,6 +2967,27 @@ async function deleteFood(id) {
     );
   }
 }
+function createCalendarTimeline() {
+  const hours = [];
+
+  for (let hour = 10; hour <= 22; hour++) {
+    const time = `${String(hour).padStart(2, "0")}:00`;
+
+    hours.push(`
+      <div class="calendarHour">
+        <span>${time}</span>
+        <div class="calendarLine"></div>
+      </div>
+    `);
+  }
+
+  return `
+    <div class="calendarTimeline">
+      ${hours.join("")}
+    </div>
+  `;
+}
+
 function renderCalendar() {
 
     const container =
