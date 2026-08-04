@@ -3014,12 +3014,15 @@ function renderCalendar() {
    .map(r => {
   const [hours, minutes] = (r.time || "10:00").split(":").map(Number);
   const top = ((hours - 10) * 60) + minutes;
+     
+     const durationMinutes = Number(r.duration_minutes || 120);
+const height = Math.max(45, durationMinutes);
 
   return `
     
      <div
   class="calendar-reservation"
-  style="top: ${top}px;"
+ style="top: ${top}px; height: ${height}px;"
            onclick="editReservation('${r.id}')">
 
             <div class="calendar-time">
