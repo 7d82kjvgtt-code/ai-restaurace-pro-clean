@@ -3058,6 +3058,14 @@ const height = Math.max(45, durationMinutes);
          `;
 })
 .join("");
+  
+  const timeline = container.querySelector(".calendarTimeline");
+
+container
+  .querySelectorAll(":scope > .calendar-reservation")
+  .forEach(reservation => {
+    timeline?.appendChild(reservation);
+  });
 
 }
 
