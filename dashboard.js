@@ -2982,23 +2982,18 @@ function renderCalendar() {
         reservations.filter(r => r.date === selectedDate);
 
     if (todayReservations.length === 0) {
+  container.innerHTML = createCalendarTimeline();
+  return;
+}
 
-        container.innerHTML = `
-            <p class="emptyCalendar">
-                Pro tento den nejsou žádné rezervace.
-            </p>
-        `;
-
-        return;
-    }
-
-    container.innerHTML =
-        todayReservations
-        .sort((a,b)=>a.time.localeCompare(b.time))
-        .map(r=>`
-
-        <div class="calendar-reservation"
-             onclick="editReservation('${r.id}')">
+   container.innerHTML =
+  createCalendarTimeline() +
+  todayReservations
+    .sort((a, b) => a.time.localeCompare(b.time))
+    .map(r => `
+    
+      <div class="calendar-reservation"
+           onclick="editReservation('${r.id}')">
 
             <div class="calendar-time">
                 ${r.time}
@@ -3024,7 +3019,8 @@ function renderCalendar() {
 
         </div>
 
-        `).join("");
+        `)
+     .join("");
 
 }
 
