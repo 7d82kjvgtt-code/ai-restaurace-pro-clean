@@ -972,7 +972,11 @@ async function saveReservationChanges() {
 
     const time =
         document.getElementById("editReservationTime").value;
-
+  
+const durationMinutes = Number(
+  document.getElementById("editReservationDuration").value
+);
+  
     const tableValue =
         document.getElementById("editReservationTable").value;
 
@@ -1012,18 +1016,19 @@ async function saveReservationChanges() {
         return;
     }
 
-    const updatedReservation = {
-        id,
-        name,
-        people,
-        date,
-        time,
-        table_id: tableId,
-        phone,
-        email,
-        note,
-        status
-    };
+   const updatedReservation = {
+  id,
+  name,
+  people,
+  date,
+  time,
+  duration_minutes: durationMinutes,
+  table_id: tableId,
+  phone,
+  email,
+  note,
+  status
+};
 
     if (tableId !== null) {
         const selectedTable = restaurantTables.find(
@@ -1063,17 +1068,18 @@ async function saveReservationChanges() {
                 headers: getHeaders({
                     Prefer: "return=minimal"
                 }),
-                body: JSON.stringify({
-                    name,
-                    people,
-                    date,
-                    time,
-                    table_id: tableId,
-                    phone,
-                    email,
-                    note,
-                    status
-                })
+              body: JSON.stringify({
+               name,
+               people,
+               date,
+               time,
+               duration_minutes: durationMinutes,
+               table_id: tableId,
+               phone,
+               email,
+               note,
+               status
+})
             }
         );
 
