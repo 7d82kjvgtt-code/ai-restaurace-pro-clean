@@ -786,6 +786,7 @@ async function updateStatus(id, status) {
     }
 
     await loadReservations();
+    return true;
   } catch (error) {
     console.error(error);
 
@@ -1132,6 +1133,7 @@ async function updateReservation(id, data) {
     alert(
       "Nepodařilo se upravit rezervaci."
     );
+    return false;
   }
 }
 
@@ -3178,6 +3180,112 @@ function attachCalendarClickHandler() {
   });
 }
 
+
+let calendarDragJustFinished = false;
+
+function handleCalendarReservationClick(event, reservationId) {
+  if (calendarDragJustFinished) {
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
+
+  editReservation(reservationId);
+}
+
+function minutesToTime(totalMinutes) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function attachCalendarDragHandlers() {
+  const timeline = document.querySelector("#calendarReservations .calendarTimeline");
+  const cards = timeline?.querySelectorAll(".calendar-reservation");
+
+  if (!timeline || !cards?.length) return;
+
+  cards.forEach(card => {
+    card.addEventListener("pointerdown", event => {
+      if (event.button !== 0) return;
+
+      const originalTop = Number.parseFloat(card.style.top) || 0;
+      const duration = Number(card.dataset.duration || 120);
+      const startY = event.clientY;
+      let moved = false;
+      let previewTop = originalTop;
+
+      card.setPointerCapture(event.pointerId);
+      card.classList.add("is-dragging");
+
+      const onPointerMove = moveEvent => {
+        const deltaY = moveEvent.clientY - startY;
+
+        if (Math.abs(deltaY) >= 5) moved = true;
+        if (!moved) return;
+
+        const maxTop = Math.max(0, 780 - duration);
+        previewTop = Math.max(0, Math.min(maxTop, originalTop + deltaY));
+        card.style.top = `${previewTop}px`;
+
+        const snappedMinutes = Math.round(previewTop / 30) * 30;
+        card.querySelector(".calendar-time")?.replaceChildren(
+          document.createTextNode(minutesToTime((10 * 60) + snappedMinutes))
+        );
+      };
+
+      const finishDrag = async upEvent => {
+        card.removeEventListener("pointermove", onPointerMove);
+        card.removeEventListener("pointerup", finishDrag);
+        card.removeEventListener("pointercancel", cancelDrag);
+        card.classList.remove("is-dragging");
+
+        if (!moved) return;
+
+        calendarDragJustFinished = true;
+        setTimeout(() => {
+          calendarDragJustFinished = false;
+        }, 300);
+
+        upEvent.preventDefault();
+        upEvent.stopPropagation();
+
+        const snappedMinutes = Math.max(
+          0,
+          Math.min(780 - duration, Math.round(previewTop / 30) * 30)
+        );
+        const newTime = minutesToTime((10 * 60) + snappedMinutes);
+        const reservationId = card.dataset.reservationId;
+
+        card.style.top = `${snappedMinutes}px`;
+        card.classList.add("is-saving");
+
+        const saved = await updateReservation(reservationId, { time: newTime });
+        card.classList.remove("is-saving");
+
+        if (saved) {
+          renderCalendar();
+        } else {
+          card.style.top = `${originalTop}px`;
+          renderCalendar();
+        }
+      };
+
+      const cancelDrag = () => {
+        card.removeEventListener("pointermove", onPointerMove);
+        card.removeEventListener("pointerup", finishDrag);
+        card.removeEventListener("pointercancel", cancelDrag);
+        card.classList.remove("is-dragging");
+        card.style.top = `${originalTop}px`;
+      };
+
+      card.addEventListener("pointermove", onPointerMove);
+      card.addEventListener("pointerup", finishDrag);
+      card.addEventListener("pointercancel", cancelDrag);
+    });
+  });
+}
+
 function renderCalendar() {
   const container = document.getElementById("calendarReservations");
   if (!container) return;
@@ -3192,6 +3300,7 @@ function renderCalendar() {
   if (dayReservations.length === 0) {
     container.innerHTML = createCalendarTimeline();
     attachCalendarClickHandler();
+    attachCalendarDragHandlers();
     startCalendarCurrentTimeTimer();
     return;
   }
@@ -3213,7 +3322,9 @@ function renderCalendar() {
           type="button"
           class="calendar-reservation ${statusClass}"
           style="top:${event.start}px;height:${height}px;left:calc(${leftPercent}% + 3px);width:calc(${widthPercent}% - 6px);"
-          onclick="editReservation('${r.id}')"
+          data-reservation-id="${escapeHtml(r.id)}"
+          data-duration="${event.duration}"
+          onclick="handleCalendarReservationClick(event, '${r.id}')"
           aria-label="Upravit rezervaci ${escapeHtml(r.name || "")}" 
         >
           <span class="calendar-time">${escapeHtml(r.time || "")}</span>
@@ -3231,6 +3342,7 @@ function renderCalendar() {
 
   container.innerHTML = createCalendarTimeline(eventsHtml);
   attachCalendarClickHandler();
+  attachCalendarDragHandlers();
   startCalendarCurrentTimeTimer();
 }
 
