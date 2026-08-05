@@ -1953,52 +1953,61 @@ tbody tr:hover {
 }
 
 /* =========================================================
-   OPRAVA MOBILNIHO MENU A KARET REZERVACI
+   POSLEDNI MOBILNI OPRAVA â akce rezervaci + mensi menu
 ========================================================= */
 @media (max-width: 700px) {
-  /* Spolehliva ikona bez problemu s kodovanim souboru. */
+  .mobile-menu-button {
+    right: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    width: 50px;
+    min-width: 50px;
+    height: 50px;
+    min-height: 50px;
+    font-size: 0;
+  }
+
   .mobile-menu-button::before {
     content: "\2630";
-    display: block;
-    font-family: Arial, sans-serif;
-    font-size: 27px;
-    font-weight: 800;
+    font-size: 22px;
     line-height: 1;
   }
 
-  .mobile-menu-button {
-    width: 56px;
-    min-width: 56px;
-    height: 56px;
-    min-height: 56px;
-    right: 14px;
-    bottom: calc(20px + env(safe-area-inset-bottom));
+  .main {
+    padding-bottom: calc(120px + env(safe-area-inset-bottom));
   }
 
-  /* Hodnoty v kartach nesmi roztahovat stranku. */
+  #rezervace,
+  #rezervace .panel,
+  #rezervace .table-wrapper,
+  #rezervace table,
+  #rezervace tbody,
+  #rezervace tr {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  #rezervace tr {
+    overflow: hidden;
+  }
+
   #rezervace td {
-    min-width: 0;
-  }
-
-  #rezervace td > * {
     min-width: 0;
     max-width: 100%;
   }
 
-  #rezervace .contactLink {
-    display: block;
+  #rezervace td[data-label="E-mail"] > *,
+  #rezervace td[data-label="PoznĂĄmka"] > * {
     min-width: 0;
     max-width: 100%;
     overflow-wrap: anywhere;
     word-break: break-word;
-    white-space: normal;
   }
 
-  /* Akce jsou vzdy cele videt a pohodlne se ovladaji prstem. */
   #rezervace td[data-label="Akce"] {
     display: block;
     padding-top: 12px;
-    padding-bottom: 6px;
   }
 
   #rezervace td[data-label="Akce"]::before {
@@ -2007,36 +2016,25 @@ tbody tr:hover {
   }
 
   #rezervace .tableActions {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
     width: 100%;
+    max-width: 100%;
   }
 
   #rezervace .tableActions button {
-    width: 100%;
-    min-width: 0;
-    height: 48px;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 46px;
+    min-height: 46px;
     padding: 0;
-    font-size: 20px;
-    border-radius: 12px;
-  }
-
-  #rezervace tr {
-    overflow: hidden;
-  }
-
-  #rezervace tbody {
-    padding-bottom: 90px;
+    border-radius: 11px;
   }
 }
 
 @media (max-width: 380px) {
-  #rezervace td {
-    grid-template-columns: 78px minmax(0, 1fr);
-  }
-
   #rezervace .tableActions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
