@@ -381,7 +381,7 @@ tbody tr:hover {
   border-radius: 999px;
 }
 
-.status.ĂÂekÄÄ {
+.status.ÄÂĂÂekĂÂĂÂ {
   background: #d97706;
 }
 
@@ -389,7 +389,7 @@ tbody tr:hover {
   background: var(--success);
 }
 
-.status.ZruÄšÄeno {
+.status.ZruĂĹĄĂÂeno {
   background: var(--danger);
 }
 
@@ -504,7 +504,7 @@ tbody tr:hover {
   padding: 0;
 }
 
-/* SprÄÄva stolÄšĹť */
+/* SprĂÂĂÂva stolĂĹĄÄšĹĽ */
 
 .switch-row {
   display: flex;
@@ -605,7 +605,7 @@ tbody tr:hover {
   scroll-margin-top: 25px;
 }
 
-/* PÄšÂihlÄÄÄšÄenÄÂ­ */
+/* PĂĹĄĂÂihlĂÂĂÂĂĹĄĂÂenĂÂĂÂ­ */
 
 #loginScreen {
   position: fixed;
@@ -929,7 +929,7 @@ tbody tr:hover {
     color: white;
 }
 /* =========================
-   KALENDÄÂÄšÂ REZERVACÄÂ
+   KALENDĂÂĂÂĂĹĄĂÂ REZERVACĂÂĂÂ
 ========================= */
 
 #kalendar {
@@ -1063,7 +1063,7 @@ tbody tr:hover {
     }
 
 }
-/* KalendÄÄÄšÂ pÄšÂes celou ÄšÄÄÂ­ÄšÂku dashboardu */
+/* KalendĂÂĂÂĂĹĄĂÂ pĂĹĄĂÂes celou ĂĹĄĂÂĂÂĂÂ­ĂĹĄĂÂku dashboardu */
 #kalendar {
     width: 100%;
     max-width: none;
@@ -1118,7 +1118,7 @@ tbody tr:hover {
     user-select: none;
     touch-action: none;
 }
-/* OvlÄÄdÄÄnÄÂ­ mapy stolÄšĹť */
+/* OvlĂÂĂÂdĂÂĂÂnĂÂĂÂ­ mapy stolĂĹĄÄšĹĽ */
 
 .map-toolbar {
     display: flex;
@@ -1399,7 +1399,7 @@ tbody tr:hover {
   box-shadow: 0 8px 20px rgba(255, 90, 31, 0.25);
 }
 
-/* ===== OPRAVENÄÂ KALENDÄÂÄšÂ Ă˘ÂÂ finÄÄlnÄÂ­ pÄšÂepis ===== */
+/* ===== OPRAVENĂÂĂÂ KALENDĂÂĂÂĂĹĄĂÂ ÄËĂÂĂÂ finĂÂĂÂlnĂÂĂÂ­ pĂĹĄĂÂepis ===== */
 #calendarReservations {
   position: relative;
   margin-top: 20px;
@@ -1557,7 +1557,7 @@ tbody tr:hover {
   }
 }
 
-/* ===== BarevnĂŠ stavy rezervacĂ­ v kalendĂĄĹi ===== */
+/* ===== BarevnÄĹ  stavy rezervacÄÂ­ v kalendÄÄÄšÂi ===== */
 .calendar-reservation.pending {
   background: linear-gradient(135deg, #ff8a1f, #ff5a1f);
   border-color: rgba(255, 138, 31, 0.65);
@@ -1593,7 +1593,7 @@ tbody tr:hover {
 }
 
 
-/* ===== AKTUĂLNĂ ÄAS V KALENDĂĹI ===== */
+/* ===== AKTUÄÂLNÄÂ ĂÂAS V KALENDÄÂÄšÂI ===== */
 .calendar-current-time {
   position: absolute;
   left: 55px;
@@ -1658,7 +1658,7 @@ tbody tr:hover {
 }
 
 
-/* KliknutĂ­ do volnĂŠho Äasu v kalendĂĄĹi */
+/* KliknutÄÂ­ do volnÄĹ ho ĂÂasu v kalendÄÄÄšÂi */
 #calendarReservations .calendarTimeline {
   cursor: crosshair;
 }
@@ -1675,7 +1675,7 @@ tbody tr:hover {
   pointer-events: auto;
 }
 
-/* Drag & drop rezervacĂ­ v kalendĂĄĹi */
+/* Drag & drop rezervacÄÂ­ v kalendÄÄÄšÂi */
 #calendarReservations .calendar-reservation {
   touch-action: none;
   user-select: none;
@@ -1697,7 +1697,7 @@ tbody tr:hover {
 }
 
 
-/* ModernĂ­ upozornÄnĂ­ dashboardu */
+/* ModernÄÂ­ upozornĂÂnÄÂ­ dashboardu */
 .dashboard-notice-container {
   position: fixed;
   top: 22px;
@@ -1760,7 +1760,7 @@ tbody tr:hover {
 
 
 /* =========================================================
-   MOBILNĂ NAVIGACE
+   MOBILNÄÂ NAVIGACE
 ========================================================= */
 .mobile-menu-button {
   display: none;
@@ -1841,4 +1841,113 @@ tbody tr:hover {
     min-height: 44px;
     font-size: 15px;
   }
+}
+
+/* =========================================================
+   FINĂLNĂ MOBILNĂ DOLADÄNĂ
+========================================================= */
+@media (max-width: 700px) {
+  body { overflow-x: hidden; }
+  .main { padding: 18px 10px 110px; overflow: visible; }
+
+  /* PlovoucĂ­ menu dole vpravo, aby nepĹekrĂ˝valo nadpisy */
+  .mobile-menu-button {
+    top: auto;
+    left: auto;
+    right: 16px;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    width: 58px;
+    min-width: 58px;
+    height: 58px;
+    min-height: 58px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 0;
+    box-shadow: 0 14px 35px rgba(0,0,0,.5);
+  }
+  .mobile-menu-button::before { content: "â°"; font-size: 25px; line-height: 1; }
+
+  .sidebar { width: min(86vw, 330px); padding-top: max(34px, env(safe-area-inset-top)); }
+  .sidebar h2 { margin: 28px 0; font-size: 25px; }
+  .sidebar a { padding: 13px 14px; }
+
+  .topbar { margin-bottom: 18px; }
+  .topbar-actions { gap: 8px; }
+  .topbar-actions > * { min-width: 0; }
+  .section-heading h2, .panel h2 { font-size: clamp(25px, 7vw, 34px); }
+
+  /* Rezervace jako karty mĂ­sto ĹĄirokĂŠ tabulky */
+  #rezervace .table-wrapper { overflow: visible; }
+  #rezervace table, #rezervace thead, #rezervace tbody, #rezervace tr, #rezervace td { display: block; width: 100%; }
+  #rezervace thead { display: none; }
+  #rezervace tbody { display: grid; gap: 14px; }
+  #rezervace tr {
+    padding: 15px;
+    background: rgba(30,41,59,.95);
+    border: 1px solid rgba(148,163,184,.18);
+    border-radius: 16px;
+    box-shadow: 0 10px 24px rgba(0,0,0,.18);
+  }
+  #rezervace td {
+    display: grid;
+    grid-template-columns: 92px minmax(0,1fr);
+    gap: 10px;
+    align-items: center;
+    padding: 8px 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+  #rezervace td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+  }
+  #rezervace td:first-child { font-size: 20px; font-weight: 800; }
+  #rezervace .tableActions { justify-content: flex-start; flex-wrap: wrap; }
+  #rezervace .tableActions button { min-width: 44px; }
+  #rezervace .tableSelect { min-width: 0; width: 100%; }
+
+  /* KalendĂĄĹ */
+  #kalendar.panel { padding: 10px 6px 18px; }
+  .calendarHour { grid-template-columns: 58px 1fr; }
+  .calendarEventsLayer { left: 58px; right: 6px; }
+  .calendar-reservation { padding: 8px 10px; border-radius: 12px; }
+  .calendar-info strong { font-size: 14px; }
+  .calendar-info small { font-size: 11px; }
+  .calendar-status { display: none; }
+
+  /* Mapa stolĹŻ: na telefonu kompaktnĂ­ mĹĂ­Ĺžka mĂ­sto obĹĂ­ plochy */
+  #floorMapWrapper { overflow: visible; }
+  #floorMap.floor-map {
+    transform: none !important;
+    width: 100% !important;
+    min-height: 0;
+    padding: 18px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 16px;
+  }
+  #floorMap .table {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 118px;
+    height: 118px;
+    justify-self: center;
+    font-size: 16px;
+  }
+  .table-map-name { font-size: 16px; }
+  .table-map-capacity, .table-map-status { font-size: 12px; }
+  .zoom-controls { display: none; }
+
+  /* FormulĂĄĹe a grafy */
+  .chart-wrap { height: 250px; }
+  .filter-actions { gap: 10px; }
+  input, select, textarea, button { max-width: 100%; }
+}
+
+@media (max-width: 380px) {
+  #floorMap.floor-map { grid-template-columns: 1fr; }
+  #rezervace td { grid-template-columns: 78px minmax(0,1fr); }
 }
