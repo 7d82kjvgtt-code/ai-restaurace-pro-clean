@@ -216,7 +216,9 @@ document.querySelectorAll(".room-switch").forEach((button) => {
 async function loadDashboardData() {
   await Promise.all([
     loadTables(),
-    loadFoods()
+    loadFoods(),
+    loadOpeningHours(),
+    loadBlockedTimes()
   ]);
 
   await loadReservations();
@@ -1999,6 +2001,17 @@ async function saveNewReservation() {
 
     if (!name || !date || !time || !Number.isInteger(people) || people < 1) {
         showDashboardNotice("Vyplň jméno, počet osob, datum a čas.");
+        return;
+    }
+
+    const openingAvailability = await checkDashboardOpeningAvailability({
+        date,
+        time,
+        durationMinutes
+    });
+
+    if (!openingAvailability.ok) {
+        showDashboardNotice(openingAvailability.message);
         return;
     }
 
@@ -4040,3 +4053,148 @@ document.addEventListener("DOMContentLoaded", () => {
   setupAutomaticTableRecommendation();
   updateNewTableRecommendation();
 });
+
+
+/* =========================================================
+   PROVOZNÍ DOBA A BLOKOVANÉ ČASY
+========================================================= */
+const DAY_NAMES = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
+let openingHours = [];
+let blockedTimes = [];
+
+async function loadOpeningHours() {
+  if (!currentRestaurantId) return;
+  try {
+    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/opening_hours?restaurant_id=eq.${currentRestaurantId}&select=*&order=day_of_week.asc`, { headers: getHeaders() });
+    if (!response.ok) throw new Error(await response.text());
+    openingHours = await response.json();
+    if (!openingHours.length) {
+      openingHours = DAY_NAMES.map((_, day) => ({ day_of_week: day, is_open: true, open_time: "10:00", close_time: "22:00" }));
+    }
+    renderOpeningHours();
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice("Nejdřív spusť soubor supabase-opening-hours.sql v Supabase SQL Editoru.");
+  }
+}
+
+function renderOpeningHours() {
+  const container = document.getElementById("openingHoursGrid");
+  if (!container) return;
+  const byDay = new Map(openingHours.map(row => [Number(row.day_of_week), row]));
+  container.innerHTML = DAY_NAMES.map((name, day) => {
+    const row = byDay.get(day) || { is_open: true, open_time: "10:00", close_time: "22:00" };
+    return `<div class="opening-day" data-day="${day}">
+      <strong>${name}</strong>
+      <label><input class="day-open" type="checkbox" ${row.is_open ? "checked" : ""}> Otevřeno</label>
+      <input class="day-from" type="time" value="${String(row.open_time).slice(0,5)}">
+      <span>–</span>
+      <input class="day-to" type="time" value="${String(row.close_time).slice(0,5)}">
+    </div>`;
+  }).join("");
+}
+
+async function saveOpeningHours() {
+  const rows = [...document.querySelectorAll(".opening-day")].map(element => ({
+    restaurant_id: currentRestaurantId,
+    day_of_week: Number(element.dataset.day),
+    is_open: element.querySelector(".day-open").checked,
+    open_time: element.querySelector(".day-from").value,
+    close_time: element.querySelector(".day-to").value
+  }));
+
+  if (rows.some(row => row.is_open && (!row.open_time || !row.close_time || row.close_time <= row.open_time))) {
+    showDashboardNotice("U otevřených dnů musí být konec později než začátek.");
+    return;
+  }
+
+  try {
+    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/opening_hours?on_conflict=restaurant_id,day_of_week`, {
+      method: "POST",
+      headers: getHeaders({ Prefer: "resolution=merge-duplicates,return=representation" }),
+      body: JSON.stringify(rows)
+    });
+    if (!response.ok) throw new Error(await response.text());
+    openingHours = await response.json();
+    renderOpeningHours();
+    showDashboardNotice("Otevírací doba byla uložena.", "success");
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice("Otevírací dobu se nepodařilo uložit.");
+  }
+}
+
+async function loadBlockedTimes() {
+  if (!currentRestaurantId) return;
+  try {
+    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/blocked_times?restaurant_id=eq.${currentRestaurantId}&select=*&order=date.asc,start_time.asc`, { headers: getHeaders() });
+    if (!response.ok) throw new Error(await response.text());
+    blockedTimes = await response.json();
+    renderBlockedTimes();
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function renderBlockedTimes() {
+  const container = document.getElementById("blockedTimesList");
+  if (!container) return;
+  if (!blockedTimes.length) {
+    container.innerHTML = '<p class="empty-state">Žádné blokované časy.</p>';
+    return;
+  }
+  container.innerHTML = blockedTimes.map(block => `<div class="blocked-time-item">
+    <div><strong>${block.date}</strong> · ${String(block.start_time).slice(0,5)}–${String(block.end_time).slice(0,5)}<br><span>${escapeHtml(block.reason || "Bez důvodu")}</span></div>
+    <button type="button" class="dangerButton" onclick="deleteBlockedTime(${Number(block.id)})">Smazat</button>
+  </div>`).join("");
+}
+
+async function addBlockedTime() {
+  const date = document.getElementById("blockDate").value;
+  const start_time = document.getElementById("blockStart").value;
+  const end_time = document.getElementById("blockEnd").value;
+  const reason = document.getElementById("blockReason").value.trim();
+  if (!date || !start_time || !end_time || end_time <= start_time) {
+    showDashboardNotice("Vyplň datum a platný čas blokace.");
+    return;
+  }
+  try {
+    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/blocked_times`, {
+      method: "POST",
+      headers: getHeaders({ Prefer: "return=representation" }),
+      body: JSON.stringify({ restaurant_id: currentRestaurantId, date, start_time, end_time, reason })
+    });
+    if (!response.ok) throw new Error(await response.text());
+    document.getElementById("blockReason").value = "";
+    await loadBlockedTimes();
+    showDashboardNotice("Čas byl zablokován.", "success");
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice("Blokaci se nepodařilo uložit.");
+  }
+}
+
+async function deleteBlockedTime(id) {
+  try {
+    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/blocked_times?id=eq.${Number(id)}&restaurant_id=eq.${currentRestaurantId}`, { method: "DELETE", headers: getHeaders() });
+    if (!response.ok) throw new Error(await response.text());
+    await loadBlockedTimes();
+    showDashboardNotice("Blokace byla odstraněna.", "success");
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice("Blokaci se nepodařilo odstranit.");
+  }
+}
+
+async function checkDashboardOpeningAvailability({ date, time, durationMinutes }) {
+  const day = new Date(`${date}T12:00:00`).getDay();
+  const hours = openingHours.find(row => Number(row.day_of_week) === day) || { is_open: true, open_time: "10:00", close_time: "22:00" };
+  if (!hours.is_open) return { ok: false, message: "V tento den má restaurace zavřeno." };
+  const start = timeToMinutes(time);
+  const end = start + Number(durationMinutes || 120);
+  if (start < timeToMinutes(hours.open_time) || end > timeToMinutes(hours.close_time)) {
+    return { ok: false, message: `Rezervace musí celá proběhnout mezi ${String(hours.open_time).slice(0,5)} a ${String(hours.close_time).slice(0,5)}.` };
+  }
+  const block = blockedTimes.find(item => item.date === date && start < timeToMinutes(item.end_time) && timeToMinutes(item.start_time) < end);
+  return block ? { ok: false, message: block.reason ? `Tento čas je blokovaný: ${block.reason}` : "Tento čas je blokovaný." } : { ok: true };
+}
