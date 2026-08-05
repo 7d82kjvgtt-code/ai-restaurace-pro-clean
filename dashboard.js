@@ -815,6 +815,7 @@ async function deleteReservation(id) {
     }
 
     await loadReservations();
+    return true;
   } catch (error) {
     console.error(error);
 
@@ -1063,7 +1064,7 @@ const durationMinutes = Number(
         ) {
             alert(
                 `${selectedTable.name} je v tomto čase obsazený.\n\n` +
-                "Každá rezervace blokuje stůl na 2 hodiny."
+                "Zvol jiný čas, délku rezervace nebo jiný stůl."
             );
             return;
         }
@@ -1826,6 +1827,9 @@ async function saveNewReservation() {
     const people = Number(document.getElementById("newPeople").value);
     const date = document.getElementById("newDate").value;
     const time = document.getElementById("newTime").value;
+    const durationMinutes = Number(
+        document.getElementById("newDuration")?.value || 120
+    );
     const tableId = Number(document.getElementById("newTable").value);
     const phone = document.getElementById("newPhone").value.trim();
     const email = document.getElementById("newEmail").value.trim();
@@ -1857,6 +1861,7 @@ async function saveNewReservation() {
         people,
         date,
         time,
+        duration_minutes: durationMinutes,
         table_id: tableId,
         phone,
         email,
@@ -1867,8 +1872,8 @@ async function saveNewReservation() {
 
     if (hasTableConflict(tableId, newReservation)) {
         alert(
-            `${selectedTable.name} je v tomto čase už rezervovaný.\n\n` +
-            "Každá rezervace blokuje stůl na 2 hodiny."
+            `${selectedTable.name} je v tomto čase už obsazený.\n\n` +
+            "Zvol jiný čas, délku rezervace nebo jiný stůl."
         );
         return;
     }
@@ -1902,6 +1907,9 @@ async function saveNewReservation() {
         ].forEach(id => {
             document.getElementById(id).value = "";
         });
+
+        const newDuration = document.getElementById("newDuration");
+        if (newDuration) newDuration.value = "120";
 
         selectedTableId = null;
 
@@ -2319,19 +2327,21 @@ function reservationsOverlap(first, second) {
     return false;
   }
 
-  const reservationDuration = 120;
+  const firstStart = timeToMinutes(first.time);
+  const secondStart = timeToMinutes(second.time);
 
-  const firstStart =
-    timeToMinutes(first.time);
+  const firstDuration = Math.max(
+    30,
+    Number(first.duration_minutes || 120)
+  );
 
-  const firstEnd =
-    firstStart + reservationDuration;
+  const secondDuration = Math.max(
+    30,
+    Number(second.duration_minutes || 120)
+  );
 
-  const secondStart =
-    timeToMinutes(second.time);
-
-  const secondEnd =
-    secondStart + reservationDuration;
+  const firstEnd = firstStart + firstDuration;
+  const secondEnd = secondStart + secondDuration;
 
   return (
     firstStart < secondEnd &&
@@ -3256,6 +3266,39 @@ function attachCalendarDragHandlers() {
         );
         const newTime = minutesToTime((10 * 60) + snappedMinutes);
         const reservationId = card.dataset.reservationId;
+
+        const draggedReservation = reservations.find(
+          item => Number(item.id) === Number(reservationId)
+        );
+
+        if (!draggedReservation) {
+          alert("Rezervace nebyla nalezena.");
+          renderCalendar();
+          return;
+        }
+
+        const proposedReservation = {
+          ...draggedReservation,
+          time: newTime
+        };
+
+        if (
+          proposedReservation.table_id !== null &&
+          proposedReservation.table_id !== undefined &&
+          (proposedReservation.status || "Čeká") !== "Zrušeno" &&
+          hasTableConflict(
+            proposedReservation.table_id,
+            proposedReservation,
+            proposedReservation.id
+          )
+        ) {
+          alert(
+            `${getTableName(proposedReservation.table_id)} je v čase ${newTime} obsazený.\n\n` +
+            "Rezervace nebyla přesunuta."
+          );
+          renderCalendar();
+          return;
+        }
 
         card.style.top = `${snappedMinutes}px`;
         card.classList.add("is-saving");
