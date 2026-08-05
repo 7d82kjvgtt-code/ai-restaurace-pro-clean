@@ -707,35 +707,35 @@ function renderReservations(data) {
       return `
         <tr>
 
-          <td>
+          <td data-label="Jméno">
             ${escapeHtml(
               reservation.name || "-"
             )}
           </td>
 
-          <td>
+          <td data-label="Osob">
             ${escapeHtml(
               reservation.people || "-"
             )}
           </td>
 
-          <td>
+          <td data-label="Datum">
             ${escapeHtml(
               formatDate(reservation.date)
             )}
           </td>
 
-          <td>
+          <td data-label="Čas">
             ${escapeHtml(
               reservation.time || "-"
             )}
           </td>
 
-          <td>
+          <td data-label="Stůl">
             ${renderTableSelect(reservation)}
           </td>
 
-          <td>
+          <td data-label="Telefon">
             ${
               reservation.phone
                 ? `
@@ -754,7 +754,7 @@ function renderReservations(data) {
             }
           </td>
 
-          <td>
+          <td data-label="E-mail">
             ${
               reservation.email
                 ? `
@@ -773,13 +773,13 @@ function renderReservations(data) {
             }
           </td>
 
-          <td>
+          <td data-label="Poznámka">
             ${escapeHtml(
               reservation.note || "-"
             )}
           </td>
 
-          <td>
+          <td data-label="Stav">
             <span
               class="status ${escapeHtml(
                 reservation.status || "Čeká"
@@ -791,7 +791,7 @@ function renderReservations(data) {
             </span>
           </td>
 
-          <td>
+          <td data-label="Akce">
             <div class="tableActions">
 
   <button
