@@ -1591,3 +1591,68 @@ tbody tr:hover {
   background: rgba(254, 242, 242, 0.94);
   color: #b91c1c;
 }
+
+
+/* ===== AKTUĂLNĂ ÄAS V KALENDĂĹI ===== */
+.calendar-current-time {
+  position: absolute;
+  left: 55px;
+  right: 12px;
+  height: 0;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.calendar-current-time[hidden] {
+  display: none;
+}
+
+.calendar-current-time-label {
+  position: absolute;
+  left: -55px;
+  top: -10px;
+  width: 48px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.calendar-current-time-dot {
+  position: absolute;
+  left: 11px;
+  top: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.75);
+}
+
+.calendar-current-time-line {
+  position: absolute;
+  left: 16px;
+  right: 0;
+  top: -1px;
+  height: 2px;
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.55);
+}
+
+@media (max-width: 700px) {
+  .calendar-current-time {
+    left: 43px;
+    right: 6px;
+  }
+
+  .calendar-current-time-label {
+    left: -43px;
+    width: 40px;
+    font-size: 10px;
+  }
+}
