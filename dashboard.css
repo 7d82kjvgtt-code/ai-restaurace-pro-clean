@@ -1656,3 +1656,21 @@ tbody tr:hover {
     font-size: 10px;
   }
 }
+
+
+/* KliknutĂ­ do volnĂŠho Äasu v kalendĂĄĹi */
+#calendarReservations .calendarTimeline {
+  cursor: crosshair;
+}
+
+#calendarReservations .calendar-reservation {
+  cursor: pointer;
+}
+
+#calendarReservations .calendarEventsLayer {
+  pointer-events: none;
+}
+
+#calendarReservations .calendar-reservation {
+  pointer-events: auto;
+}
