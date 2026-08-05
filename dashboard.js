@@ -3112,6 +3112,72 @@ function buildCalendarLayout(dayReservations) {
   return events;
 }
 
+function openReservationFromCalendar(date, time) {
+  const reservationSection = document.getElementById("novaRezervace");
+  const tableSelect = document.getElementById("newTable");
+  const dateInput = document.getElementById("newDate");
+  const timeInput = document.getElementById("newTime");
+
+  if (!reservationSection || !tableSelect || !dateInput || !timeInput) {
+    alert("Formulář nové rezervace se nepodařilo otevřít.");
+    return;
+  }
+
+  showDashboardSection("rezervace");
+
+  tableSelect.innerHTML = restaurantTables
+    .filter(table => table.active)
+    .map(table => `
+      <option value="${table.id}">
+        ${escapeHtml(table.name)} (${table.capacity} míst)
+      </option>
+    `)
+    .join("");
+
+  dateInput.value = date;
+  timeInput.value = time;
+  reservationSection.style.display = "block";
+
+  requestAnimationFrame(() => {
+    reservationSection.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+
+    document.getElementById("newName")?.focus();
+  });
+}
+
+function attachCalendarClickHandler() {
+  const timeline = document.querySelector("#calendarReservations .calendarTimeline");
+  const eventsLayer = timeline?.querySelector(".calendarEventsLayer");
+  const dateInput = document.getElementById("calendarDate");
+
+  if (!timeline || !eventsLayer || !dateInput) return;
+
+  timeline.addEventListener("click", event => {
+    if (event.target.closest(".calendar-reservation")) return;
+
+    const rect = eventsLayer.getBoundingClientRect();
+    const clickedY = event.clientY - rect.top;
+
+    if (clickedY < 0 || clickedY > 780) return;
+
+    const roundedMinutes = Math.max(
+      0,
+      Math.min(720, Math.round(clickedY / 30) * 30)
+    );
+
+    const totalMinutes = (10 * 60) + roundedMinutes;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+    const date = dateInput.value || getLocalDateString();
+
+    openReservationFromCalendar(date, time);
+  });
+}
+
 function renderCalendar() {
   const container = document.getElementById("calendarReservations");
   if (!container) return;
@@ -3125,6 +3191,7 @@ function renderCalendar() {
 
   if (dayReservations.length === 0) {
     container.innerHTML = createCalendarTimeline();
+    attachCalendarClickHandler();
     startCalendarCurrentTimeTimer();
     return;
   }
@@ -3163,6 +3230,7 @@ function renderCalendar() {
     .join("");
 
   container.innerHTML = createCalendarTimeline(eventsHtml);
+  attachCalendarClickHandler();
   startCalendarCurrentTimeTimer();
 }
 
