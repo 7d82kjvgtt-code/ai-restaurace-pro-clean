@@ -381,7 +381,7 @@ tbody tr:hover {
   border-radius: 999px;
 }
 
-.status.ÄÂĂÂekĂÂĂÂ {
+.status.ĂÂĂÂÄÂĂÂekÄÂĂÂÄÂĂÂ {
   background: #d97706;
 }
 
@@ -389,7 +389,7 @@ tbody tr:hover {
   background: var(--success);
 }
 
-.status.ZruĂĹĄĂÂeno {
+.status.ZruÄÂÄšÄÄÂĂÂeno {
   background: var(--danger);
 }
 
@@ -504,7 +504,7 @@ tbody tr:hover {
   padding: 0;
 }
 
-/* SprĂÂĂÂva stolĂĹĄÄšĹĽ */
+/* SprÄÂĂÂÄÂĂÂva stolÄÂÄšÄĂĹĄÄšÄ˝ */
 
 .switch-row {
   display: flex;
@@ -605,7 +605,7 @@ tbody tr:hover {
   scroll-margin-top: 25px;
 }
 
-/* PĂĹĄĂÂihlĂÂĂÂĂĹĄĂÂenĂÂĂÂ­ */
+/* PÄÂÄšÄÄÂĂÂihlÄÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂenÄÂĂÂÄÂĂÂ­ */
 
 #loginScreen {
   position: fixed;
@@ -929,7 +929,7 @@ tbody tr:hover {
     color: white;
 }
 /* =========================
-   KALENDĂÂĂÂĂĹĄĂÂ REZERVACĂÂĂÂ
+   KALENDÄÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ REZERVACÄÂĂÂÄÂĂÂ
 ========================= */
 
 #kalendar {
@@ -1063,7 +1063,7 @@ tbody tr:hover {
     }
 
 }
-/* KalendĂÂĂÂĂĹĄĂÂ pĂĹĄĂÂes celou ĂĹĄĂÂĂÂĂÂ­ĂĹĄĂÂku dashboardu */
+/* KalendÄÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ pÄÂÄšÄÄÂĂÂes celou ÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ­ÄÂÄšÄÄÂĂÂku dashboardu */
 #kalendar {
     width: 100%;
     max-width: none;
@@ -1118,7 +1118,7 @@ tbody tr:hover {
     user-select: none;
     touch-action: none;
 }
-/* OvlĂÂĂÂdĂÂĂÂnĂÂĂÂ­ mapy stolĂĹĄÄšĹĽ */
+/* OvlÄÂĂÂÄÂĂÂdÄÂĂÂÄÂĂÂnÄÂĂÂÄÂĂÂ­ mapy stolÄÂÄšÄĂĹĄÄšÄ˝ */
 
 .map-toolbar {
     display: flex;
@@ -1399,7 +1399,7 @@ tbody tr:hover {
   box-shadow: 0 8px 20px rgba(255, 90, 31, 0.25);
 }
 
-/* ===== OPRAVENĂÂĂÂ KALENDĂÂĂÂĂĹĄĂÂ ÄËĂÂĂÂ finĂÂĂÂlnĂÂĂÂ­ pĂĹĄĂÂepis ===== */
+/* ===== OPRAVENÄÂĂÂÄÂĂÂ KALENDÄÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ ĂÂĂÂÄÂĂÂÄÂĂÂ finÄÂĂÂÄÂĂÂlnÄÂĂÂÄÂĂÂ­ pÄÂÄšÄÄÂĂÂepis ===== */
 #calendarReservations {
   position: relative;
   margin-top: 20px;
@@ -1557,7 +1557,7 @@ tbody tr:hover {
   }
 }
 
-/* ===== BarevnÄĹ  stavy rezervacÄÂ­ v kalendÄÄÄšÂi ===== */
+/* ===== BarevnĂÂÄš  stavy rezervacĂÂĂÂ­ v kalendĂÂĂÂĂĹĄĂÂi ===== */
 .calendar-reservation.pending {
   background: linear-gradient(135deg, #ff8a1f, #ff5a1f);
   border-color: rgba(255, 138, 31, 0.65);
@@ -1593,7 +1593,7 @@ tbody tr:hover {
 }
 
 
-/* ===== AKTUÄÂLNÄÂ ĂÂAS V KALENDÄÂÄšÂI ===== */
+/* ===== AKTUĂÂĂÂLNĂÂĂÂ ÄÂĂÂAS V KALENDĂÂĂÂĂĹĄĂÂI ===== */
 .calendar-current-time {
   position: absolute;
   left: 55px;
@@ -1658,7 +1658,7 @@ tbody tr:hover {
 }
 
 
-/* KliknutÄÂ­ do volnÄĹ ho ĂÂasu v kalendÄÄÄšÂi */
+/* KliknutĂÂĂÂ­ do volnĂÂÄš ho ÄÂĂÂasu v kalendĂÂĂÂĂĹĄĂÂi */
 #calendarReservations .calendarTimeline {
   cursor: crosshair;
 }
@@ -1675,7 +1675,7 @@ tbody tr:hover {
   pointer-events: auto;
 }
 
-/* Drag & drop rezervacÄÂ­ v kalendÄÄÄšÂi */
+/* Drag & drop rezervacĂÂĂÂ­ v kalendĂÂĂÂĂĹĄĂÂi */
 #calendarReservations .calendar-reservation {
   touch-action: none;
   user-select: none;
@@ -1697,7 +1697,7 @@ tbody tr:hover {
 }
 
 
-/* ModernÄÂ­ upozornĂÂnÄÂ­ dashboardu */
+/* ModernĂÂĂÂ­ upozornÄÂĂÂnĂÂĂÂ­ dashboardu */
 .dashboard-notice-container {
   position: fixed;
   top: 22px;
@@ -1760,7 +1760,7 @@ tbody tr:hover {
 
 
 /* =========================================================
-   MOBILNÄÂ NAVIGACE
+   MOBILNĂÂĂÂ NAVIGACE
 ========================================================= */
 .mobile-menu-button {
   display: none;
@@ -1844,13 +1844,13 @@ tbody tr:hover {
 }
 
 /* =========================================================
-   FINĂLNĂ MOBILNĂ DOLADÄNĂ
+   FINÄÂLNÄÂ MOBILNÄÂ DOLADĂÂNÄÂ
 ========================================================= */
 @media (max-width: 700px) {
   body { overflow-x: hidden; }
   .main { padding: 18px 10px 110px; overflow: visible; }
 
-  /* PlovoucĂ­ menu dole vpravo, aby nepĹekrĂ˝valo nadpisy */
+  /* PlovoucÄÂ­ menu dole vpravo, aby nepÄšÂekrÄËvalo nadpisy */
   .mobile-menu-button {
     top: auto;
     left: auto;
@@ -1865,7 +1865,7 @@ tbody tr:hover {
     font-size: 0;
     box-shadow: 0 14px 35px rgba(0,0,0,.5);
   }
-  .mobile-menu-button::before { content: "â°"; font-size: 25px; line-height: 1; }
+  .mobile-menu-button::before { content: "Ă˘ÂÂ°"; font-size: 25px; line-height: 1; }
 
   .sidebar { width: min(86vw, 330px); padding-top: max(34px, env(safe-area-inset-top)); }
   .sidebar h2 { margin: 28px 0; font-size: 25px; }
@@ -1876,7 +1876,7 @@ tbody tr:hover {
   .topbar-actions > * { min-width: 0; }
   .section-heading h2, .panel h2 { font-size: clamp(25px, 7vw, 34px); }
 
-  /* Rezervace jako karty mĂ­sto ĹĄirokĂŠ tabulky */
+  /* Rezervace jako karty mÄÂ­sto ÄšÄirokÄĹ  tabulky */
   #rezervace .table-wrapper { overflow: visible; }
   #rezervace table, #rezervace thead, #rezervace tbody, #rezervace tr, #rezervace td { display: block; width: 100%; }
   #rezervace thead { display: none; }
@@ -1908,7 +1908,7 @@ tbody tr:hover {
   #rezervace .tableActions button { min-width: 44px; }
   #rezervace .tableSelect { min-width: 0; width: 100%; }
 
-  /* KalendĂĄĹ */
+  /* KalendÄÄÄšÂ */
   #kalendar.panel { padding: 10px 6px 18px; }
   .calendarHour { grid-template-columns: 58px 1fr; }
   .calendarEventsLayer { left: 58px; right: 6px; }
@@ -1917,7 +1917,7 @@ tbody tr:hover {
   .calendar-info small { font-size: 11px; }
   .calendar-status { display: none; }
 
-  /* Mapa stolĹŻ: na telefonu kompaktnĂ­ mĹĂ­Ĺžka mĂ­sto obĹĂ­ plochy */
+  /* Mapa stolÄšĹť: na telefonu kompaktnÄÂ­ mÄšÂÄÂ­ÄšĹžka mÄÂ­sto obÄšÂÄÂ­ plochy */
   #floorMapWrapper { overflow: visible; }
   #floorMap.floor-map {
     transform: none !important;
@@ -1941,7 +1941,7 @@ tbody tr:hover {
   .table-map-capacity, .table-map-status { font-size: 12px; }
   .zoom-controls { display: none; }
 
-  /* FormulĂĄĹe a grafy */
+  /* FormulÄÄÄšÂe a grafy */
   .chart-wrap { height: 250px; }
   .filter-actions { gap: 10px; }
   input, select, textarea, button { max-width: 100%; }
@@ -1950,4 +1950,93 @@ tbody tr:hover {
 @media (max-width: 380px) {
   #floorMap.floor-map { grid-template-columns: 1fr; }
   #rezervace td { grid-template-columns: 78px minmax(0,1fr); }
+}
+
+/* =========================================================
+   OPRAVA MOBILNIHO MENU A KARET REZERVACI
+========================================================= */
+@media (max-width: 700px) {
+  /* Spolehliva ikona bez problemu s kodovanim souboru. */
+  .mobile-menu-button::before {
+    content: "\2630";
+    display: block;
+    font-family: Arial, sans-serif;
+    font-size: 27px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .mobile-menu-button {
+    width: 56px;
+    min-width: 56px;
+    height: 56px;
+    min-height: 56px;
+    right: 14px;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+
+  /* Hodnoty v kartach nesmi roztahovat stranku. */
+  #rezervace td {
+    min-width: 0;
+  }
+
+  #rezervace td > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #rezervace .contactLink {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+  }
+
+  /* Akce jsou vzdy cele videt a pohodlne se ovladaji prstem. */
+  #rezervace td[data-label="Akce"] {
+    display: block;
+    padding-top: 12px;
+    padding-bottom: 6px;
+  }
+
+  #rezervace td[data-label="Akce"]::before {
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  #rezervace .tableActions {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  #rezervace .tableActions button {
+    width: 100%;
+    min-width: 0;
+    height: 48px;
+    padding: 0;
+    font-size: 20px;
+    border-radius: 12px;
+  }
+
+  #rezervace tr {
+    overflow: hidden;
+  }
+
+  #rezervace tbody {
+    padding-bottom: 90px;
+  }
+}
+
+@media (max-width: 380px) {
+  #rezervace td {
+    grid-template-columns: 78px minmax(0, 1fr);
+  }
+
+  #rezervace .tableActions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
