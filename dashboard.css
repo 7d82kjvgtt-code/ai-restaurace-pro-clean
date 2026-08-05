@@ -1674,3 +1674,24 @@ tbody tr:hover {
 #calendarReservations .calendar-reservation {
   pointer-events: auto;
 }
+
+/* Drag & drop rezervacĂ­ v kalendĂĄĹi */
+#calendarReservations .calendar-reservation {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#calendarReservations .calendar-reservation.is-dragging {
+  cursor: grabbing;
+  opacity: 0.9;
+  transform: scale(1.015);
+  z-index: 100;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
+  transition: none;
+}
+
+#calendarReservations .calendar-reservation.is-saving {
+  cursor: wait;
+  opacity: 0.65;
+}
