@@ -1997,3 +1997,7 @@ tbody tr:hover {
     font-size: 0.95rem;
   }
 }
+
+
+/* Provozní doba a blokace */
+.operations-panel{display:block}.operations-help{color:#94a3b8;margin:0 0 20px}.opening-hours-grid{display:grid;gap:10px;margin-bottom:18px}.opening-day{display:grid;grid-template-columns:minmax(110px,1fr) 130px 140px 20px 140px;align-items:center;gap:12px;padding:14px;border:1px solid #334155;border-radius:14px;background:#111827}.opening-day input[type="time"],.blocked-time-form input{width:100%;padding:12px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff}.blocked-time-form{display:grid;grid-template-columns:1fr 1fr 1fr 2fr auto;gap:12px;align-items:end;margin-top:28px}.blocked-time-form h3{grid-column:1/-1;margin:0}.blocked-times-list{display:grid;gap:10px;margin-top:18px}.blocked-time-item{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px;border:1px solid #334155;border-radius:14px;background:#111827}.blocked-time-item span{color:#94a3b8}@media(max-width:760px){.opening-day{grid-template-columns:1fr 1fr}.opening-day strong{grid-column:1/-1}.opening-day span{display:none}.blocked-time-form{grid-template-columns:1fr}.blocked-time-form h3{grid-column:auto}.blocked-time-item{align-items:flex-start;flex-direction:column}}
