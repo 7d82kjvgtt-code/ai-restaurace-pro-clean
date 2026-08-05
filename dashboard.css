@@ -381,7 +381,7 @@ tbody tr:hover {
   border-radius: 999px;
 }
 
-.status.ÄekĂĄ {
+.status.ĂÂekÄÄ {
   background: #d97706;
 }
 
@@ -389,7 +389,7 @@ tbody tr:hover {
   background: var(--success);
 }
 
-.status.ZruĹĄeno {
+.status.ZruÄšÄeno {
   background: var(--danger);
 }
 
@@ -504,7 +504,7 @@ tbody tr:hover {
   padding: 0;
 }
 
-/* SprĂĄva stolĹŻ */
+/* SprÄÄva stolÄšĹť */
 
 .switch-row {
   display: flex;
@@ -605,7 +605,7 @@ tbody tr:hover {
   scroll-margin-top: 25px;
 }
 
-/* PĹihlĂĄĹĄenĂ­ */
+/* PÄšÂihlÄÄÄšÄenÄÂ­ */
 
 #loginScreen {
   position: fixed;
@@ -929,7 +929,7 @@ tbody tr:hover {
     color: white;
 }
 /* =========================
-   KALENDĂĹ REZERVACĂ
+   KALENDÄÂÄšÂ REZERVACÄÂ
 ========================= */
 
 #kalendar {
@@ -1063,7 +1063,7 @@ tbody tr:hover {
     }
 
 }
-/* KalendĂĄĹ pĹes celou ĹĄĂ­Ĺku dashboardu */
+/* KalendÄÄÄšÂ pÄšÂes celou ÄšÄÄÂ­ÄšÂku dashboardu */
 #kalendar {
     width: 100%;
     max-width: none;
@@ -1118,7 +1118,7 @@ tbody tr:hover {
     user-select: none;
     touch-action: none;
 }
-/* OvlĂĄdĂĄnĂ­ mapy stolĹŻ */
+/* OvlÄÄdÄÄnÄÂ­ mapy stolÄšĹť */
 
 .map-toolbar {
     display: flex;
@@ -1399,7 +1399,7 @@ tbody tr:hover {
   box-shadow: 0 8px 20px rgba(255, 90, 31, 0.25);
 }
 
-/* ===== OPRAVENĂ KALENDĂĹ â finĂĄlnĂ­ pĹepis ===== */
+/* ===== OPRAVENÄÂ KALENDÄÂÄšÂ Ă˘ÂÂ finÄÄlnÄÂ­ pÄšÂepis ===== */
 #calendarReservations {
   position: relative;
   margin-top: 20px;
@@ -1555,4 +1555,39 @@ tbody tr:hover {
   .calendar-status {
     display: none;
   }
+}
+
+/* ===== BarevnĂŠ stavy rezervacĂ­ v kalendĂĄĹi ===== */
+.calendar-reservation.pending {
+  background: linear-gradient(135deg, #ff8a1f, #ff5a1f);
+  border-color: rgba(255, 138, 31, 0.65);
+  color: #1f1308;
+}
+
+.calendar-reservation.confirmed {
+  background: linear-gradient(135deg, #34d399, #16a34a);
+  border-color: rgba(52, 211, 153, 0.7);
+  color: #052e16;
+}
+
+.calendar-reservation.cancelled {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  border-color: rgba(248, 113, 113, 0.75);
+  color: #fff;
+  opacity: 0.82;
+}
+
+.calendar-reservation.pending .calendar-status {
+  background: rgba(255, 247, 237, 0.9);
+  color: #9a3412;
+}
+
+.calendar-reservation.confirmed .calendar-status {
+  background: rgba(236, 253, 245, 0.92);
+  color: #047857;
+}
+
+.calendar-reservation.cancelled .calendar-status {
+  background: rgba(254, 242, 242, 0.94);
+  color: #b91c1c;
 }
