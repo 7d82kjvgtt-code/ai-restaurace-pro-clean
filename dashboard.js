@@ -174,6 +174,7 @@ let statusChart = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
   setupNavigation();
+  setupMobileNavigation();
 document.querySelectorAll(".room-switch").forEach((button) => {
     button.addEventListener("click", () => {
         selectedRoom = button.dataset.room;
@@ -219,6 +220,46 @@ async function loadDashboardData() {
   ]);
 
   await loadReservations();
+}
+
+function setupMobileNavigation() {
+  const button = document.getElementById("mobileMenuButton");
+  const sidebar = document.getElementById("dashboardSidebar");
+  const overlay = document.getElementById("mobileMenuOverlay");
+
+  if (!button || !sidebar || !overlay) return;
+
+  const closeMenu = () => {
+    sidebar.classList.remove("mobile-open");
+    overlay.classList.remove("visible");
+    document.body.classList.remove("mobile-menu-open");
+    button.setAttribute("aria-expanded", "false");
+  };
+
+  const openMenu = () => {
+    sidebar.classList.add("mobile-open");
+    overlay.classList.add("visible");
+    document.body.classList.add("mobile-menu-open");
+    button.setAttribute("aria-expanded", "true");
+  };
+
+  button.addEventListener("click", () => {
+    sidebar.classList.contains("mobile-open") ? closeMenu() : openMenu();
+  });
+
+  overlay.addEventListener("click", closeMenu);
+
+  sidebar.querySelectorAll("nav a").forEach(link => {
+    link.addEventListener("click", closeMenu);
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 1100) closeMenu();
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") closeMenu();
+  });
 }
 
 function setupNavigation() {
