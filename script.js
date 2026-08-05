@@ -190,7 +190,64 @@ function odpoved() {
   }
 }
 
+let reservationSubmissionInProgress = false;
+
+function getPublicReservationButton() {
+  return document.querySelector('button[onclick*="ulozitRezervaci"]');
+}
+
+function setPublicReservationSubmitting(isSubmitting) {
+  reservationSubmissionInProgress = isSubmitting;
+
+  const button = getPublicReservationButton();
+  if (!button) return;
+
+  if (!button.dataset.originalText) {
+    button.dataset.originalText = button.textContent.trim() || "Potvrdit rezervaci";
+  }
+
+  button.disabled = isSubmitting;
+  button.setAttribute("aria-busy", String(isSubmitting));
+  button.textContent = isSubmitting
+    ? "Ukládám rezervaci…"
+    : button.dataset.originalText;
+}
+
+async function publicReservationAlreadyExists({ name, date, time, phone, email }) {
+  const params = new URLSearchParams({
+    restaurant_id: `eq.${PUBLIC_RESTAURANT_ID}`,
+    date: `eq.${date}`,
+    time: `eq.${time}`,
+    status: "neq.Zrušeno",
+    select: "id,name,phone,email"
+  });
+
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/reservations?${params.toString()}`,
+    { method: "GET", headers }
+  );
+
+  if (!response.ok) {
+    throw new Error("Nepodařilo se ověřit, zda rezervace už neexistuje.");
+  }
+
+  const normalizedName = name.trim().toLowerCase();
+  const normalizedPhone = phone.replace(/\s+/g, "");
+  const normalizedEmail = email.trim().toLowerCase();
+  const rows = await response.json();
+
+  return rows.some(row => {
+    const sameName = String(row.name || "").trim().toLowerCase() === normalizedName;
+    const samePhone = String(row.phone || "").replace(/\s+/g, "") === normalizedPhone;
+    const sameEmail = String(row.email || "").trim().toLowerCase() === normalizedEmail;
+
+    return sameName && (samePhone || sameEmail);
+  });
+}
+
 async function ulozitRezervaci() {
+  if (reservationSubmissionInProgress) return;
+
   const name = document.getElementById("jmeno").value.trim();
   const people = document.getElementById("osoby").value.trim();
   const date = document.getElementById("datum").value;
@@ -200,207 +257,198 @@ async function ulozitRezervaci() {
   const note = document.getElementById("poznamka").value.trim();
   const namePattern = /^[A-Za-zÁ-Žá-ž\s'-]{2,50}$/;
 
-if (!namePattern.test(name)) {
-  alert("Zadej platné jméno alespoň o 2 písmenech.");
-  document.getElementById("jmeno").value = "";
-  return;
-}
-const today = new Date();
-
-const localToday = new Date(
-  today.getTime() - today.getTimezoneOffset() * 60000
-)
-  .toISOString()
-  .split("T")[0];
-
-if (!date) {
-  alert("Zadej platné datum rezervace.");
-  document.getElementById("datum").value = "";
-  return;
-}
-
-if (date < localToday) {
-  alert("Nelze vytvořit rezervaci na minulý den.");
-  document.getElementById("datum").value = "";
-  return;
-}
-  
-  const maxDate = new Date();
-maxDate.setFullYear(maxDate.getFullYear() + 1);
-
-const localMaxDate = new Date(
-  maxDate.getTime() - maxDate.getTimezoneOffset() * 60000
-)
-  .toISOString()
-  .split("T")[0];
-
-if (date > localMaxDate) {
-  alert("Rezervaci lze vytvořit maximálně 1 rok dopředu.");
-  document.getElementById("datum").value = "";
-  return;
-}
-  
-const openingTime = "10:00";
-const closingTime = "22:00";
-
-if (time < openingTime || time > closingTime) {
-  alert("Rezervace je možná pouze mezi 10:00 a 22:00.");
-  document.getElementById("cas").value = "";
-  return;
-}
-  if (date === localToday) {
-  const now = new Date();
-
-  const currentTime =
-    String(now.getHours()).padStart(2, "0") +
-    ":" +
-    String(now.getMinutes()).padStart(2, "0");
-
-  if (time <= currentTime) {
-    alert("Na dnešek nelze rezervovat čas, který už proběhl.");
-    document.getElementById("cas").value = "";
+  if (!namePattern.test(name)) {
+    alert("Zadej platné jméno alespoň o 2 písmenech.");
+    document.getElementById("jmeno").value = "";
     return;
   }
-}
+
+  const today = new Date();
+  const localToday = new Date(
+    today.getTime() - today.getTimezoneOffset() * 60000
+  ).toISOString().split("T")[0];
+
+  if (!date) {
+    alert("Zadej platné datum rezervace.");
+    return;
+  }
+
+  if (date < localToday) {
+    alert("Nelze vytvořit rezervaci na minulý den.");
+    return;
+  }
+
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 1);
+  const localMaxDate = new Date(
+    maxDate.getTime() - maxDate.getTimezoneOffset() * 60000
+  ).toISOString().split("T")[0];
+
+  if (date > localMaxDate) {
+    alert("Rezervaci lze vytvořit maximálně 1 rok dopředu.");
+    return;
+  }
+
+  const openingTime = "10:00";
+  const closingTime = "22:00";
+
+  if (!time || time < openingTime || time > closingTime) {
+    alert("Rezervace je možná pouze mezi 10:00 a 22:00.");
+    return;
+  }
+
+  if (date === localToday) {
+    const now = new Date();
+    const currentTime =
+      String(now.getHours()).padStart(2, "0") + ":" +
+      String(now.getMinutes()).padStart(2, "0");
+
+    if (time <= currentTime) {
+      alert("Na dnešek nelze rezervovat čas, který už proběhl.");
+      return;
+    }
+  }
+
   const peopleNumber = Number(people);
-  
+  if (!Number.isInteger(peopleNumber) || peopleNumber < 1 || peopleNumber > 20) {
+    alert("Počet osob musí být od 1 do 20.");
+    return;
+  }
 
-if (peopleNumber < 1 || peopleNumber > 20) {
-  alert("Počet osob musí být od 1 do 20.");
-  document.getElementById("osoby").value = "";
-  return;
-}
- const phoneClean = phone.replace(/\s+/g, "");
+  const phoneClean = phone.replace(/\s+/g, "");
+  if (!/^\+?\d{9,15}$/.test(phoneClean)) {
+    alert("Zadej platné telefonní číslo.");
+    return;
+  }
 
-if (!/^\+?\d{9,15}$/.test(phoneClean)) {
-  alert("Zadej platné telefonní číslo.");
-  document.getElementById("telefon").value = "";
-  return;
-}
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailPattern.test(email)) {
+    alert("Zadej platnou e-mailovou adresu.");
+    return;
+  }
 
-if (!emailPattern.test(email)) {
-  alert("Zadej platnou e-mailovou adresu.");
-  document.getElementById("email").value = "";
-  return;
-}
   if (!name || !people || !date || !time || !phone || !email) {
     alert("Vyplň jméno, počet osob, datum, čas, telefon a e-mail.");
     return;
   }
-  
-const checkRes = await fetch(
-  `${SUPABASE_URL}/rest/v1/reservations?date=eq.${date}&time=eq.${time}&status=neq.Zrušeno&select=id`,
-  {
-    method: "GET",
-    headers
-  }
-);
 
-if (!checkRes.ok) {
-  alert("Nepodařilo se ověřit dostupnost termínu.");
-  console.error(await checkRes.text());
-  return;
-}
-
-const existingReservations = await checkRes.json();
-
-if (existingReservations.length >= 7) {
-  alert("Tento termín je už plně obsazený. Vyber jiný čas.");
-  return;
-}
-  let automaticallySelectedTable = null;
+  setPublicReservationSubmitting(true);
 
   try {
-    automaticallySelectedTable = await findBestPublicTable({
+    const duplicateExists = await publicReservationAlreadyExists({
+      name,
+      date,
+      time,
+      phone,
+      email
+    });
+
+    if (duplicateExists) {
+      alert("Tato rezervace už byla uložena. Není potřeba ji odesílat znovu.");
+      return;
+    }
+
+    const checkRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/reservations?date=eq.${encodeURIComponent(date)}&time=eq.${encodeURIComponent(time)}&status=neq.Zrušeno&select=id`,
+      { method: "GET", headers }
+    );
+
+    if (!checkRes.ok) {
+      throw new Error("Nepodařilo se ověřit dostupnost termínu.");
+    }
+
+    const existingReservations = await checkRes.json();
+    if (existingReservations.length >= 7) {
+      alert("Tento termín je už plně obsazený. Vyber jiný čas.");
+      return;
+    }
+
+    const automaticallySelectedTable = await findBestPublicTable({
       people: peopleNumber,
       date,
       time
     });
-  } catch (error) {
-    alert(error.message || "Nepodařilo se vybrat volný stůl.");
-    return;
-  }
 
-  if (!automaticallySelectedTable) {
-    alert(
-      "Pro tento počet osob není v daném čase volný vhodný stůl. " +
-      "Vyber jiný čas."
-    );
-    return;
-  }
+    if (!automaticallySelectedTable) {
+      alert(
+        "Pro tento počet osob není v daném čase volný vhodný stůl. " +
+        "Vyber jiný čas."
+      );
+      return;
+    }
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations`, {
-    method: "POST",
-    headers: {
-      ...headers,
-      Prefer: "return=minimal"
-    },
-    body: JSON.stringify({
-      name,
-      people: peopleNumber,
-      date,
-      time,
-      duration_minutes: PUBLIC_RESERVATION_DURATION_MINUTES,
-      table_id: Number(automaticallySelectedTable.id),
-      phone,
-      email,
-      note,
-      status: "Čeká",
-      restaurant_id: PUBLIC_RESTAURANT_ID
-    })
-  });
-
-  if (!res.ok) {
-    const errorText = await res.text();
-    alert("Chyba rezervace: " + errorText);
-    console.error(errorText);
-    return;
-  }
-
-  let emailSent = false;
-
-  try {
-    const emailRes = await fetch("/api/send-email", {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        ...headers,
+        Prefer: "return=minimal"
       },
       body: JSON.stringify({
         name,
-        people: Number(people),
+        people: peopleNumber,
         date,
         time,
+        duration_minutes: PUBLIC_RESERVATION_DURATION_MINUTES,
+        table_id: Number(automaticallySelectedTable.id),
         phone,
         email,
-        note
+        note,
+        status: "Čeká",
+        restaurant_id: PUBLIC_RESTAURANT_ID
       })
     });
 
-    const emailData = await emailRes.json().catch(() => ({}));
-    emailSent = emailRes.ok;
-
-    if (!emailRes.ok) {
-      console.error("E-mail se nepodařilo odeslat:", emailData);
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error("Chyba rezervace: " + errorText);
     }
-  } catch (emailError) {
-    console.error("E-mail se nepodařilo odeslat:", emailError);
+
+    let emailSent = false;
+
+    try {
+      const emailRes = await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          people: peopleNumber,
+          date,
+          time,
+          phone,
+          email,
+          note
+        })
+      });
+
+      const emailData = await emailRes.json().catch(() => ({}));
+      emailSent = emailRes.ok;
+
+      if (!emailRes.ok) {
+        console.error("E-mail se nepodařilo odeslat:", emailData);
+      }
+    } catch (emailError) {
+      console.error("E-mail se nepodařilo odeslat:", emailError);
+    }
+
+    alert(
+      emailSent
+        ? `✅ Rezervace uložena. Automaticky byl vybrán ${automaticallySelectedTable.name} a potvrzení bylo odesláno e-mailem!`
+        : `✅ Rezervace uložena. Automaticky byl vybrán ${automaticallySelectedTable.name}. Potvrzovací e-mail se ale nepodařilo odeslat.`
+    );
+
+    ["jmeno", "osoby", "datum", "cas", "telefon", "email", "poznamka"]
+      .forEach(id => {
+        const input = document.getElementById(id);
+        if (input) input.value = "";
+      });
+  } catch (error) {
+    console.error(error);
+    alert(error.message || "Rezervaci se nepodařilo uložit.");
+  } finally {
+    setPublicReservationSubmitting(false);
   }
-
-  alert(
-    emailSent
-      ? `✅ Rezervace uložena. Automaticky byl vybrán ${automaticallySelectedTable.name} a potvrzení bylo odesláno e-mailem!`
-      : `✅ Rezervace uložena. Automaticky byl vybrán ${automaticallySelectedTable.name}. Potvrzovací e-mail se ale nepodařilo odeslat.`
-  );
-
-  document.getElementById("jmeno").value = "";
-  document.getElementById("osoby").value = "";
-  document.getElementById("datum").value = "";
-  document.getElementById("cas").value = "";
-  document.getElementById("telefon").value = "";
-  document.getElementById("email").value = "";
-  document.getElementById("poznamka").value = "";
 }
+
 document.addEventListener("DOMContentLoaded", () => {
   const menuToggle = document.getElementById("menuToggle");
   const navLinks = document.getElementById("navLinks");
