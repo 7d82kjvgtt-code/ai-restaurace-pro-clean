@@ -96,6 +96,59 @@ async function findBestPublicTable({ people, date, time }) {
   }) || null;
 }
 
+async function checkPublicOpeningAvailability({ date, time, durationMinutes }) {
+  const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
+  const endMinutes = timeToMinutes(time) + Number(durationMinutes || 120);
+
+  const hoursUrl = `${SUPABASE_URL}/rest/v1/opening_hours?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&day_of_week=eq.${dayOfWeek}&select=is_open,open_time,close_time`;
+  const blocksUrl = `${SUPABASE_URL}/rest/v1/blocked_times?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&select=start_time,end_time,reason`;
+
+  const [hoursResponse, blocksResponse] = await Promise.all([
+    fetch(hoursUrl, { headers }),
+    fetch(blocksUrl, { headers })
+  ]);
+
+  if (!hoursResponse.ok || !blocksResponse.ok) {
+    throw new Error("Nepodařilo se ověřit otevírací dobu.");
+  }
+
+  const hoursRows = await hoursResponse.json();
+  const blocks = await blocksResponse.json();
+  const hours = hoursRows[0] || { is_open: true, open_time: "10:00:00", close_time: "22:00:00" };
+
+  if (!hours.is_open) {
+    return { ok: false, message: "V tento den má restaurace zavřeno." };
+  }
+
+  const openMinutes = timeToMinutes(hours.open_time);
+  const closeMinutes = timeToMinutes(hours.close_time);
+  const startMinutes = timeToMinutes(time);
+
+  if (startMinutes < openMinutes || endMinutes > closeMinutes) {
+    return {
+      ok: false,
+      message: `Rezervace musí celá proběhnout mezi ${String(hours.open_time).slice(0,5)} a ${String(hours.close_time).slice(0,5)}.`
+    };
+  }
+
+  const conflictingBlock = blocks.find(block => {
+    const blockStart = timeToMinutes(block.start_time);
+    const blockEnd = timeToMinutes(block.end_time);
+    return startMinutes < blockEnd && blockStart < endMinutes;
+  });
+
+  if (conflictingBlock) {
+    return {
+      ok: false,
+      message: conflictingBlock.reason
+        ? `Tento čas je blokovaný: ${conflictingBlock.reason}`
+        : "Tento čas je momentálně blokovaný. Vyber jiný čas."
+    };
+  }
+
+  return { ok: true };
+}
+
 async function loadMenu() {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/menu?select=*&order=id.asc`, {
     headers
@@ -289,13 +342,6 @@ async function ulozitRezervaci() {
     return;
   }
 
-  const openingTime = "10:00";
-  const closingTime = "22:00";
-
-  if (!time || time < openingTime || time > closingTime) {
-    alert("Rezervace je možná pouze mezi 10:00 a 22:00.");
-    return;
-  }
 
   if (date === localToday) {
     const now = new Date();
@@ -335,6 +381,16 @@ async function ulozitRezervaci() {
   setPublicReservationSubmitting(true);
 
   try {
+    const openingAvailability = await checkPublicOpeningAvailability({
+      date,
+      time,
+      durationMinutes: PUBLIC_RESERVATION_DURATION_MINUTES
+    });
+
+    if (!openingAvailability.ok) {
+      alert(openingAvailability.message);
+      return;
+    }
     const duplicateExists = await publicReservationAlreadyExists({
       name,
       date,
