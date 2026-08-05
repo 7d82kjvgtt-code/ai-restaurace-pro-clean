@@ -902,7 +902,15 @@ function editReservation(id) {
 
     document.getElementById("editReservationTime").value =
         reservation.time || "";
+  
+const durationSelect =
+    document.getElementById("editReservationDuration");
 
+if (durationSelect) {
+    durationSelect.value = String(
+        reservation.duration_minutes || 120
+    );
+}
     document.getElementById("editReservationPhone").value =
         reservation.phone || "";
 
