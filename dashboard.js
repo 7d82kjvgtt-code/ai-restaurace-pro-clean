@@ -3666,6 +3666,7 @@ function showDashboardSection(sectionId) {
         "kalendar",
         "stoly",
         "mapa",
+        "provoz",
         "menu"
     ];
 
