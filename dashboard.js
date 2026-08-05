@@ -2973,7 +2973,7 @@ async function deleteFood(id) {
     );
   }
 }
-function createCalendarTimeline() {
+function createCalendarTimeline(eventsHtml = "") {
   const hours = [];
 
   for (let hour = 10; hour <= 22; hour++) {
@@ -2990,75 +2990,125 @@ function createCalendarTimeline() {
   return `
     <div class="calendarTimeline">
       ${hours.join("")}
+      <div class="calendarEventsLayer">
+        ${eventsHtml}
+      </div>
     </div>
   `;
 }
 
-function renderCalendar() {
+function getCalendarStartMinutes(reservation) {
+  const [hours, minutes] = String(reservation.time || "10:00")
+    .split(":")
+    .map(Number);
 
-    const container =
-        document.getElementById("calendarReservations");
-
-    if (!container) return;
-
-    const selectedDate =
-        document.getElementById("calendarDate")?.value
-        || getLocalDateString();
-
-    const todayReservations =
-        reservations.filter(r => r.date === selectedDate);
-
-    if (todayReservations.length === 0) {
-  container.innerHTML = createCalendarTimeline();
-  return;
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return 0;
+  return Math.max(0, ((hours - 10) * 60) + minutes);
 }
 
-   container.innerHTML =
-  createCalendarTimeline() +
-  todayReservations
-    .sort((a, b) => a.time.localeCompare(b.time))
-   .map(r => {
-  const [hours, minutes] = (r.time || "10:00").split(":").map(Number);
-  const top = ((hours - 10) * 60) + minutes;
-     
-     const durationMinutes = Number(r.duration_minutes || 120);
-const height = Math.max(45, durationMinutes);
+function buildCalendarLayout(dayReservations) {
+  const events = dayReservations
+    .map(reservation => {
+      const start = getCalendarStartMinutes(reservation);
+      const duration = Math.max(30, Number(reservation.duration_minutes || 120));
 
-  return `
-    
-     <div
-  class="calendar-reservation"
- style="top: ${top}px; height: ${height}px;"
-           onclick="editReservation('${r.id}')">
+      return {
+        reservation,
+        start,
+        duration,
+        end: start + duration,
+        column: 0,
+        columnCount: 1
+      };
+    })
+    .sort((a, b) => a.start - b.start || b.duration - a.duration);
 
-            <div class="calendar-time">
-                ${r.time}
-            </div>
+  let clusterStart = 0;
 
-            <div class="calendar-info">
+  while (clusterStart < events.length) {
+    let clusterEnd = clusterStart + 1;
+    let latestEnd = events[clusterStart].end;
 
-                <h3>${r.name}</h3>
+    while (clusterEnd < events.length && events[clusterEnd].start < latestEnd) {
+      latestEnd = Math.max(latestEnd, events[clusterEnd].end);
+      clusterEnd += 1;
+    }
 
-                <p>
+    const cluster = events.slice(clusterStart, clusterEnd);
+    const columnEnds = [];
 
-                    👥 ${r.people} osob
+    cluster.forEach(event => {
+      let column = columnEnds.findIndex(end => end <= event.start);
 
-                    ${r.table_name ? " • 🪑 "+r.table_name : ""}
+      if (column === -1) {
+        column = columnEnds.length;
+      }
 
-                </p>
+      event.column = column;
+      columnEnds[column] = event.end;
+    });
 
-            </div>
+    const columnCount = Math.max(1, columnEnds.length);
+    cluster.forEach(event => {
+      event.columnCount = columnCount;
+    });
 
-            <div class="calendar-status ${getCalendarStatusClass(r.status)}">
-    ${getCalendarStatusLabel(r.status)}
-</div>
+    clusterStart = clusterEnd;
+  }
 
-        </div>
+  return events;
+}
 
-         `;
-})
-.join("");
-  
+function renderCalendar() {
+  const container = document.getElementById("calendarReservations");
+  if (!container) return;
+
+  const selectedDate =
+    document.getElementById("calendarDate")?.value || getLocalDateString();
+
+  const dayReservations = reservations.filter(
+    reservation => reservation.date === selectedDate
+  );
+
+  if (dayReservations.length === 0) {
+    container.innerHTML = createCalendarTimeline();
+    return;
+  }
+
+  const eventsHtml = buildCalendarLayout(dayReservations)
+    .map(event => {
+      const r = event.reservation;
+      const widthPercent = 100 / event.columnCount;
+      const leftPercent = event.column * widthPercent;
+      const height = Math.max(30, event.duration - 2);
+      const statusClass = getCalendarStatusClass(r.status);
+      const statusLabel = getCalendarStatusLabel(r.status);
+      const tableName = r.table_name
+        ? ` • 🪑 ${escapeHtml(r.table_name)}`
+        : "";
+
+      return `
+        <button
+          type="button"
+          class="calendar-reservation ${statusClass}"
+          style="top:${event.start}px;height:${height}px;left:calc(${leftPercent}% + 3px);width:calc(${widthPercent}% - 6px);"
+          onclick="editReservation('${r.id}')"
+          aria-label="Upravit rezervaci ${escapeHtml(r.name || "")}" 
+        >
+          <span class="calendar-time">${escapeHtml(r.time || "")}</span>
+
+          <span class="calendar-info">
+            <strong>${escapeHtml(r.name || "Bez jména")}</strong>
+            <small>👥 ${escapeHtml(r.people || 0)} osob${tableName}</small>
+          </span>
+
+          <span class="calendar-status ${statusClass}">${escapeHtml(statusLabel)}</span>
+        </button>
+      `;
+    })
+    .join("");
+
+  container.innerHTML = createCalendarTimeline(eventsHtml);
 }
 
 const calendarDateInput =
