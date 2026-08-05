@@ -61,6 +61,7 @@
     <a href="#kalendar" data-section="kalendar">🗓️ Kalendář</a>
     <a href="#stoly" data-section="stoly">🪑 Stoly</a>
     <a href="#mapa" data-section="mapa">🗺️ Mapa stolů</a>
+    <a href="#provoz" data-section="provoz">🕒 Provozní doba</a>
     <a href="#menu" data-section="menu">🍕 Menu</a>
 </nav>
 
@@ -337,7 +338,27 @@
 </div>
 
 </section>
-   <section id="mapa" class="panel" style="display:none;">
+   
+<section class="panel operations-panel" id="provoz">
+  <div class="section-heading panel-top">
+    <div><span class="eyebrow">Nastavení rezervací</span><h2>🕒 Provozní doba a blokace</h2></div>
+  </div>
+  <p class="operations-help">Nastav otevírací dobu pro každý den. Rezervace musí skončit před zavřením.</p>
+  <div id="openingHoursGrid" class="opening-hours-grid"></div>
+  <button type="button" class="successButton" onclick="saveOpeningHours()">Uložit otevírací dobu</button>
+
+  <div class="blocked-time-form">
+    <h3>🚫 Zablokovat konkrétní čas</h3>
+    <input id="blockDate" type="date">
+    <input id="blockStart" type="time">
+    <input id="blockEnd" type="time">
+    <input id="blockReason" type="text" placeholder="Důvod, například soukromá akce">
+    <button type="button" class="dangerButton" onclick="addBlockedTime()">Přidat blokaci</button>
+  </div>
+  <div id="blockedTimesList" class="blocked-times-list"></div>
+</section>
+
+<section id="mapa" class="panel" style="display:none;">
     <div class="section-heading">
         <span class="eyebrow">Mapa restaurace</span>
 
