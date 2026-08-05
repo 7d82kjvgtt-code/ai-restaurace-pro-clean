@@ -9,6 +9,93 @@ const headers = {
 
 let menu = [];
 
+
+const PUBLIC_RESTAURANT_ID = 1;
+const PUBLIC_RESERVATION_DURATION_MINUTES = 120;
+
+function timeToMinutes(value) {
+  const [hours, minutes] = String(value || "00:00")
+    .split(":")
+    .map(Number);
+
+  return (hours * 60) + minutes;
+}
+
+function publicReservationsOverlap(first, second) {
+  if (!first?.date || !second?.date || first.date !== second.date) {
+    return false;
+  }
+
+  const firstStart = timeToMinutes(first.time);
+  const secondStart = timeToMinutes(second.time);
+  const firstEnd = firstStart + Math.max(
+    30,
+    Number(first.duration_minutes || PUBLIC_RESERVATION_DURATION_MINUTES)
+  );
+  const secondEnd = secondStart + Math.max(
+    30,
+    Number(second.duration_minutes || PUBLIC_RESERVATION_DURATION_MINUTES)
+  );
+
+  return firstStart < secondEnd && secondStart < firstEnd;
+}
+
+async function findBestPublicTable({ people, date, time }) {
+  const tablesUrl =
+    `${SUPABASE_URL}/rest/v1/restaurant_tables` +
+    `?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}` +
+    `&active=eq.true` +
+    `&capacity=gte.${Number(people)}` +
+    `&select=id,name,capacity,active` +
+    `&order=capacity.asc`;
+
+  const reservationsUrl =
+    `${SUPABASE_URL}/rest/v1/reservations` +
+    `?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}` +
+    `&date=eq.${encodeURIComponent(date)}` +
+    `&status=neq.${encodeURIComponent("Zrušeno")}` +
+    `&select=id,date,time,duration_minutes,table_id,status`;
+
+  const [tablesResponse, reservationsResponse] = await Promise.all([
+    fetch(tablesUrl, { headers }),
+    fetch(reservationsUrl, { headers })
+  ]);
+
+  if (!tablesResponse.ok || !reservationsResponse.ok) {
+    const tablesError = tablesResponse.ok
+      ? ""
+      : await tablesResponse.text();
+    const reservationsError = reservationsResponse.ok
+      ? ""
+      : await reservationsResponse.text();
+
+    console.error("Chyba automatického výběru stolu:", {
+      tablesError,
+      reservationsError
+    });
+
+    throw new Error("Nepodařilo se ověřit dostupnost stolů.");
+  }
+
+  const tables = await tablesResponse.json();
+  const reservationsForDate = await reservationsResponse.json();
+  const draft = {
+    date,
+    time,
+    duration_minutes: PUBLIC_RESERVATION_DURATION_MINUTES
+  };
+
+  return tables.find(table => {
+    return !reservationsForDate.some(reservation => {
+      if (Number(reservation.table_id) !== Number(table.id)) {
+        return false;
+      }
+
+      return publicReservationsOverlap(draft, reservation);
+    });
+  }) || null;
+}
+
 async function loadMenu() {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/menu?select=*&order=id.asc`, {
     headers
@@ -222,6 +309,27 @@ if (existingReservations.length >= 7) {
   alert("Tento termín je už plně obsazený. Vyber jiný čas.");
   return;
 }
+  let automaticallySelectedTable = null;
+
+  try {
+    automaticallySelectedTable = await findBestPublicTable({
+      people: peopleNumber,
+      date,
+      time
+    });
+  } catch (error) {
+    alert(error.message || "Nepodařilo se vybrat volný stůl.");
+    return;
+  }
+
+  if (!automaticallySelectedTable) {
+    alert(
+      "Pro tento počet osob není v daném čase volný vhodný stůl. " +
+      "Vyber jiný čas."
+    );
+    return;
+  }
+
   const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations`, {
     method: "POST",
     headers: {
@@ -230,14 +338,16 @@ if (existingReservations.length >= 7) {
     },
     body: JSON.stringify({
       name,
-      people: Number(people),
+      people: peopleNumber,
       date,
       time,
+      duration_minutes: PUBLIC_RESERVATION_DURATION_MINUTES,
+      table_id: Number(automaticallySelectedTable.id),
       phone,
       email,
       note,
       status: "Čeká",
-      restaurant_id: 1
+      restaurant_id: PUBLIC_RESTAURANT_ID
     })
   });
 
@@ -279,8 +389,8 @@ if (existingReservations.length >= 7) {
 
   alert(
     emailSent
-      ? "✅ Rezervace uložena a potvrzení bylo odesláno e-mailem!"
-      : "✅ Rezervace uložena! Potvrzovací e-mail se ale nepodařilo odeslat."
+      ? `✅ Rezervace uložena. Automaticky byl vybrán ${automaticallySelectedTable.name} a potvrzení bylo odesláno e-mailem!`
+      : `✅ Rezervace uložena. Automaticky byl vybrán ${automaticallySelectedTable.name}. Potvrzovací e-mail se ale nepodařilo odeslat.`
   );
 
   document.getElementById("jmeno").value = "";
