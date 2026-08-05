@@ -1883,6 +1883,87 @@ function handleTableModalPrimaryAction() {
     createReservationFromTable();
 }
 
+
+function getNewReservationDraft() {
+  const people = Number(document.getElementById("newPeople")?.value || 0);
+  const date = document.getElementById("newDate")?.value || "";
+  const time = document.getElementById("newTime")?.value || "";
+  const durationMinutes = Number(
+    document.getElementById("newDuration")?.value || 120
+  );
+
+  return {
+    people,
+    date,
+    time,
+    duration_minutes: durationMinutes,
+    status: "Čeká"
+  };
+}
+
+function fillNewTableOptions(preferredValue = "auto") {
+  const tableSelect = document.getElementById("newTable");
+  if (!tableSelect) return;
+
+  const activeTables = restaurantTables
+    .filter(table => table.active)
+    .sort((a, b) => Number(a.capacity) - Number(b.capacity));
+
+  tableSelect.innerHTML = `
+    <option value="auto">🪄 Automaticky vybrat nejlepší stůl</option>
+    ${activeTables.map(table => `
+      <option value="${Number(table.id)}">
+        ${escapeHtml(table.name)} (${Number(table.capacity)} míst)
+      </option>
+    `).join("")}
+  `;
+
+  const optionExists = Array.from(tableSelect.options)
+    .some(option => option.value === String(preferredValue));
+  tableSelect.value = optionExists ? String(preferredValue) : "auto";
+}
+
+function updateNewTableRecommendation() {
+  const box = document.getElementById("tableRecommendation");
+  const tableSelect = document.getElementById("newTable");
+  if (!box || !tableSelect) return;
+
+  const draft = getNewReservationDraft();
+
+  if (!draft.people || !draft.date || !draft.time) {
+    box.className = "tableRecommendation";
+    box.textContent =
+      "Zadej počet osob, datum a čas. Systém potom doporučí nejlepší volný stůl.";
+    return;
+  }
+
+  const bestTable = findBestAvailableTable(draft);
+
+  if (!bestTable) {
+    box.className = "tableRecommendation unavailable";
+    box.textContent =
+      `Pro ${draft.people} osob v ${draft.time} není volný vhodný stůl.`;
+    return;
+  }
+
+  box.className = "tableRecommendation available";
+  box.innerHTML = `
+    <strong>🪄 Doporučení: ${escapeHtml(bestTable.name)}</strong>
+    <span>${Number(bestTable.capacity)} míst · volný po celou dobu rezervace</span>
+  `;
+}
+
+function setupAutomaticTableRecommendation() {
+  ["newPeople", "newDate", "newTime", "newDuration", "newTable"]
+    .forEach(id => {
+      const element = document.getElementById(id);
+      if (!element || element.dataset.autoTableListener === "1") return;
+      element.dataset.autoTableListener = "1";
+      element.addEventListener("input", updateNewTableRecommendation);
+      element.addEventListener("change", updateNewTableRecommendation);
+    });
+}
+
 function createReservationFromTable() {
     closeTableModal();
 
@@ -1894,16 +1975,9 @@ function createReservationFromTable() {
         return;
     }
 
-    tableSelect.innerHTML = restaurantTables
-        .filter(table => table.active)
-        .map(table => `
-            <option value="${table.id}">
-                ${table.name} (${table.capacity} míst)
-            </option>
-        `)
-        .join("");
-
-    tableSelect.value = String(selectedTableId);
+    fillNewTableOptions(selectedTableId);
+    setupAutomaticTableRecommendation();
+    updateNewTableRecommendation();
     reservationSection.style.display = "block";
     reservationSection.scrollIntoView({
         behavior: "smooth",
@@ -1918,7 +1992,7 @@ async function saveNewReservation() {
     const durationMinutes = Number(
         document.getElementById("newDuration")?.value || 120
     );
-    const tableId = Number(document.getElementById("newTable").value);
+    const tableValue = document.getElementById("newTable").value;
     const phone = document.getElementById("newPhone").value.trim();
     const email = document.getElementById("newEmail").value.trim();
     const note = document.getElementById("newNote").value.trim();
@@ -1928,14 +2002,40 @@ async function saveNewReservation() {
         return;
     }
 
-    const selectedTable = restaurantTables.find(
-        table => Number(table.id) === tableId
-    );
+    const reservationDraft = {
+        people,
+        date,
+        time,
+        duration_minutes: durationMinutes,
+        status: "Čeká"
+    };
+
+    let selectedTable = null;
+
+    if (tableValue === "auto" || tableValue === "") {
+        selectedTable = findBestAvailableTable(reservationDraft);
+
+        if (!selectedTable) {
+            showDashboardNotice(
+                `Pro ${people} osob v ${time} není volný vhodný stůl.
+
+` +
+                "Zvol jiný čas, kratší délku nebo vytvoř větší stůl."
+            );
+            return;
+        }
+    } else {
+        selectedTable = restaurantTables.find(
+            table => Number(table.id) === Number(tableValue)
+        );
+    }
 
     if (!selectedTable) {
         showDashboardNotice("Vyber platný stůl.");
         return;
     }
+
+    const tableId = Number(selectedTable.id);
 
     if (people > Number(selectedTable.capacity)) {
         showDashboardNotice(
@@ -2529,7 +2629,7 @@ async function autoAssignTable(reservationId) {
       `Pro rezervaci na ${formatDate(
         reservation.date
       )} v ${reservation.time || "-"} není volný vhodný stůl.\n\n` +
-      "Každá rezervace blokuje stůl na 2 hodiny."
+      "Kontrola používá skutečnou délku rezervace."
     );
 
     return;
@@ -2623,7 +2723,7 @@ async function assignTable(
   ) {
     showDashboardNotice(
       `${selectedTable.name} je v tomto čase již obsazený.\n\n` +
-      "Každá rezervace blokuje stůl na 2 hodiny."
+      "Kontrola používá skutečnou délku rezervace."
     );
 
     renderReservations(
@@ -3225,17 +3325,12 @@ function openReservationFromCalendar(date, time) {
 
   showDashboardSection("rezervace");
 
-  tableSelect.innerHTML = restaurantTables
-    .filter(table => table.active)
-    .map(table => `
-      <option value="${table.id}">
-        ${escapeHtml(table.name)} (${table.capacity} míst)
-      </option>
-    `)
-    .join("");
+  fillNewTableOptions("auto");
+  setupAutomaticTableRecommendation();
 
   dateInput.value = date;
   timeInput.value = time;
+  updateNewTableRecommendation();
   reservationSection.style.display = "block";
 
   requestAnimationFrame(() => {
@@ -3937,3 +4032,11 @@ const roomInput =
     }
   }
 }
+
+
+// Automatické doporučení stolu v nové rezervaci.
+document.addEventListener("DOMContentLoaded", () => {
+  fillNewTableOptions("auto");
+  setupAutomaticTableRecommendation();
+  updateNewTableRecommendation();
+});
