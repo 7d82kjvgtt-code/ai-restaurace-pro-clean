@@ -20,6 +20,53 @@ let selectedRoom = "Hlavní sál";
 let mergeModeActive = false;
 let selectedTablesForMerge = [];
 
+function showDashboardNotice(message, type = "auto") {
+  const text = String(message || "").trim();
+  if (!text) return;
+
+  let resolvedType = type;
+  if (resolvedType === "auto") {
+    const lower = text.toLowerCase();
+    resolvedType = /úspěš|uložen|spojen|rozpojen/.test(lower)
+      ? "success"
+      : /obsazen|nepodař|nenalezen|vyplň|vyber|pouze|nemá přístup/.test(lower)
+        ? "error"
+        : "info";
+  }
+
+  let container = document.getElementById("dashboardNoticeContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "dashboardNoticeContainer";
+    container.className = "dashboard-notice-container";
+    container.setAttribute("aria-live", "polite");
+    document.body.appendChild(container);
+  }
+
+  const notice = document.createElement("div");
+  notice.className = `dashboard-notice dashboard-notice--${resolvedType}`;
+  notice.setAttribute("role", resolvedType === "error" ? "alert" : "status");
+
+  const icon = resolvedType === "success" ? "✓" : resolvedType === "error" ? "!" : "i";
+  notice.innerHTML = `
+    <span class="dashboard-notice__icon">${icon}</span>
+    <span class="dashboard-notice__text"></span>
+    <button class="dashboard-notice__close" type="button" aria-label="Zavřít">×</button>
+  `;
+  notice.querySelector(".dashboard-notice__text").textContent = text;
+
+  const close = () => {
+    if (notice.classList.contains("is-leaving")) return;
+    notice.classList.add("is-leaving");
+    window.setTimeout(() => notice.remove(), 220);
+  };
+
+  notice.querySelector(".dashboard-notice__close").addEventListener("click", close);
+  container.appendChild(notice);
+  requestAnimationFrame(() => notice.classList.add("is-visible"));
+  window.setTimeout(close, resolvedType === "error" ? 6500 : 4200);
+}
+
 function toggleMergeMode() {
   mergeModeActive = !mergeModeActive;
 
@@ -36,7 +83,7 @@ function toggleMergeMode() {
 
   async function confirmTableMerge() {
   if (selectedTablesForMerge.length < 2) {
-    alert("Vyber alespoň 2 stoly.");
+    showDashboardNotice("Vyber alespoň 2 stoly.");
     return;
   }
 
@@ -45,7 +92,7 @@ function toggleMergeMode() {
   );
 
   if (selectedTables.length < 2) {
-    alert("Vybrané stoly se nepodařilo najít.");
+    showDashboardNotice("Vybrané stoly se nepodařilo najít.");
     return;
   }
 
@@ -54,7 +101,7 @@ function toggleMergeMode() {
   )];
 
   if (rooms.length > 1) {
-    alert("Spojit lze pouze stoly ze stejné místnosti.");
+    showDashboardNotice("Spojit lze pouze stoly ze stejné místnosti.");
     return;
   }
 
@@ -89,7 +136,7 @@ function toggleMergeMode() {
       throw new Error(await response.text());
     }
 
-    alert("Stoly byly úspěšně spojeny.");
+    showDashboardNotice("Stoly byly úspěšně spojeny.");
 
     selectedTablesForMerge = [];
     mergeModeActive = false;
@@ -118,7 +165,7 @@ function toggleMergeMode() {
    await loadTables();
   } catch (error) {
     console.error(error);
-    alert("Spojení stolů se nepodařilo uložit.");
+    showDashboardNotice("Spojení stolů se nepodařilo uložit.");
   }
 }
   
@@ -158,7 +205,7 @@ document.querySelectorAll(".room-switch").forEach((button) => {
   } else {
     clearSession();
     showLogin();
-    alert("Účet není přiřazený k žádné restauraci.");
+    showDashboardNotice("Účet není přiřazený k žádné restauraci.");
   }
 } else {
   showLogin();
@@ -281,7 +328,7 @@ async function loadRestaurantContext() {
 
 if (userRole !== "owner") {
     console.error("Uživatel nemá oprávnění otevřít Dashboard.");
-    alert("Do administrace má přístup pouze majitel restaurace.");
+    showDashboardNotice("Do administrace má přístup pouze majitel restaurace.");
     return false;
 }
     currentRestaurantId = profile.restaurant_id;
@@ -790,7 +837,7 @@ async function updateStatus(id, status) {
   } catch (error) {
     console.error(error);
 
-    alert(
+    showDashboardNotice(
       "Nepodařilo se změnit stav rezervace."
     );
   }
@@ -819,7 +866,7 @@ async function deleteReservation(id) {
   } catch (error) {
     console.error(error);
 
-    alert(
+    showDashboardNotice(
       "Nepodařilo se smazat rezervaci."
     );
   }
@@ -886,7 +933,7 @@ function editReservation(id) {
     );
 
     if (!reservation) {
-        alert("Rezervace nebyla nalezena.");
+        showDashboardNotice("Rezervace nebyla nalezena.");
         return;
     }
 
@@ -1022,7 +1069,7 @@ const durationMinutes = Number(
         people < 1 ||
         people > 30
     ) {
-        alert("Vyplň správně jméno, počet osob, datum a čas.");
+        showDashboardNotice("Vyplň správně jméno, počet osob, datum a čas.");
         return;
     }
 
@@ -1046,12 +1093,12 @@ const durationMinutes = Number(
         );
 
         if (!selectedTable) {
-            alert("Vybraný stůl nebyl nalezen.");
+            showDashboardNotice("Vybraný stůl nebyl nalezen.");
             return;
         }
 
         if (people > Number(selectedTable.capacity)) {
-            alert(
+            showDashboardNotice(
                 `${selectedTable.name} má jen ` +
                 `${selectedTable.capacity} míst.`
             );
@@ -1062,7 +1109,7 @@ const durationMinutes = Number(
             status !== "Zrušeno" &&
             hasTableConflict(tableId, updatedReservation, id)
         ) {
-            alert(
+            showDashboardNotice(
                 `${selectedTable.name} je v tomto čase obsazený.\n\n` +
                 "Zvol jiný čas, délku rezervace nebo jiný stůl."
             );
@@ -1105,10 +1152,10 @@ await loadReservations();
 
 renderTables();
 
-alert("Rezervace byla úspěšně upravena.");
+showDashboardNotice("Rezervace byla úspěšně upravena.");
     } catch (error) {
         console.error(error);
-        alert("Rezervaci se nepodařilo upravit.");
+        showDashboardNotice("Rezervaci se nepodařilo upravit.");
     }
 }
 
@@ -1131,7 +1178,7 @@ async function updateReservation(id, data) {
   } catch (error) {
     console.error(error);
 
-    alert(
+    showDashboardNotice(
       "Nepodařilo se upravit rezervaci."
     );
     return false;
@@ -1142,7 +1189,7 @@ function exportReservations() {
   const data = getFilteredReservations();
 
   if (!data.length) {
-    alert(
+    showDashboardNotice(
       "Nejsou žádné rezervace ke stažení."
     );
 
@@ -1694,10 +1741,10 @@ function openTableGroup(groupId) {
     closeTableModal();
     await loadTables();
 
-    alert("Stoly byly úspěšně rozpojeny.");
+    showDashboardNotice("Stoly byly úspěšně rozpojeny.");
   } catch (error) {
     console.error(error);
-    alert("Stoly se nepodařilo rozpojit.");
+    showDashboardNotice("Stoly se nepodařilo rozpojit.");
   }
 }
 function openTable(tableId) {
@@ -1802,7 +1849,7 @@ function createReservationFromTable() {
     const tableSelect = document.getElementById("newTable");
 
     if (!reservationSection || !tableSelect) {
-        alert("Formulář rezervace se nepodařilo otevřít.");
+        showDashboardNotice("Formulář rezervace se nepodařilo otevřít.");
         return;
     }
 
@@ -1836,7 +1883,7 @@ async function saveNewReservation() {
     const note = document.getElementById("newNote").value.trim();
 
     if (!name || !date || !time || !Number.isInteger(people) || people < 1) {
-        alert("Vyplň jméno, počet osob, datum a čas.");
+        showDashboardNotice("Vyplň jméno, počet osob, datum a čas.");
         return;
     }
 
@@ -1845,12 +1892,12 @@ async function saveNewReservation() {
     );
 
     if (!selectedTable) {
-        alert("Vyber platný stůl.");
+        showDashboardNotice("Vyber platný stůl.");
         return;
     }
 
     if (people > Number(selectedTable.capacity)) {
-        alert(
+        showDashboardNotice(
             `${selectedTable.name} má pouze ${selectedTable.capacity} míst.`
         );
         return;
@@ -1871,7 +1918,7 @@ async function saveNewReservation() {
     };
 
     if (hasTableConflict(tableId, newReservation)) {
-        alert(
+        showDashboardNotice(
             `${selectedTable.name} je v tomto čase už obsazený.\n\n` +
             "Zvol jiný čas, délku rezervace nebo jiný stůl."
         );
@@ -1915,10 +1962,10 @@ async function saveNewReservation() {
 
         await loadReservations();
 
-        alert("Rezervace byla úspěšně uložena.");
+        showDashboardNotice("Rezervace byla úspěšně uložena.");
     } catch (error) {
         console.error(error);
-        alert("Rezervaci se nepodařilo uložit.");
+        showDashboardNotice("Rezervaci se nepodařilo uložit.");
     }
 }
 function renderTables() {
@@ -2040,7 +2087,7 @@ async function saveTable() {
     ).checked;
 
   if (name.length < 2) {
-    alert("Zadej název stolu.");
+    showDashboardNotice("Zadej název stolu.");
     return;
   }
 
@@ -2049,7 +2096,7 @@ async function saveTable() {
     capacity < 1 ||
     capacity > 30
   ) {
-    alert(
+    showDashboardNotice(
       "Kapacita musí být od 1 do 30 míst."
     );
 
@@ -2069,7 +2116,7 @@ async function saveTable() {
     });
 
   if (duplicate) {
-    alert(
+    showDashboardNotice(
       "Stůl s tímto názvem už existuje."
     );
 
@@ -2115,7 +2162,7 @@ async function saveTable() {
   } catch (error) {
     console.error(error);
 
-    alert(
+    showDashboardNotice(
       "Nepodařilo se uložit stůl."
     );
   }
@@ -2233,7 +2280,7 @@ async function deleteTable(id) {
   } catch (error) {
     console.error(error);
 
-    alert(
+    showDashboardNotice(
       "Nepodařilo se smazat stůl."
     );
   }
@@ -2418,7 +2465,7 @@ async function autoAssignTable(reservationId) {
     });
 
   if (!reservation) {
-    alert("Rezervace nebyla nalezena.");
+    showDashboardNotice("Rezervace nebyla nalezena.");
     return;
   }
 
@@ -2426,7 +2473,7 @@ async function autoAssignTable(reservationId) {
     (reservation.status || "Čeká") ===
     "Zrušeno"
   ) {
-    alert(
+    showDashboardNotice(
       "Zrušené rezervaci nelze přiřadit stůl."
     );
 
@@ -2437,7 +2484,7 @@ async function autoAssignTable(reservationId) {
     findBestAvailableTable(reservation);
 
   if (!bestTable) {
-    alert(
+    showDashboardNotice(
       `Pro rezervaci na ${formatDate(
         reservation.date
       )} v ${reservation.time || "-"} není volný vhodný stůl.\n\n` +
@@ -2480,7 +2527,7 @@ async function assignTable(
     });
 
   if (!reservation) {
-    alert("Rezervace nebyla nalezena.");
+    showDashboardNotice("Rezervace nebyla nalezena.");
     return;
   }
 
@@ -2496,7 +2543,7 @@ async function assignTable(
     selectedTable &&
     selectedTable.active === false
   ) {
-    alert(
+    showDashboardNotice(
       `${selectedTable.name} je neaktivní.`
     );
 
@@ -2512,7 +2559,7 @@ async function assignTable(
     Number(reservation.people) >
       Number(selectedTable.capacity)
   ) {
-    alert(
+    showDashboardNotice(
       `${selectedTable.name} má pouze ` +
       `${selectedTable.capacity} míst, ale ` +
       `rezervace je pro ${reservation.people} osob.`
@@ -2533,7 +2580,7 @@ async function assignTable(
       reservation.id
     )
   ) {
-    alert(
+    showDashboardNotice(
       `${selectedTable.name} je v tomto čase již obsazený.\n\n` +
       "Každá rezervace blokuje stůl na 2 hodiny."
     );
@@ -2568,7 +2615,7 @@ async function assignTable(
   } catch (error) {
     console.error(error);
 
-    alert(
+    showDashboardNotice(
       "Nepodařilo se přiřadit stůl."
     );
 
@@ -2669,7 +2716,7 @@ async function saveFood() {
     ).files?.[0];
 
   if (!name || !price) {
-    alert("Vyplň název i cenu.");
+    showDashboardNotice("Vyplň název i cenu.");
     return;
   }
 
@@ -2756,7 +2803,7 @@ async function saveFood() {
   } catch (error) {
     console.error(error);
 
-    alert(
+    showDashboardNotice(
       "Nepodařilo se uložit jídlo nebo nahrát fotografii."
     );
   }
@@ -2988,7 +3035,7 @@ async function deleteFood(id) {
   } catch (error) {
     console.error(error);
 
-    alert(
+    showDashboardNotice(
       "Nepodařilo se smazat jídlo."
     );
   }
@@ -3131,7 +3178,7 @@ function openReservationFromCalendar(date, time) {
   const timeInput = document.getElementById("newTime");
 
   if (!reservationSection || !tableSelect || !dateInput || !timeInput) {
-    alert("Formulář nové rezervace se nepodařilo otevřít.");
+    showDashboardNotice("Formulář nové rezervace se nepodařilo otevřít.");
     return;
   }
 
@@ -3272,7 +3319,7 @@ function attachCalendarDragHandlers() {
         );
 
         if (!draggedReservation) {
-          alert("Rezervace nebyla nalezena.");
+          showDashboardNotice("Rezervace nebyla nalezena.");
           renderCalendar();
           return;
         }
@@ -3292,7 +3339,7 @@ function attachCalendarDragHandlers() {
             proposedReservation.id
           )
         ) {
-          alert(
+          showDashboardNotice(
             `${getTableName(proposedReservation.table_id)} je v čase ${newTime} obsazený.\n\n` +
             "Rezervace nebyla přesunuta."
           );
@@ -3615,7 +3662,7 @@ if (tableWasDragged) {
         }
     } catch (error) {
         console.error("Nepodařilo se uložit pozici stolu:", error);
-        alert("Pozici stolu se nepodařilo uložit.");
+        showDashboardNotice("Pozici stolu se nepodařilo uložit.");
         await loadRestaurantTables();
     }
 });
@@ -3748,7 +3795,7 @@ const roomInput =
   const capacity = Number(capacityInput.value);
   const room = roomInput.value;
   if (name.length < 2) {
-    alert("Zadej název stolu.");
+    showDashboardNotice("Zadej název stolu.");
     nameInput.focus();
     return;
   }
@@ -3758,7 +3805,7 @@ const roomInput =
     capacity < 1 ||
     capacity > 30
   ) {
-    alert("Počet míst musí být od 1 do 30.");
+    showDashboardNotice("Počet míst musí být od 1 do 30.");
     capacityInput.focus();
     return;
   }
@@ -3767,7 +3814,7 @@ const roomInput =
     pendingTableX === null ||
     pendingTableY === null
   ) {
-    alert("Nejdříve klikni do mapy.");
+    showDashboardNotice("Nejdříve klikni do mapy.");
     closeQuickTableModal();
     return;
   }
@@ -3781,7 +3828,7 @@ const roomInput =
   });
 
   if (duplicate) {
-    alert("Stůl s tímto názvem už existuje.");
+    showDashboardNotice("Stůl s tímto názvem už existuje.");
     nameInput.focus();
     return;
   }
@@ -3841,7 +3888,7 @@ const roomInput =
       error
     );
 
-    alert("Stůl se nepodařilo přidat.");
+    showDashboardNotice("Stůl se nepodařilo přidat.");
   } finally {
     if (addButton) {
       addButton.disabled = false;
