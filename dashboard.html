@@ -263,7 +263,13 @@
             <option value="180">180 minut</option>
         </select>
 
-        <select id="newTable"></select>
+        <select id="newTable" aria-label="Výběr stolu">
+            <option value="auto">🪄 Automaticky vybrat nejlepší stůl</option>
+        </select>
+
+        <div id="tableRecommendation" class="tableRecommendation" aria-live="polite">
+            Zadej počet osob, datum a čas. Systém potom doporučí nejlepší volný stůl.
+        </div>
 
         <input id="newPhone" type="text" placeholder="Telefon">
 
