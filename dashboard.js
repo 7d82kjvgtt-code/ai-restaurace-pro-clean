@@ -3001,8 +3001,53 @@ function createCalendarTimeline(eventsHtml = "") {
       <div class="calendarEventsLayer">
         ${eventsHtml}
       </div>
+
+      <div class="calendar-current-time" id="calendarCurrentTime" hidden>
+        <span class="calendar-current-time-label"></span>
+        <span class="calendar-current-time-dot"></span>
+        <span class="calendar-current-time-line"></span>
+      </div>
     </div>
   `;
+}
+
+let calendarCurrentTimeTimer = null;
+
+function updateCalendarCurrentTime() {
+  const indicator = document.getElementById("calendarCurrentTime");
+  const dateInput = document.getElementById("calendarDate");
+
+  if (!indicator || !dateInput) return;
+
+  const now = new Date();
+  const selectedDate = dateInput.value || getLocalDateString();
+  const currentDate = getLocalDateString();
+  const totalMinutes = ((now.getHours() - 10) * 60) + now.getMinutes();
+
+  if (selectedDate !== currentDate || totalMinutes < 0 || totalMinutes > 780) {
+    indicator.hidden = true;
+    return;
+  }
+
+  indicator.hidden = false;
+  indicator.style.top = `${10 + totalMinutes}px`;
+
+  const label = indicator.querySelector(".calendar-current-time-label");
+  if (label) {
+    label.textContent = now.toLocaleTimeString("cs-CZ", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+}
+
+function startCalendarCurrentTimeTimer() {
+  if (calendarCurrentTimeTimer) {
+    clearInterval(calendarCurrentTimeTimer);
+  }
+
+  updateCalendarCurrentTime();
+  calendarCurrentTimeTimer = setInterval(updateCalendarCurrentTime, 30000);
 }
 
 function getCalendarStartMinutes(reservation) {
@@ -3080,6 +3125,7 @@ function renderCalendar() {
 
   if (dayReservations.length === 0) {
     container.innerHTML = createCalendarTimeline();
+    startCalendarCurrentTimeTimer();
     return;
   }
 
@@ -3117,6 +3163,7 @@ function renderCalendar() {
     .join("");
 
   container.innerHTML = createCalendarTimeline(eventsHtml);
+  startCalendarCurrentTimeTimer();
 }
 
 const calendarDateInput =
