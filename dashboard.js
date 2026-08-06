@@ -20,6 +20,9 @@ let selectedRoom = "Hlavní sál";
 let mergeModeActive = false;
 let selectedTablesForMerge = [];
 
+let upcomingReservationTimer = null;
+const shownUpcomingReservationAlerts = new Set();
+
 function showDashboardNotice(message, type = "auto") {
   const text = String(message || "").trim();
   if (!text) return;
@@ -654,6 +657,8 @@ renderReservations(reservations);
 renderCalendar();
 renderCharts();
 renderFloorMap();
+renderUpcomingReservations();
+startUpcomingReservationTimer();
   } catch (error) {
     console.error(error);
 
@@ -665,6 +670,122 @@ renderFloorMap();
       </tr>
     `;
   }
+}
+
+function parseReservationDateTime(reservation) {
+  if (!reservation?.date || !reservation?.time) return null;
+
+  const time = String(reservation.time).slice(0, 5);
+  const parsed = new Date(`${reservation.date}T${time}:00`);
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function isCancelledReservation(reservation) {
+  const status = String(reservation?.status || "").toLowerCase();
+  return ["zrušeno", "zruseno", "cancelled", "canceled"].includes(status);
+}
+
+function getReservationTableLabel(reservation) {
+  if (!reservation?.table_id) return "Bez stolu";
+
+  const table = restaurantTables.find(
+    item => Number(item.id) === Number(reservation.table_id)
+  );
+
+  return table?.name || `Stůl ${reservation.table_id}`;
+}
+
+function formatUpcomingTime(minutes) {
+  if (minutes <= 0) return "Právě teď";
+  if (minutes < 60) return `Za ${minutes} min`;
+
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `Za ${hours} h ${rest} min` : `Za ${hours} h`;
+}
+
+function getUpcomingReservations() {
+  const now = new Date();
+  const today = getLocalDateString(now);
+
+  return reservations
+    .filter(reservation => reservation.date === today && !isCancelledReservation(reservation))
+    .map(reservation => {
+      const startsAt = parseReservationDateTime(reservation);
+      const minutesUntil = startsAt
+        ? Math.ceil((startsAt.getTime() - now.getTime()) / 60000)
+        : null;
+
+      return { reservation, startsAt, minutesUntil };
+    })
+    .filter(item => item.startsAt && item.minutesUntil >= -15 && item.minutesUntil <= 120)
+    .sort((a, b) => a.startsAt - b.startsAt);
+}
+
+function renderUpcomingReservations() {
+  const list = document.getElementById("upcomingReservationsList");
+  if (!list) return;
+
+  const upcoming = getUpcomingReservations();
+
+  if (!upcoming.length) {
+    list.innerHTML = `
+      <div class="upcoming-empty-state">
+        <span>✓</span>
+        <div>
+          <strong>V příštích 2 hodinách nic nepřijde</strong>
+          <small>Seznam se automaticky aktualizuje každou minutu.</small>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = upcoming.map(({ reservation, minutesUntil }) => {
+    const statusClass = getCalendarStatusClass(reservation.status);
+    const people = Number(reservation.people || 0);
+
+    return `
+      <button
+        type="button"
+        class="upcoming-reservation-card ${statusClass}"
+        onclick="editReservation(${Number(reservation.id)})"
+      >
+        <span class="upcoming-time-block">
+          <strong>${escapeHtml(String(reservation.time || "").slice(0, 5))}</strong>
+          <small>${escapeHtml(formatUpcomingTime(minutesUntil))}</small>
+        </span>
+        <span class="upcoming-main-info">
+          <strong>${escapeHtml(reservation.name || "Bez jména")}</strong>
+          <small>${people} ${people === 1 ? "osoba" : people >= 2 && people <= 4 ? "osoby" : "osob"} · ${escapeHtml(getReservationTableLabel(reservation))}</small>
+        </span>
+        <span class="upcoming-status">${escapeHtml(getCalendarStatusLabel(reservation.status))}</span>
+      </button>
+    `;
+  }).join("");
+
+  upcoming.forEach(({ reservation, minutesUntil }) => {
+    if (minutesUntil < 0 || minutesUntil > 30) return;
+
+    const alertKey = `${reservation.id}:${reservation.date}:${String(reservation.time).slice(0, 5)}`;
+    if (shownUpcomingReservationAlerts.has(alertKey)) return;
+
+    shownUpcomingReservationAlerts.add(alertKey);
+    const tableLabel = getReservationTableLabel(reservation);
+    showDashboardNotice(
+      `${formatUpcomingTime(minutesUntil)} přijde ${reservation.name || "rezervace"} – ${reservation.people || 0} osob, ${tableLabel}.`,
+      "info"
+    );
+  });
+}
+
+function startUpcomingReservationTimer() {
+  if (upcomingReservationTimer) return;
+
+  upcomingReservationTimer = window.setInterval(() => {
+    renderUpcomingReservations();
+  }, 60000);
 }
 
 function updateStatistics() {
