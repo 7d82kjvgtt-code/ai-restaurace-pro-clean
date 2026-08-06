@@ -2059,6 +2059,26 @@ tbody tr:hover {
   background: rgba(30, 41, 59, 0.92);
 }
 
+
+
+.upcoming-reservation-card.imminent {
+  border-color: rgba(249, 115, 22, 0.72);
+  border-left-color: #fb923c;
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.18), rgba(15, 23, 42, 0.88));
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.16), 0 12px 30px rgba(249, 115, 22, 0.12);
+}
+
+.upcoming-reservation-card.imminent .upcoming-time-block small {
+  color: #fdba74;
+  font-weight: 800;
+}
+
+.upcoming-reservation-card.imminent .upcoming-status {
+  color: #fff7ed;
+  background: rgba(249, 115, 22, 0.3);
+  border: 1px solid rgba(251, 146, 60, 0.42);
+}
+
 .upcoming-reservation-card.confirmed { border-left-color: #22c55e; }
 .upcoming-reservation-card.cancelled { border-left-color: #ef4444; opacity: 0.72; }
 
