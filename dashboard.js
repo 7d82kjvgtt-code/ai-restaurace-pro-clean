@@ -3862,6 +3862,12 @@ function showDashboardSection(sectionId) {
             id === sectionId ? "" : "none";
     });
 
+    // Panel s blížícími se rezervacemi patří pouze na Přehled.
+    const upcomingPanel = document.getElementById("upcomingReservationsPanel");
+    if (upcomingPanel) {
+        upcomingPanel.style.display = sectionId === "prehled" ? "" : "none";
+    }
+
     document
         .querySelectorAll(".sidebar nav a")
         .forEach(link => {
@@ -4375,5 +4381,16 @@ async function checkDashboardOpeningAvailability({ date, time, durationMinutes }
     return { ok: false, message: `Rezervace musí celá proběhnout mezi ${String(hours.open_time).slice(0,5)} a ${String(hours.close_time).slice(0,5)}.` };
   }
   const block = blockedTimes.find(item => item.date === date && start < timeToMinutes(item.end_time) && timeToMinutes(item.start_time) < end);
-  return block ? { ok: false, message: block.reason ? `Tento čas je blokovaný: ${block.reason}` : "Tento čas je blokovaný." } : { ok: true };
+  if (block) {
+    const reservationEnd = `${String(Math.floor(end / 60) % 24).padStart(2, "0")}:${String(end % 60).padStart(2, "0")}`;
+    const blockStart = String(block.start_time).slice(0, 5);
+    const blockEnd = String(block.end_time).slice(0, 5);
+    return {
+      ok: false,
+      message: block.reason
+        ? `Rezervace by končila v ${reservationEnd} a zasahovala do blokace ${blockStart}–${blockEnd}: ${block.reason}`
+        : `Rezervace by končila v ${reservationEnd} a zasahovala do blokovaného času ${blockStart}–${blockEnd}.`
+    };
+  }
+  return { ok: true };
 }
