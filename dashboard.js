@@ -1015,35 +1015,92 @@ if (durationSelect) {
     document.getElementById("editReservationStatus").value =
         reservation.status || "Čeká";
 
-    const tableSelect =
-        document.getElementById("editReservationTable");
+    updateEditReservationTableOptions(reservation.table_id);
 
-    tableSelect.innerHTML = `
-        <option value="">Bez stolu</option>
-        ${restaurantTables
-            .filter(table => {
-                return (
-                    table.active ||
-                    Number(table.id) === Number(reservation.table_id)
-                );
-            })
-            .map(table => `
-                <option value="${table.id}">
-                    ${table.name} (${table.capacity} míst)
-                </option>
-            `)
-            .join("")}
-    `;
-
+    const tableSelect = document.getElementById("editReservationTable");
     tableSelect.value =
         reservation.table_id === null ||
         reservation.table_id === undefined
             ? ""
             : String(reservation.table_id);
 
+    [
+        "editReservationPeople",
+        "editReservationDate",
+        "editReservationTime",
+        "editReservationDuration",
+        "editReservationStatus"
+    ].forEach(elementId => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.onchange = () => updateEditReservationTableOptions();
+            element.oninput = () => updateEditReservationTableOptions();
+        }
+    });
+
     document
         .getElementById("reservationModal")
         .classList.add("show");
+}
+
+
+function updateEditReservationTableOptions(preferredTableId = undefined) {
+    const tableSelect = document.getElementById("editReservationTable");
+    const idInput = document.getElementById("editReservationId");
+    const peopleInput = document.getElementById("editReservationPeople");
+    const dateInput = document.getElementById("editReservationDate");
+    const timeInput = document.getElementById("editReservationTime");
+    const durationInput = document.getElementById("editReservationDuration");
+    const statusInput = document.getElementById("editReservationStatus");
+
+    if (!tableSelect || !idInput || !peopleInput || !dateInput || !timeInput || !durationInput || !statusInput) {
+        return;
+    }
+
+    const previousValue = preferredTableId !== undefined
+        ? (preferredTableId === null ? "" : String(preferredTableId))
+        : tableSelect.value;
+
+    const reservationId = Number(idInput.value || 0);
+    const people = Number(peopleInput.value || 0);
+    const proposedReservation = {
+        id: reservationId,
+        people,
+        date: dateInput.value,
+        time: timeInput.value,
+        duration_minutes: Number(durationInput.value || 120),
+        status: statusInput.value || "Čeká"
+    };
+
+    const options = restaurantTables
+        .filter(table => table.active || String(table.id) === previousValue)
+        .sort((a, b) => Number(a.capacity) - Number(b.capacity))
+        .map(table => {
+            const tooSmall = people > Number(table.capacity || 0);
+            const occupied = proposedReservation.status !== "Zrušeno" &&
+                proposedReservation.date && proposedReservation.time &&
+                hasTableConflict(table.id, proposedReservation, reservationId);
+            const unavailable = !table.active || tooSmall || occupied;
+
+            let label = `${table.name} (${table.capacity} míst)`;
+            if (!table.active) label += " — neaktivní";
+            else if (tooSmall) label += " — malá kapacita";
+            else if (occupied) label += " — obsazený";
+            else label += " — volný";
+
+            return `<option value="${table.id}" ${unavailable ? "disabled" : ""}>${label}</option>`;
+        })
+        .join("");
+
+    tableSelect.innerHTML = `<option value="">Bez stolu</option>${options}`;
+
+    const preferredOption = [...tableSelect.options].find(option => option.value === previousValue);
+    if (preferredOption) {
+        preferredOption.disabled = false;
+        tableSelect.value = previousValue;
+    } else {
+        tableSelect.value = "";
+    }
 }
 
 function closeReservationModal() {
