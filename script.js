@@ -138,11 +138,15 @@ async function checkPublicOpeningAvailability({ date, time, durationMinutes }) {
   });
 
   if (conflictingBlock) {
+    const reservationEnd = `${String(Math.floor(endMinutes / 60) % 24).padStart(2, "0")}:${String(endMinutes % 60).padStart(2, "0")}`;
+    const blockStart = String(conflictingBlock.start_time).slice(0, 5);
+    const blockEnd = String(conflictingBlock.end_time).slice(0, 5);
+
     return {
       ok: false,
       message: conflictingBlock.reason
-        ? `Tento čas je blokovaný: ${conflictingBlock.reason}`
-        : "Tento čas je momentálně blokovaný. Vyber jiný čas."
+        ? `Rezervace by končila v ${reservationEnd} a zasahovala do blokace ${blockStart}–${blockEnd}: ${conflictingBlock.reason}`
+        : `Rezervace by končila v ${reservationEnd} a zasahovala do blokovaného času ${blockStart}–${blockEnd}.`
     };
   }
 
