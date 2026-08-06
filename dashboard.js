@@ -1211,7 +1211,7 @@ const durationMinutes = Number(
         ) {
             showDashboardNotice(
                 `${selectedTable.name} je v tomto čase obsazený.\n\n` +
-                "Zvol jiný čas, délku rezervace nebo jiný stůl."
+                "Vyber jiný stůl nebo jiný čas."
             );
             return;
         }
@@ -2130,8 +2130,8 @@ async function saveNewReservation() {
 
     if (hasTableConflict(tableId, newReservation)) {
         showDashboardNotice(
-            `${selectedTable.name} je v tomto čase už obsazený.\n\n` +
-            "Zvol jiný čas, délku rezervace nebo jiný stůl."
+            `${selectedTable.name} je v tomto čase obsazený.\n\n` +
+            "Vyber jiný stůl nebo jiný čas."
         );
         return;
     }
@@ -2792,8 +2792,8 @@ async function assignTable(
     )
   ) {
     showDashboardNotice(
-      `${selectedTable.name} je v tomto čase již obsazený.\n\n` +
-      "Kontrola používá skutečnou délku rezervace."
+      `${selectedTable.name} je v tomto čase obsazený.\n\n` +
+      "Vyber jiný stůl nebo jiný čas."
     );
 
     renderReservations(
