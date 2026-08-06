@@ -719,7 +719,7 @@ function getUpcomingReservations() {
 
       return { reservation, startsAt, minutesUntil };
     })
-    .filter(item => item.startsAt && item.minutesUntil >= -15 && item.minutesUntil <= 120)
+    .filter(item => item.startsAt && item.minutesUntil >= 0 && item.minutesUntil <= 120)
     .sort((a, b) => a.startsAt - b.startsAt);
 }
 
@@ -745,11 +745,12 @@ function renderUpcomingReservations() {
   list.innerHTML = upcoming.map(({ reservation, minutesUntil }) => {
     const statusClass = getCalendarStatusClass(reservation.status);
     const people = Number(reservation.people || 0);
+    const isImminent = minutesUntil <= 30;
 
     return `
       <button
         type="button"
-        class="upcoming-reservation-card ${statusClass}"
+        class="upcoming-reservation-card ${statusClass}${isImminent ? " imminent" : ""}"
         onclick="editReservation(${Number(reservation.id)})"
       >
         <span class="upcoming-time-block">
@@ -760,7 +761,7 @@ function renderUpcomingReservations() {
           <strong>${escapeHtml(reservation.name || "Bez jména")}</strong>
           <small>${people} ${people === 1 ? "osoba" : people >= 2 && people <= 4 ? "osoby" : "osob"} · ${escapeHtml(getReservationTableLabel(reservation))}</small>
         </span>
-        <span class="upcoming-status">${escapeHtml(getCalendarStatusLabel(reservation.status))}</span>
+        <span class="upcoming-status">${isImminent ? "Brzy přijde" : escapeHtml(getCalendarStatusLabel(reservation.status))}</span>
       </button>
     `;
   }).join("");
