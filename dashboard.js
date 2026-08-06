@@ -197,6 +197,18 @@ document.querySelectorAll(".room-switch").forEach((button) => {
     .getElementById("statusFilter")
     ?.addEventListener("change", applyFilters);
 
+  [
+    "editReservationPeople",
+    "editReservationDate",
+    "editReservationTime",
+    "editReservationDuration",
+    "editReservationStatus"
+  ].forEach(id => {
+    document.getElementById(id)?.addEventListener("change", () => {
+      populateEditReservationTableOptions();
+    });
+  });
+
   if (await ensureValidSession()) {
   const restaurantLoaded = await loadRestaurantContext();
 
@@ -1015,35 +1027,93 @@ if (durationSelect) {
     document.getElementById("editReservationStatus").value =
         reservation.status || "Čeká";
 
-    const tableSelect =
-        document.getElementById("editReservationTable");
-
-    tableSelect.innerHTML = `
-        <option value="">Bez stolu</option>
-        ${restaurantTables
-            .filter(table => {
-                return (
-                    table.active ||
-                    Number(table.id) === Number(reservation.table_id)
-                );
-            })
-            .map(table => `
-                <option value="${table.id}">
-                    ${table.name} (${table.capacity} míst)
-                </option>
-            `)
-            .join("")}
-    `;
-
-    tableSelect.value =
-        reservation.table_id === null ||
-        reservation.table_id === undefined
-            ? ""
-            : String(reservation.table_id);
+    populateEditReservationTableOptions(reservation);
 
     document
         .getElementById("reservationModal")
         .classList.add("show");
+}
+
+function getEditedReservationDraft() {
+    const id = Number(
+        document.getElementById("editReservationId")?.value || 0
+    );
+
+    return {
+        id,
+        people: Number(
+            document.getElementById("editReservationPeople")?.value || 0
+        ),
+        date: document.getElementById("editReservationDate")?.value || "",
+        time: document.getElementById("editReservationTime")?.value || "",
+        duration_minutes: Number(
+            document.getElementById("editReservationDuration")?.value || 120
+        ),
+        status: document.getElementById("editReservationStatus")?.value || "Čeká"
+    };
+}
+
+function populateEditReservationTableOptions(sourceReservation = null) {
+    const tableSelect = document.getElementById("editReservationTable");
+    if (!tableSelect) return;
+
+    const currentValue = tableSelect.value;
+    const draft = sourceReservation
+        ? {
+            ...sourceReservation,
+            duration_minutes: Number(sourceReservation.duration_minutes || 120)
+        }
+        : getEditedReservationDraft();
+
+    const assignedId = sourceReservation
+        ? (
+            sourceReservation.table_id === null ||
+            sourceReservation.table_id === undefined
+                ? ""
+                : String(sourceReservation.table_id)
+          )
+        : currentValue;
+
+    const options = restaurantTables
+        .filter(table => table.active || String(table.id) === assignedId)
+        .map(table => {
+            const tooSmall = Number(draft.people || 0) > Number(table.capacity || 0);
+            const occupied =
+                draft.date &&
+                draft.time &&
+                (draft.status || "Čeká") !== "Zrušeno" &&
+                hasTableConflict(table.id, draft, draft.id || null);
+
+            const unavailable = tooSmall || occupied || table.active === false;
+            let reason = " – volný";
+
+            if (tooSmall) reason = " – malá kapacita";
+            else if (occupied) reason = " – obsazený";
+            else if (table.active === false) reason = " – neaktivní";
+
+            return `
+                <option
+                    value="${Number(table.id)}"
+                    ${unavailable && String(table.id) !== assignedId ? "disabled" : ""}
+                >
+                    ${escapeHtml(table.name)} (${Number(table.capacity)} míst)${reason}
+                </option>
+            `;
+        })
+        .join("");
+
+    tableSelect.innerHTML = `
+        <option value="">Bez stolu</option>
+        ${options}
+    `;
+
+    tableSelect.value = assignedId;
+
+    const hint = document.getElementById("editReservationTableHint");
+    if (hint) {
+        hint.textContent =
+            "Volné stoly lze vybrat. Obsazené nebo příliš malé stoly jsou zablokované.";
+    }
 }
 
 function closeReservationModal() {
@@ -1195,7 +1265,12 @@ await loadReservations();
 
 renderTables();
 
-showDashboardNotice("Rezervace byla úspěšně upravena.");
+showDashboardNotice(
+  tableId === null
+    ? "Rezervace byla uložena bez stolu."
+    : `Rezervace byla přesunuta na ${getTableName(tableId)}.`,
+  "success"
+);
     } catch (error) {
         console.error(error);
         showDashboardNotice("Rezervaci se nepodařilo upravit.");
