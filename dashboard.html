@@ -59,6 +59,7 @@
     <a href="#grafy" data-section="grafy">📊 Statistiky</a>
     <a href="#rezervace" data-section="rezervace">📅 Rezervace</a>
     <a href="#historie" data-section="historie">🕘 Historie</a>
+    <a href="#customers" data-section="customers">👤 Zákazníci</a>
     <a href="#kalendar" data-section="kalendar">🗓️ Kalendář</a>
     <a href="#stoly" data-section="stoly">🪑 Stoly</a>
     <a href="#mapa" data-section="mapa">🗺️ Mapa stolů</a>
@@ -321,6 +322,30 @@
         </button>
     </div>
 </section>
+
+    <section class="panel customers-panel" id="customers" style="display:none;">
+      <div class="section-heading panel-top customers-heading">
+        <div>
+          <span class="eyebrow">CRM hostů</span>
+          <h2>👤 Zákazníci</h2>
+          <p class="customers-help">Přehled hostů vytvořený z rezervací. Poznámky a označení stálého hosta se ukládají zvlášť.</p>
+        </div>
+        <div class="customer-toolbar">
+          <input id="customerSearch" type="search" placeholder="Hledat jméno, telefon nebo e-mail">
+          <select id="customerTypeFilter" aria-label="Filtrovat zákazníky">
+            <option value="">Všichni zákazníci</option>
+            <option value="regular">⭐ Stálí hosté</option>
+            <option value="returning">Vracející se</option>
+          </select>
+          <button type="button" class="neutralButton" onclick="renderCustomers()">↻ Obnovit</button>
+        </div>
+      </div>
+      <div class="customer-summary" id="customerSummary"></div>
+      <div id="customerList" class="customer-list">
+        <div class="history-empty">Načítám zákazníky…</div>
+      </div>
+    </section>
+
    <section class="panel" id="kalendar">
 
     <div class="section-heading panel-top">
