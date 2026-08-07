@@ -250,7 +250,7 @@ function odpoved() {
 let reservationSubmissionInProgress = false;
 
 function getPublicReservationButton() {
-  return document.querySelector('button[onclick*="ulozitRezervaci"]');
+  return document.getElementById("reservationSubmitButton") || document.querySelector('button[onclick*="ulozitRezervaci"]');
 }
 
 function setPublicReservationSubmitting(isSubmitting) {
@@ -268,6 +268,135 @@ function setPublicReservationSubmitting(isSubmitting) {
   button.textContent = isSubmitting
     ? "Ukládám rezervaci…"
     : button.dataset.originalText;
+}
+
+
+function showPublicReservationNotice(message, type = null) {
+  const notice = document.getElementById("reservationNotice");
+  if (!notice) {
+    console[type === "success" ? "log" : "warn"](message);
+    return;
+  }
+
+  const text = String(message || "").trim();
+  const resolvedType = type || (text.startsWith("✅") ? "success" : "error");
+  notice.hidden = false;
+  notice.className = `reservation-notice ${resolvedType}`;
+  notice.innerHTML = `
+    <span class="reservation-notice-icon">${resolvedType === "success" ? "✓" : "!"}</span>
+    <span>${text.replace(/^✅\s*/, "")}</span>
+    <button type="button" class="reservation-notice-close" aria-label="Zavřít">×</button>
+  `;
+
+  notice.querySelector(".reservation-notice-close")?.addEventListener("click", () => {
+    notice.hidden = true;
+  });
+
+  notice.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function setAvailableTimesStatus(message, type = "info") {
+  const status = document.getElementById("availableTimesStatus");
+  if (!status) return;
+  status.textContent = message || "";
+  status.dataset.type = type;
+}
+
+async function loadAvailableReservationTimes() {
+  const dateInput = document.getElementById("datum");
+  const peopleInput = document.getElementById("osoby");
+  const timeSelect = document.getElementById("cas");
+  if (!dateInput || !peopleInput || !timeSelect) return;
+
+  const date = dateInput.value;
+  const people = Number(peopleInput.value);
+  const previousValue = timeSelect.value;
+
+  if (!date || !Number.isInteger(people) || people < 1 || people > 20) {
+    timeSelect.innerHTML = '<option value="">Nejdřív vyber datum a počet osob</option>';
+    timeSelect.disabled = true;
+    setAvailableTimesStatus("");
+    return;
+  }
+
+  timeSelect.disabled = true;
+  timeSelect.innerHTML = '<option value="">Načítám volné časy…</option>';
+  setAvailableTimesStatus("Kontroluji otevírací dobu a volné stoly…");
+
+  try {
+    const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
+    const urls = [
+      `${SUPABASE_URL}/rest/v1/opening_hours?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&day_of_week=eq.${dayOfWeek}&select=is_open,open_time,close_time`,
+      `${SUPABASE_URL}/rest/v1/blocked_times?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&select=start_time,end_time,reason`,
+      `${SUPABASE_URL}/rest/v1/restaurant_tables?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&active=eq.true&capacity=gte.${people}&select=id,name,capacity,active&order=capacity.asc`,
+      `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,table_id,status`
+    ];
+
+    const responses = await Promise.all(urls.map(url => fetch(url, { headers })));
+    if (responses.some(response => !response.ok)) {
+      throw new Error("Nepodařilo se načíst dostupné časy.");
+    }
+
+    const [hoursRows, blocks, tables, reservations] = await Promise.all(responses.map(response => response.json()));
+    const hours = hoursRows[0] || { is_open: true, open_time: "10:00:00", close_time: "22:00:00" };
+
+    if (!hours.is_open) {
+      timeSelect.innerHTML = '<option value="">Tento den je zavřeno</option>';
+      setAvailableTimesStatus("V tento den má restaurace zavřeno.", "error");
+      return;
+    }
+
+    if (!tables.length) {
+      timeSelect.innerHTML = '<option value="">Není vhodný stůl</option>';
+      setAvailableTimesStatus(`Pro ${people} osob není k dispozici vhodný aktivní stůl.`, "error");
+      return;
+    }
+
+    const openMinutes = timeToMinutes(hours.open_time);
+    const closeMinutes = timeToMinutes(hours.close_time);
+    const duration = PUBLIC_RESERVATION_DURATION_MINUTES;
+    const now = new Date();
+    const localToday = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split("T")[0];
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const slots = [];
+
+    for (let start = openMinutes; start + duration <= closeMinutes; start += 30) {
+      if (date === localToday && start <= currentMinutes) continue;
+      const end = start + duration;
+      const blocked = blocks.some(block => {
+        const blockStart = timeToMinutes(block.start_time);
+        const blockEnd = timeToMinutes(block.end_time);
+        return start < blockEnd && blockStart < end;
+      });
+      if (blocked) continue;
+
+      const availableTable = tables.find(table => !reservations.some(reservation => {
+        if (Number(reservation.table_id) !== Number(table.id)) return false;
+        const reservationStart = timeToMinutes(reservation.time);
+        const reservationEnd = reservationStart + Math.max(30, Number(reservation.duration_minutes || duration));
+        return start < reservationEnd && reservationStart < end;
+      }));
+
+      if (availableTable) {
+        slots.push(`${String(Math.floor(start / 60)).padStart(2, "0")}:${String(start % 60).padStart(2, "0")}`);
+      }
+    }
+
+    if (!slots.length) {
+      timeSelect.innerHTML = '<option value="">Žádný volný čas</option>';
+      setAvailableTimesStatus("Pro zvolený den a počet osob už není volný termín.", "error");
+      return;
+    }
+
+    timeSelect.innerHTML = '<option value="">Vyber čas</option>' + slots.map(slot => `<option value="${slot}">${slot}</option>`).join("");
+    timeSelect.disabled = false;
+    if (slots.includes(previousValue)) timeSelect.value = previousValue;
+    setAvailableTimesStatus(`${slots.length} volných termínů · délka rezervace 2 hodiny`, "success");
+  } catch (error) {
+    console.error(error);
+    timeSelect.innerHTML = '<option value="">Časy se nepodařilo načíst</option>';
+    setAvailableTimesStatus("Volné časy se nepodařilo načíst. Zkus to znovu.", "error");
+  }
 }
 
 async function publicReservationAlreadyExists({ name, date, time, phone, email }) {
@@ -315,7 +444,7 @@ async function ulozitRezervaci() {
   const namePattern = /^[A-Za-zÁ-Žá-ž\s'-]{2,50}$/;
 
   if (!namePattern.test(name)) {
-    alert("Zadej platné jméno alespoň o 2 písmenech.");
+    showPublicReservationNotice("Zadej platné jméno alespoň o 2 písmenech.");
     document.getElementById("jmeno").value = "";
     return;
   }
@@ -326,12 +455,12 @@ async function ulozitRezervaci() {
   ).toISOString().split("T")[0];
 
   if (!date) {
-    alert("Zadej platné datum rezervace.");
+    showPublicReservationNotice("Zadej platné datum rezervace.");
     return;
   }
 
   if (date < localToday) {
-    alert("Nelze vytvořit rezervaci na minulý den.");
+    showPublicReservationNotice("Nelze vytvořit rezervaci na minulý den.");
     return;
   }
 
@@ -342,7 +471,7 @@ async function ulozitRezervaci() {
   ).toISOString().split("T")[0];
 
   if (date > localMaxDate) {
-    alert("Rezervaci lze vytvořit maximálně 1 rok dopředu.");
+    showPublicReservationNotice("Rezervaci lze vytvořit maximálně 1 rok dopředu.");
     return;
   }
 
@@ -354,31 +483,31 @@ async function ulozitRezervaci() {
       String(now.getMinutes()).padStart(2, "0");
 
     if (time <= currentTime) {
-      alert("Na dnešek nelze rezervovat čas, který už proběhl.");
+      showPublicReservationNotice("Na dnešek nelze rezervovat čas, který už proběhl.");
       return;
     }
   }
 
   const peopleNumber = Number(people);
   if (!Number.isInteger(peopleNumber) || peopleNumber < 1 || peopleNumber > 20) {
-    alert("Počet osob musí být od 1 do 20.");
+    showPublicReservationNotice("Počet osob musí být od 1 do 20.");
     return;
   }
 
   const phoneClean = phone.replace(/\s+/g, "");
   if (!/^\+?\d{9,15}$/.test(phoneClean)) {
-    alert("Zadej platné telefonní číslo.");
+    showPublicReservationNotice("Zadej platné telefonní číslo.");
     return;
   }
 
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailPattern.test(email)) {
-    alert("Zadej platnou e-mailovou adresu.");
+    showPublicReservationNotice("Zadej platnou e-mailovou adresu.");
     return;
   }
 
   if (!name || !people || !date || !time || !phone || !email) {
-    alert("Vyplň jméno, počet osob, datum, čas, telefon a e-mail.");
+    showPublicReservationNotice("Vyplň jméno, počet osob, datum, čas, telefon a e-mail.");
     return;
   }
 
@@ -392,7 +521,7 @@ async function ulozitRezervaci() {
     });
 
     if (!openingAvailability.ok) {
-      alert(openingAvailability.message);
+      showPublicReservationNotice(openingAvailability.message);
       return;
     }
     const duplicateExists = await publicReservationAlreadyExists({
@@ -404,7 +533,7 @@ async function ulozitRezervaci() {
     });
 
     if (duplicateExists) {
-      alert("Tato rezervace už byla uložena. Není potřeba ji odesílat znovu.");
+      showPublicReservationNotice("Tato rezervace už byla uložena. Není potřeba ji odesílat znovu.");
       return;
     }
 
@@ -419,7 +548,7 @@ async function ulozitRezervaci() {
 
     const existingReservations = await checkRes.json();
     if (existingReservations.length >= 7) {
-      alert("Tento termín je už plně obsazený. Vyber jiný čas.");
+      showPublicReservationNotice("Tento termín je už plně obsazený. Vyber jiný čas.");
       return;
     }
 
@@ -430,7 +559,7 @@ async function ulozitRezervaci() {
     });
 
     if (!automaticallySelectedTable) {
-      alert(
+      showPublicReservationNotice(
         "Pro tento počet osob není v daném čase volný vhodný stůl. " +
         "Vyber jiný čas."
       );
@@ -490,7 +619,7 @@ async function ulozitRezervaci() {
       console.error("E-mail se nepodařilo odeslat:", emailError);
     }
 
-    alert(
+    showPublicReservationNotice(
       emailSent
         ? `✅ Rezervace uložena. Automaticky byl vybrán ${automaticallySelectedTable.name} a potvrzení bylo odesláno e-mailem!`
         : `✅ Rezervace uložena. Automaticky byl vybrán ${automaticallySelectedTable.name}. Potvrzovací e-mail se ale nepodařilo odeslat.`
@@ -501,13 +630,45 @@ async function ulozitRezervaci() {
         const input = document.getElementById(id);
         if (input) input.value = "";
       });
+    loadAvailableReservationTimes();
   } catch (error) {
     console.error(error);
-    alert(error.message || "Rezervaci se nepodařilo uložit.");
+    showPublicReservationNotice(error.message || "Rezervaci se nepodařilo uložit.");
   } finally {
     setPublicReservationSubmitting(false);
   }
 }
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const dateInput = document.getElementById("datum");
+  const peopleInput = document.getElementById("osoby");
+  const timeSelect = document.getElementById("cas");
+
+  if (dateInput) {
+    const now = new Date();
+    const localToday = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split("T")[0];
+    const max = new Date(now);
+    max.setFullYear(max.getFullYear() + 1);
+    const localMax = new Date(max.getTime() - max.getTimezoneOffset() * 60000).toISOString().split("T")[0];
+    dateInput.min = localToday;
+    dateInput.max = localMax;
+    dateInput.addEventListener("change", loadAvailableReservationTimes);
+  }
+
+  if (peopleInput) {
+    peopleInput.addEventListener("input", () => {
+      clearTimeout(peopleInput._availabilityTimer);
+      peopleInput._availabilityTimer = setTimeout(loadAvailableReservationTimes, 250);
+    });
+  }
+
+  if (timeSelect) {
+    timeSelect.addEventListener("focus", () => {
+      if (timeSelect.disabled) loadAvailableReservationTimes();
+    });
+  }
+});
 
 document.addEventListener("DOMContentLoaded", () => {
   const menuToggle = document.getElementById("menuToggle");
