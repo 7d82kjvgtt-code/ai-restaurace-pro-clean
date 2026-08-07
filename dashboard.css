@@ -2280,3 +2280,44 @@ tbody tr:hover {
     width: 100%;
   }
 }
+
+
+/* =========================================================
+   ZÁKAZNÍCI / CRM
+========================================================= */
+.customers-heading { gap: 20px; align-items: flex-end; }
+.customers-help { margin-top: 6px; opacity: .75; }
+.customer-toolbar { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.customer-toolbar input, .customer-toolbar select { min-width: 220px; }
+.customer-summary { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin: 18px 0; }
+.customer-summary > div { padding: 16px 18px; border: 1px solid rgba(255,255,255,.10); background: rgba(9,19,38,.45); border-radius: 16px; display:flex; flex-direction:column; gap:4px; }
+.customer-summary strong { font-size: 28px; }
+.customer-summary span { opacity:.7; }
+.customer-list { display:grid; gap:16px; }
+.customer-card { border:1px solid rgba(255,255,255,.11); border-radius:18px; padding:18px; background:rgba(12,24,45,.55); }
+.customer-card.is-regular { border-color: rgba(255,183,0,.45); box-shadow: 0 0 0 1px rgba(255,183,0,.08) inset; }
+.customer-card-head { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }
+.customer-name-line { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.customer-name-line h3 { margin:0; font-size:22px; }
+.customer-hint { font-size:12px; padding:5px 9px; border-radius:999px; background:rgba(255,166,0,.14); color:#ffbf4a; }
+.customer-contact { display:flex; gap:14px; flex-wrap:wrap; margin-top:7px; opacity:.78; }
+.regular-toggle { display:flex; align-items:center; gap:8px; white-space:nowrap; font-weight:700; }
+.regular-toggle input { width:20px; height:20px; accent-color:#ff5a1f; }
+.customer-stats-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:16px; }
+.customer-stats-grid > div { background:rgba(255,255,255,.035); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:3px; }
+.customer-stats-grid strong { font-size:18px; }
+.customer-stats-grid span { font-size:12px; opacity:.65; }
+.customer-note-row { display:grid; grid-template-columns:1fr auto; gap:10px; margin-top:14px; align-items:stretch; }
+.customer-note-row textarea { min-height:72px; resize:vertical; }
+.customer-history-toggle { margin-top:12px; width:100%; text-align:left; border:0; background:transparent; color:#ff8a4c; font-weight:700; cursor:pointer; padding:8px 0; }
+.customer-reservation-history { margin-top:8px; border-top:1px solid rgba(255,255,255,.08); padding-top:8px; }
+.customer-reservation-row { display:grid; grid-template-columns:1.2fr .7fr 1fr .8fr; gap:10px; align-items:center; padding:10px 4px; border-bottom:1px solid rgba(255,255,255,.06); }
+@media (max-width: 760px) {
+  .customers-heading, .customer-card-head { flex-direction:column; align-items:stretch; }
+  .customer-toolbar { justify-content:stretch; }
+  .customer-toolbar input, .customer-toolbar select, .customer-toolbar button { width:100%; min-width:0; }
+  .customer-summary { grid-template-columns:1fr; }
+  .customer-stats-grid { grid-template-columns:1fr 1fr; }
+  .customer-note-row { grid-template-columns:1fr; }
+  .customer-reservation-row { grid-template-columns:1fr 1fr; }
+}
