@@ -134,8 +134,11 @@ Zeptejte se asistenta.
     <label for="datum">Datum</label>
     <input id="datum" type="date" required>
     
-    <label for="cas">Čas</label>
-    <input id="cas" type="time"required>
+    <label for="cas">Dostupný čas</label>
+    <select id="cas" required disabled>
+      <option value="">Nejdřív vyber datum a počet osob</option>
+    </select>
+    <p id="availableTimesStatus" class="available-times-status" aria-live="polite"></p>
 
     <input id="telefon" placeholder="Telefon">
 
@@ -143,7 +146,9 @@ Zeptejte se asistenta.
 
     <textarea id="poznamka" placeholder="Poznámka" rows="4"></textarea>
 
-    <button onclick="ulozitRezervaci()">
+    <div id="reservationNotice" class="reservation-notice" role="status" aria-live="polite" hidden></div>
+
+    <button id="reservationSubmitButton" onclick="ulozitRezervaci()">
       Potvrdit rezervaci
     </button>
 
