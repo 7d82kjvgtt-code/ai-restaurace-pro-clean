@@ -62,6 +62,7 @@
     <a href="#stoly" data-section="stoly">🪑 Stoly</a>
     <a href="#mapa" data-section="mapa">🗺️ Mapa stolů</a>
     <a href="#provoz" data-section="provoz">🕒 Provozní doba</a>
+    <a href="#reservationSettings" data-section="reservationSettings">⚙️ Nastavení rezervací</a>
     <a href="#menu" data-section="menu">🍕 Menu</a>
 </nav>
 
@@ -369,6 +370,47 @@
     <button type="button" class="dangerButton" onclick="addBlockedTime()">Přidat blokaci</button>
   </div>
   <div id="blockedTimesList" class="blocked-times-list"></div>
+</section>
+
+<section class="panel reservation-settings-panel" id="reservationSettings">
+  <div class="section-heading panel-top">
+    <div>
+      <span class="eyebrow">Pravidla rezervací</span>
+      <h2>⚙️ Nastavení rezervací</h2>
+    </div>
+  </div>
+
+  <p class="reservation-settings-help">
+    Host délku rezervace nevybírá. Systém ji nastaví automaticky podle počtu osob a použije ji jen pro výpočet volného stolu a času.
+  </p>
+
+  <div class="reservation-settings-grid">
+    <article class="reservation-settings-card">
+      <h3>⏱️ Automatická délka</h3>
+      <div class="reservation-settings-fields">
+        <label>1–2 osoby<input id="settingDuration12" type="number" min="30" max="360" step="30" value="90"><span>minut</span></label>
+        <label>3–4 osoby<input id="settingDuration34" type="number" min="30" max="360" step="30" value="120"><span>minut</span></label>
+        <label>5–6 osob<input id="settingDuration56" type="number" min="30" max="360" step="30" value="150"><span>minut</span></label>
+        <label>7+ osob<input id="settingDuration7Plus" type="number" min="30" max="360" step="30" value="180"><span>minut</span></label>
+      </div>
+    </article>
+
+    <article class="reservation-settings-card">
+      <h3>📅 Pravidla pro hosty</h3>
+      <div class="reservation-settings-fields">
+        <label>Nejpozději předem<input id="settingMinAdvance" type="number" min="0" max="10080" step="15" value="60"><span>minut</span></label>
+        <label>Maximálně dopředu<input id="settingMaxAdvanceDays" type="number" min="1" max="365" step="1" value="30"><span>dní</span></label>
+        <label>Minimum hostů<input id="settingMinPeople" type="number" min="1" max="50" step="1" value="1"><span>osob</span></label>
+        <label>Maximum hostů<input id="settingMaxPeople" type="number" min="1" max="200" step="1" value="20"><span>osob</span></label>
+      </div>
+    </article>
+  </div>
+
+  <div class="reservation-settings-summary" id="reservationSettingsSummary"></div>
+
+  <button type="button" class="successButton" onclick="saveReservationSettings()">
+    Uložit nastavení rezervací
+  </button>
 </section>
 
 <section id="mapa" class="panel" style="display:none;">
