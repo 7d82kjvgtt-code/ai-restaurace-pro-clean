@@ -58,6 +58,7 @@
     <a href="#prehled" data-section="prehled">🏠 Přehled</a>
     <a href="#grafy" data-section="grafy">📊 Statistiky</a>
     <a href="#rezervace" data-section="rezervace">📅 Rezervace</a>
+    <a href="#historie" data-section="historie">🕘 Historie</a>
     <a href="#kalendar" data-section="kalendar">🗓️ Kalendář</a>
     <a href="#stoly" data-section="stoly">🪑 Stoly</a>
     <a href="#mapa" data-section="mapa">🗺️ Mapa stolů</a>
@@ -254,6 +255,29 @@
       </div>
 
     </section>
+
+    <section class="panel reservation-history-panel" id="historie" style="display:none;">
+      <div class="section-heading panel-top">
+        <div>
+          <span class="eyebrow">Audit rezervací</span>
+          <h2>🕘 Historie změn</h2>
+          <p class="history-help">Automaticky se ukládá vytvoření, změna, přesun, změna stavu i smazání rezervace.</p>
+        </div>
+        <div class="filter-actions history-actions">
+          <select id="historyActionFilter" aria-label="Filtrovat historii">
+            <option value="">Všechny změny</option>
+            <option value="created">Vytvořeno</option>
+            <option value="updated">Upraveno</option>
+            <option value="deleted">Smazáno</option>
+          </select>
+          <button type="button" class="neutralButton" onclick="loadReservationHistory()">↻ Obnovit</button>
+        </div>
+      </div>
+      <div id="reservationHistoryList" class="reservation-history-list">
+        <div class="history-empty">Načítám historii…</div>
+      </div>
+    </section>
+
 <section id="novaRezervace" class="panel" style="display:none;">
     <div class="section-heading">
         <span class="eyebrow">Nová rezervace</span>
