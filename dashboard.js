@@ -222,7 +222,8 @@ async function loadDashboardData() {
     loadFoods(),
     loadOpeningHours(),
     loadBlockedTimes(),
-    loadReservationSettings()
+    loadReservationSettings(),
+    loadReservationHistory()
   ]);
 
   await loadReservations();
@@ -999,6 +1000,7 @@ async function updateStatus(id, status) {
     }
 
     await loadReservations();
+    await loadReservationHistory();
     return true;
   } catch (error) {
     console.error(error);
@@ -1028,6 +1030,7 @@ async function deleteReservation(id) {
     }
 
     await loadReservations();
+    await loadReservationHistory();
     return true;
   } catch (error) {
     console.error(error);
@@ -1037,6 +1040,115 @@ async function deleteReservation(id) {
     );
   }
 }
+
+
+let reservationHistory = [];
+
+function historyActionLabel(action) {
+  if (action === "created") return "Vytvořeno";
+  if (action === "deleted") return "Smazáno";
+  return "Upraveno";
+}
+
+function historyFieldLabel(field) {
+  const labels = {
+    name: "Jméno",
+    people: "Počet osob",
+    date: "Datum",
+    time: "Čas",
+    duration_minutes: "Délka",
+    table_id: "Stůl",
+    status: "Stav",
+    phone: "Telefon",
+    email: "E-mail",
+    note: "Poznámka"
+  };
+  return labels[field] || field;
+}
+
+function formatHistoryValue(field, value) {
+  if (value === null || value === undefined || value === "") return "—";
+  if (field === "date") return formatDate(value);
+  if (field === "time") return String(value).slice(0, 5);
+  if (field === "duration_minutes") return `${value} min`;
+  if (field === "table_id") return value ? (getTableName(value) || `Stůl ${value}`) : "Bez stolu";
+  return String(value);
+}
+
+function getHistoryChanges(entry) {
+  if (entry.action === "created") return ["Rezervace byla vytvořena."];
+  if (entry.action === "deleted") return ["Rezervace byla smazána."];
+
+  const before = entry.before_data || {};
+  const after = entry.after_data || {};
+  const tracked = ["name", "people", "date", "time", "duration_minutes", "table_id", "status", "phone", "email", "note"];
+
+  return tracked
+    .filter(field => String(before[field] ?? "") !== String(after[field] ?? ""))
+    .map(field => `${historyFieldLabel(field)}: ${formatHistoryValue(field, before[field])} → ${formatHistoryValue(field, after[field])}`);
+}
+
+function renderReservationHistory() {
+  const list = document.getElementById("reservationHistoryList");
+  if (!list) return;
+
+  const filter = document.getElementById("historyActionFilter")?.value || "";
+  const data = filter ? reservationHistory.filter(item => item.action === filter) : reservationHistory;
+
+  if (!data.length) {
+    list.innerHTML = `<div class="history-empty">Zatím tu není žádná historie.</div>`;
+    return;
+  }
+
+  list.innerHTML = data.map(entry => {
+    const changes = getHistoryChanges(entry);
+    const name = entry.reservation_name || entry.after_data?.name || entry.before_data?.name || "Rezervace";
+    const actor = entry.actor_email || (entry.action === "created" ? "Veřejný formulář / systém" : "Systém");
+    const when = entry.created_at ? new Date(entry.created_at).toLocaleString("cs-CZ", { dateStyle: "short", timeStyle: "short" }) : "—";
+
+    return `
+      <article class="history-card history-${escapeHtml(entry.action || "updated")}">
+        <div class="history-card-top">
+          <div>
+            <span class="history-action-badge">${escapeHtml(historyActionLabel(entry.action))}</span>
+            <strong>${escapeHtml(name)}</strong>
+          </div>
+          <time>${escapeHtml(when)}</time>
+        </div>
+        <div class="history-changes">
+          ${(changes.length ? changes : ["Rezervace byla upravena."]).map(change => `<div>${escapeHtml(change)}</div>`).join("")}
+        </div>
+        <div class="history-meta">Provedl: ${escapeHtml(actor)}</div>
+      </article>
+    `;
+  }).join("");
+}
+
+async function loadReservationHistory() {
+  if (!currentRestaurantId) return;
+  const list = document.getElementById("reservationHistoryList");
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/reservation_history?restaurant_id=eq.${currentRestaurantId}&select=*&order=created_at.desc&limit=300`,
+      { headers: getHeaders() }
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    reservationHistory = await response.json();
+    renderReservationHistory();
+  } catch (error) {
+    console.error("Historii rezervací se nepodařilo načíst:", error);
+    if (list) {
+      list.innerHTML = `<div class="history-empty">Historie zatím není připravená. Spusť SQL soubor pro historii v Supabase.</div>`;
+    }
+  }
+}
+
+document.getElementById("historyActionFilter")?.addEventListener("change", renderReservationHistory);
 
 function getFilteredReservations() {
   const search =
@@ -1372,6 +1484,7 @@ const durationMinutes = Number(
 closeTableModal();
       
 await loadReservations();
+await loadReservationHistory();
 
 renderTables();
 
@@ -2946,6 +3059,7 @@ async function assignTable(
     }
 
     await loadReservations();
+    await loadReservationHistory();
   } catch (error) {
     console.error(error);
 
@@ -3842,6 +3956,7 @@ function showDashboardSection(sectionId) {
         "prehled",
         "grafy",
         "rezervace",
+        "historie",
         "novaRezervace",
         "kalendar",
         "stoly",
