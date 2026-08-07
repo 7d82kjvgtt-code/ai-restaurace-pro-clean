@@ -221,7 +221,8 @@ async function loadDashboardData() {
     loadTables(),
     loadFoods(),
     loadOpeningHours(),
-    loadBlockedTimes()
+    loadBlockedTimes(),
+    loadReservationSettings()
   ]);
 
   await loadReservations();
@@ -3846,6 +3847,7 @@ function showDashboardSection(sectionId) {
         "stoly",
         "mapa",
         "provoz",
+        "reservationSettings",
         "menu"
     ];
 
@@ -4395,3 +4397,156 @@ async function checkDashboardOpeningAvailability({ date, time, durationMinutes }
   }
   return { ok: true };
 }
+
+
+/* =========================================================
+   NASTAVENÍ REZERVACÍ PRO KAŽDOU RESTAURACI
+========================================================= */
+const DEFAULT_RESERVATION_SETTINGS = {
+  duration_1_2: 90,
+  duration_3_4: 120,
+  duration_5_6: 150,
+  duration_7_plus: 180,
+  min_advance_minutes: 60,
+  max_advance_days: 30,
+  min_people: 1,
+  max_people: 20
+};
+
+let reservationSettings = { ...DEFAULT_RESERVATION_SETTINGS };
+
+function normalizeReservationSettings(row = {}) {
+  return {
+    duration_1_2: Math.max(30, Number(row.duration_1_2 || DEFAULT_RESERVATION_SETTINGS.duration_1_2)),
+    duration_3_4: Math.max(30, Number(row.duration_3_4 || DEFAULT_RESERVATION_SETTINGS.duration_3_4)),
+    duration_5_6: Math.max(30, Number(row.duration_5_6 || DEFAULT_RESERVATION_SETTINGS.duration_5_6)),
+    duration_7_plus: Math.max(30, Number(row.duration_7_plus || DEFAULT_RESERVATION_SETTINGS.duration_7_plus)),
+    min_advance_minutes: Math.max(0, Number(row.min_advance_minutes ?? DEFAULT_RESERVATION_SETTINGS.min_advance_minutes)),
+    max_advance_days: Math.max(1, Number(row.max_advance_days || DEFAULT_RESERVATION_SETTINGS.max_advance_days)),
+    min_people: Math.max(1, Number(row.min_people || DEFAULT_RESERVATION_SETTINGS.min_people)),
+    max_people: Math.max(1, Number(row.max_people || DEFAULT_RESERVATION_SETTINGS.max_people))
+  };
+}
+
+function renderReservationSettings() {
+  const mapping = {
+    settingDuration12: reservationSettings.duration_1_2,
+    settingDuration34: reservationSettings.duration_3_4,
+    settingDuration56: reservationSettings.duration_5_6,
+    settingDuration7Plus: reservationSettings.duration_7_plus,
+    settingMinAdvance: reservationSettings.min_advance_minutes,
+    settingMaxAdvanceDays: reservationSettings.max_advance_days,
+    settingMinPeople: reservationSettings.min_people,
+    settingMaxPeople: reservationSettings.max_people
+  };
+
+  Object.entries(mapping).forEach(([id, value]) => {
+    const input = document.getElementById(id);
+    if (input) input.value = String(value);
+  });
+
+  updateReservationSettingsSummary();
+}
+
+function updateReservationSettingsSummary() {
+  const summary = document.getElementById("reservationSettingsSummary");
+  if (!summary) return;
+
+  summary.innerHTML = `
+    <strong>Jak to uvidí host:</strong>
+    <span>Host vybere pouze počet osob, datum a dostupný čas. Délka zůstává interní a systém ji použije automaticky.</span>
+  `;
+}
+
+async function loadReservationSettings() {
+  if (!currentRestaurantId) return;
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/reservation_settings?restaurant_id=eq.${currentRestaurantId}&select=*`,
+      { headers: getHeaders() }
+    );
+
+    if (!response.ok) throw new Error(await response.text());
+
+    const rows = await response.json();
+    reservationSettings = normalizeReservationSettings(rows[0] || {});
+    renderReservationSettings();
+  } catch (error) {
+    console.error("Nastavení rezervací se nepodařilo načíst:", error);
+    reservationSettings = { ...DEFAULT_RESERVATION_SETTINGS };
+    renderReservationSettings();
+    showDashboardNotice("Pro nastavení rezervací spusť v Supabase nový SQL soubor z projektu.", "info");
+  }
+}
+
+async function saveReservationSettings() {
+  if (!currentRestaurantId) return;
+
+  const values = {
+    restaurant_id: Number(currentRestaurantId),
+    duration_1_2: Number(document.getElementById("settingDuration12")?.value),
+    duration_3_4: Number(document.getElementById("settingDuration34")?.value),
+    duration_5_6: Number(document.getElementById("settingDuration56")?.value),
+    duration_7_plus: Number(document.getElementById("settingDuration7Plus")?.value),
+    min_advance_minutes: Number(document.getElementById("settingMinAdvance")?.value),
+    max_advance_days: Number(document.getElementById("settingMaxAdvanceDays")?.value),
+    min_people: Number(document.getElementById("settingMinPeople")?.value),
+    max_people: Number(document.getElementById("settingMaxPeople")?.value)
+  };
+
+  const durations = [values.duration_1_2, values.duration_3_4, values.duration_5_6, values.duration_7_plus];
+  if (durations.some(value => !Number.isFinite(value) || value < 30 || value > 360)) {
+    showDashboardNotice("Délka rezervace musí být mezi 30 a 360 minutami.");
+    return;
+  }
+
+  if (!Number.isFinite(values.min_advance_minutes) || values.min_advance_minutes < 0) {
+    showDashboardNotice("Minimální čas předem nemůže být záporný.");
+    return;
+  }
+
+  if (!Number.isFinite(values.max_advance_days) || values.max_advance_days < 1 || values.max_advance_days > 365) {
+    showDashboardNotice("Počet dní dopředu musí být od 1 do 365.");
+    return;
+  }
+
+  if (!Number.isInteger(values.min_people) || !Number.isInteger(values.max_people) || values.min_people < 1 || values.max_people < values.min_people) {
+    showDashboardNotice("Zkontroluj minimální a maximální počet hostů.");
+    return;
+  }
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/reservation_settings?on_conflict=restaurant_id`,
+      {
+        method: "POST",
+        headers: getHeaders({ Prefer: "resolution=merge-duplicates,return=representation" }),
+        body: JSON.stringify(values)
+      }
+    );
+
+    if (!response.ok) throw new Error(await response.text());
+
+    const rows = await response.json();
+    reservationSettings = normalizeReservationSettings(rows[0] || values);
+    renderReservationSettings();
+    showDashboardNotice("Nastavení rezervací bylo uloženo.", "success");
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice("Nastavení rezervací se nepodařilo uložit.");
+  }
+}
+
+[
+  "settingDuration12",
+  "settingDuration34",
+  "settingDuration56",
+  "settingDuration7Plus",
+  "settingMinAdvance",
+  "settingMaxAdvanceDays",
+  "settingMinPeople",
+  "settingMaxPeople"
+].forEach(id => {
+  document.getElementById(id)?.addEventListener("input", updateReservationSettingsSummary);
+});
