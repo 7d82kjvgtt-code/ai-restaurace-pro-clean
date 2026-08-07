@@ -1306,6 +1306,32 @@ function renderCustomers() {
   }).join("");
 }
 
+
+async function refreshCustomers(button) {
+  const originalText = button?.textContent || "↻ Obnovit";
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Obnovuji…";
+  }
+
+  try {
+    // Znovu načteme rezervace i uložené profily zákazníků z databáze.
+    // Samotné renderCustomers() jen překresluje data, která už jsou v paměti.
+    await loadReservations();
+    await loadCustomerProfiles();
+    renderCustomers();
+    showDashboardNotice("Zákazníci byli aktualizováni.", "success");
+  } catch (error) {
+    console.error("Obnovení zákazníků selhalo:", error);
+    showDashboardNotice("Zákazníky se nepodařilo aktualizovat.", "error");
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+}
+
 async function loadCustomerProfiles() {
   if (!currentRestaurantId) return;
   try {
