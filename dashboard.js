@@ -4,6 +4,7 @@ const SUPABASE_KEY = "sb_publishable_l6ko8NS_92RjQBM2rEzAvA_Sd2hYicb";
 let reservations = [];
 let foods = [];
 let restaurantTables = [];
+let customerProfiles = [];
 
 let currentRestaurantId = null;
 let currentUserRole = null;
@@ -223,7 +224,8 @@ async function loadDashboardData() {
     loadOpeningHours(),
     loadBlockedTimes(),
     loadReservationSettings(),
-    loadReservationHistory()
+    loadReservationHistory(),
+    loadCustomerProfiles()
   ]);
 
   await loadReservations();
@@ -661,6 +663,7 @@ renderCharts();
 renderFloorMap();
 renderUpcomingReservations();
 startUpcomingReservationTimer();
+renderCustomers();
   } catch (error) {
     console.error(error);
 
@@ -1149,6 +1152,226 @@ async function loadReservationHistory() {
 }
 
 document.getElementById("historyActionFilter")?.addEventListener("change", renderReservationHistory);
+
+
+/* =========================================================
+   ZÁKAZNÍCI / STÁLÍ HOSTÉ
+========================================================= */
+function normalizeCustomerPhone(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function getCustomerKey(reservation) {
+  const email = String(reservation?.email || "").trim().toLowerCase();
+  const phone = normalizeCustomerPhone(reservation?.phone);
+  const name = String(reservation?.name || "").trim().toLowerCase();
+  if (email) return `email:${email}`;
+  if (phone) return `phone:${phone}`;
+  return `name:${name}`;
+}
+
+function getCustomerProfile(customerKey) {
+  return customerProfiles.find(item => item.customer_key === customerKey) || null;
+}
+
+function buildCustomers() {
+  const groups = new Map();
+
+  reservations.forEach(reservation => {
+    const key = getCustomerKey(reservation);
+    if (!key || key === "name:") return;
+
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        name: reservation.name || "Host",
+        phone: reservation.phone || "",
+        email: reservation.email || "",
+        reservations: [],
+        totalPeople: 0
+      });
+    }
+
+    const customer = groups.get(key);
+    customer.reservations.push(reservation);
+    customer.totalPeople += Number(reservation.people || 0);
+    if (!customer.phone && reservation.phone) customer.phone = reservation.phone;
+    if (!customer.email && reservation.email) customer.email = reservation.email;
+    if (reservation.name) customer.name = reservation.name;
+  });
+
+  return [...groups.values()].map(customer => {
+    const sorted = [...customer.reservations].sort((a, b) => {
+      return String(`${b.date || ""} ${b.time || ""}`).localeCompare(String(`${a.date || ""} ${a.time || ""}`));
+    });
+    const profile = getCustomerProfile(customer.key);
+    const completedOrActive = sorted.filter(item => !isCancelledReservation(item));
+
+    return {
+      ...customer,
+      reservations: sorted,
+      reservationCount: sorted.length,
+      activeReservationCount: completedOrActive.length,
+      lastReservation: completedOrActive[0] || sorted[0] || null,
+      note: profile?.note || "",
+      isRegular: Boolean(profile?.is_regular),
+      profileId: profile?.id || null
+    };
+  }).sort((a, b) => {
+    if (a.isRegular !== b.isRegular) return a.isRegular ? -1 : 1;
+    return b.reservationCount - a.reservationCount;
+  });
+}
+
+function renderCustomerSummary(customers) {
+  const summary = document.getElementById("customerSummary");
+  if (!summary) return;
+  const regulars = customers.filter(c => c.isRegular).length;
+  const returning = customers.filter(c => c.reservationCount >= 2).length;
+  summary.innerHTML = `
+    <div><strong>${customers.length}</strong><span>Zákazníků</span></div>
+    <div><strong>${returning}</strong><span>Vracejících se</span></div>
+    <div><strong>${regulars}</strong><span>Stálých hostů</span></div>
+  `;
+}
+
+function renderCustomers() {
+  const list = document.getElementById("customerList");
+  if (!list) return;
+
+  const allCustomers = buildCustomers();
+  renderCustomerSummary(allCustomers);
+
+  const search = String(document.getElementById("customerSearch")?.value || "").trim().toLowerCase();
+  const filter = document.getElementById("customerTypeFilter")?.value || "";
+
+  const customers = allCustomers.filter(customer => {
+    const haystack = `${customer.name} ${customer.phone} ${customer.email}`.toLowerCase();
+    if (search && !haystack.includes(search)) return false;
+    if (filter === "regular" && !customer.isRegular) return false;
+    if (filter === "returning" && customer.reservationCount < 2) return false;
+    return true;
+  });
+
+  if (!customers.length) {
+    list.innerHTML = `<div class="history-empty">Žádní zákazníci neodpovídají filtru.</div>`;
+    return;
+  }
+
+  list.innerHTML = customers.map((customer, index) => {
+    const last = customer.lastReservation;
+    const lastText = last ? `${formatDate(last.date)} ${String(last.time || "").slice(0,5)}` : "—";
+    const autoHint = !customer.isRegular && customer.reservationCount >= 3
+      ? `<span class="customer-hint">Častý host · vhodný k označení ⭐</span>` : "";
+    const history = customer.reservations.map(r => `
+      <div class="customer-reservation-row">
+        <span>${escapeHtml(formatDate(r.date))} ${escapeHtml(String(r.time || "").slice(0,5))}</span>
+        <span>${escapeHtml(String(r.people || 0))} osob</span>
+        <span>${escapeHtml(getReservationTableLabel(r))}</span>
+        <span class="status ${escapeHtml(r.status || "Čeká")}">${escapeHtml(r.status || "Čeká")}</span>
+      </div>
+    `).join("");
+
+    return `
+      <article class="customer-card ${customer.isRegular ? "is-regular" : ""}">
+        <div class="customer-card-head">
+          <div>
+            <div class="customer-name-line">
+              <h3>${customer.isRegular ? "⭐ " : ""}${escapeHtml(customer.name)}</h3>
+              ${autoHint}
+            </div>
+            <div class="customer-contact">
+              <span>📞 ${escapeHtml(customer.phone || "Bez telefonu")}</span>
+              <span>✉️ ${escapeHtml(customer.email || "Bez e-mailu")}</span>
+            </div>
+          </div>
+          <label class="regular-toggle">
+            <input type="checkbox" ${customer.isRegular ? "checked" : ""} onchange="saveCustomerProfile('${escapeHtml(customer.key)}', { is_regular: this.checked })">
+            <span>Stálý host</span>
+          </label>
+        </div>
+        <div class="customer-stats-grid">
+          <div><strong>${customer.reservationCount}</strong><span>rezervací</span></div>
+          <div><strong>${customer.totalPeople}</strong><span>hostů celkem</span></div>
+          <div><strong>${escapeHtml(lastText)}</strong><span>poslední rezervace</span></div>
+        </div>
+        <div class="customer-note-row">
+          <textarea id="customerNote-${index}" placeholder="Interní poznámka k hostovi…">${escapeHtml(customer.note)}</textarea>
+          <button type="button" class="primary-btn" onclick="saveCustomerNote('${escapeHtml(customer.key)}', 'customerNote-${index}')">Uložit poznámku</button>
+        </div>
+        <button type="button" class="customer-history-toggle" onclick="toggleCustomerHistory('customerHistory-${index}', this)">Zobrazit historii rezervací (${customer.reservationCount})</button>
+        <div id="customerHistory-${index}" class="customer-reservation-history" hidden>${history}</div>
+      </article>
+    `;
+  }).join("");
+}
+
+async function loadCustomerProfiles() {
+  if (!currentRestaurantId) return;
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/customer_profiles?restaurant_id=eq.${currentRestaurantId}&select=*`,
+      { headers: getHeaders() }
+    );
+    if (!response.ok) throw new Error(await response.text());
+    customerProfiles = await response.json();
+    renderCustomers();
+  } catch (error) {
+    console.warn("Profily zákazníků zatím nejsou dostupné:", error);
+    customerProfiles = [];
+    renderCustomers();
+  }
+}
+
+async function saveCustomerProfile(customerKey, changes) {
+  const customer = buildCustomers().find(item => item.key === customerKey);
+  if (!customer) return;
+
+  const existing = getCustomerProfile(customerKey);
+  const payload = {
+    restaurant_id: Number(currentRestaurantId),
+    customer_key: customerKey,
+    name: customer.name || null,
+    phone: customer.phone || null,
+    email: customer.email || null,
+    note: existing?.note || "",
+    is_regular: Boolean(existing?.is_regular),
+    ...changes,
+    updated_at: new Date().toISOString()
+  };
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/customer_profiles?on_conflict=restaurant_id,customer_key`,
+      {
+        method: "POST",
+        headers: getHeaders({ Prefer: "resolution=merge-duplicates,return=representation" }),
+        body: JSON.stringify(payload)
+      }
+    );
+    if (!response.ok) throw new Error(await response.text());
+    await loadCustomerProfiles();
+    showDashboardNotice("Profil zákazníka byl uložen.", "success");
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice("Profil zákazníka se nepodařilo uložit.", "error");
+  }
+}
+
+function saveCustomerNote(customerKey, textareaId) {
+  const note = document.getElementById(textareaId)?.value || "";
+  return saveCustomerProfile(customerKey, { note });
+}
+
+function toggleCustomerHistory(id, button) {
+  const element = document.getElementById(id);
+  if (!element) return;
+  element.hidden = !element.hidden;
+  if (button) button.textContent = element.hidden ? `Zobrazit historii rezervací (${element.children.length})` : "Skrýt historii rezervací";
+}
+
+document.getElementById("customerSearch")?.addEventListener("input", renderCustomers);
+document.getElementById("customerTypeFilter")?.addEventListener("change", renderCustomers);
 
 function getFilteredReservations() {
   const search =
@@ -3957,6 +4180,7 @@ function showDashboardSection(sectionId) {
         "grafy",
         "rezervace",
         "historie",
+        "customers",
         "novaRezervace",
         "kalendar",
         "stoly",
