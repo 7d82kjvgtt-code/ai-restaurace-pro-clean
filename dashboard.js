@@ -1310,15 +1310,18 @@ async function loadCustomerProfiles() {
   if (!currentRestaurantId) return;
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/customer_profiles?restaurant_id=eq.${currentRestaurantId}&select=*`,
-      { headers: getHeaders() }
+      `${SUPABASE_URL}/rest/v1/customer_profiles?restaurant_id=eq.${encodeURIComponent(currentRestaurantId)}&select=*`,
+      { headers: getHeaders({ "Cache-Control": "no-cache" }) }
     );
     if (!response.ok) throw new Error(await response.text());
-    customerProfiles = await response.json();
+
+    const rows = await response.json();
+    customerProfiles = Array.isArray(rows) ? rows : [];
     renderCustomers();
   } catch (error) {
     console.warn("Profily zákazníků zatím nejsou dostupné:", error);
-    customerProfiles = [];
+    // Nemažeme lokální profily při dočasné chybě načtení, aby se právě
+    // uložená poznámka nebo označení stálého hosta neztratily z UI.
     renderCustomers();
   }
 }
@@ -1350,11 +1353,35 @@ async function saveCustomerProfile(customerKey, changes) {
       }
     );
     if (!response.ok) throw new Error(await response.text());
+
+    const savedRows = await response.json();
+    const saved = Array.isArray(savedRows) && savedRows[0] ? savedRows[0] : payload;
+    const index = customerProfiles.findIndex(item => item.customer_key === customerKey);
+    if (index >= 0) {
+      customerProfiles[index] = { ...customerProfiles[index], ...saved };
+    } else {
+      customerProfiles.push(saved);
+    }
+    renderCustomers();
+
+    // Následně znovu načteme databázi, aby bylo jisté, že hodnota opravdu
+    // přežila refresh a není jen lokálně v prohlížeči.
     await loadCustomerProfiles();
+
+    const persisted = getCustomerProfile(customerKey);
+    if (Object.prototype.hasOwnProperty.call(changes, "note") &&
+        String(persisted?.note || "") !== String(changes.note || "")) {
+      throw new Error("Poznámka se po uložení nenačetla zpět z databáze.");
+    }
+    if (Object.prototype.hasOwnProperty.call(changes, "is_regular") &&
+        Boolean(persisted?.is_regular) !== Boolean(changes.is_regular)) {
+      throw new Error("Označení stálého hosta se po uložení nenačetlo zpět z databáze.");
+    }
+
     showDashboardNotice("Profil zákazníka byl uložen.", "success");
   } catch (error) {
     console.error(error);
-    showDashboardNotice("Profil zákazníka se nepodařilo uložit.", "error");
+    showDashboardNotice("Profil zákazníka se nepodařilo trvale uložit.", "error");
   }
 }
 
