@@ -11,7 +11,82 @@ let menu = [];
 
 
 const PUBLIC_RESTAURANT_ID = 1;
-const PUBLIC_RESERVATION_DURATION_MINUTES = 120;
+const DEFAULT_PUBLIC_RESERVATION_SETTINGS = {
+  duration_1_2: 90,
+  duration_3_4: 120,
+  duration_5_6: 150,
+  duration_7_plus: 180,
+  min_advance_minutes: 60,
+  max_advance_days: 30,
+  min_people: 1,
+  max_people: 20
+};
+
+let publicReservationSettings = { ...DEFAULT_PUBLIC_RESERVATION_SETTINGS };
+let publicReservationSettingsLoaded = false;
+
+function getPublicReservationDuration(people) {
+  const count = Number(people || 1);
+  if (count <= 2) return Number(publicReservationSettings.duration_1_2 || 90);
+  if (count <= 4) return Number(publicReservationSettings.duration_3_4 || 120);
+  if (count <= 6) return Number(publicReservationSettings.duration_5_6 || 150);
+  return Number(publicReservationSettings.duration_7_plus || 180);
+}
+
+function localDateString(date) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+    .toISOString()
+    .split("T")[0];
+}
+
+function addLocalDays(date, days) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + Number(days || 0));
+  return result;
+}
+
+function applyPublicReservationSettingsToForm() {
+  const peopleInput = document.getElementById("osoby");
+  const dateInput = document.getElementById("datum");
+  if (peopleInput) {
+    peopleInput.min = String(publicReservationSettings.min_people);
+    peopleInput.max = String(publicReservationSettings.max_people);
+  }
+  if (dateInput) {
+    const now = new Date();
+    dateInput.min = localDateString(now);
+    dateInput.max = localDateString(addLocalDays(now, publicReservationSettings.max_advance_days));
+  }
+}
+
+async function loadPublicReservationSettings(force = false) {
+  if (publicReservationSettingsLoaded && !force) return publicReservationSettings;
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/reservation_settings?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&select=*`,
+      { headers }
+    );
+    if (!response.ok) throw new Error(await response.text());
+    const rows = await response.json();
+    const row = rows[0] || {};
+    publicReservationSettings = {
+      duration_1_2: Math.max(30, Number(row.duration_1_2 || 90)),
+      duration_3_4: Math.max(30, Number(row.duration_3_4 || 120)),
+      duration_5_6: Math.max(30, Number(row.duration_5_6 || 150)),
+      duration_7_plus: Math.max(30, Number(row.duration_7_plus || 180)),
+      min_advance_minutes: Math.max(0, Number(row.min_advance_minutes ?? 60)),
+      max_advance_days: Math.max(1, Number(row.max_advance_days || 30)),
+      min_people: Math.max(1, Number(row.min_people || 1)),
+      max_people: Math.max(1, Number(row.max_people || 20))
+    };
+  } catch (error) {
+    console.warn("Používám výchozí nastavení rezervací:", error);
+    publicReservationSettings = { ...DEFAULT_PUBLIC_RESERVATION_SETTINGS };
+  }
+  publicReservationSettingsLoaded = true;
+  applyPublicReservationSettingsToForm();
+  return publicReservationSettings;
+}
 
 function timeToMinutes(value) {
   const [hours, minutes] = String(value || "00:00")
@@ -30,17 +105,17 @@ function publicReservationsOverlap(first, second) {
   const secondStart = timeToMinutes(second.time);
   const firstEnd = firstStart + Math.max(
     30,
-    Number(first.duration_minutes || PUBLIC_RESERVATION_DURATION_MINUTES)
+    Number(first.duration_minutes || getPublicReservationDuration(first.people || 1))
   );
   const secondEnd = secondStart + Math.max(
     30,
-    Number(second.duration_minutes || PUBLIC_RESERVATION_DURATION_MINUTES)
+    Number(second.duration_minutes || getPublicReservationDuration(second.people || 1))
   );
 
   return firstStart < secondEnd && secondStart < firstEnd;
 }
 
-async function findBestPublicTable({ people, date, time }) {
+async function findBestPublicTable({ people, date, time, durationMinutes }) {
   const tablesUrl =
     `${SUPABASE_URL}/rest/v1/restaurant_tables` +
     `?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}` +
@@ -82,7 +157,7 @@ async function findBestPublicTable({ people, date, time }) {
   const draft = {
     date,
     time,
-    duration_minutes: PUBLIC_RESERVATION_DURATION_MINUTES
+    duration_minutes: Number(durationMinutes || getPublicReservationDuration(people))
   };
 
   return tables.find(table => {
@@ -303,6 +378,7 @@ function setAvailableTimesStatus(message, type = "info") {
 }
 
 async function loadAvailableReservationTimes() {
+  await loadPublicReservationSettings();
   const dateInput = document.getElementById("datum");
   const peopleInput = document.getElementById("osoby");
   const timeSelect = document.getElementById("cas");
@@ -312,7 +388,7 @@ async function loadAvailableReservationTimes() {
   const people = Number(peopleInput.value);
   const previousValue = timeSelect.value;
 
-  if (!date || !Number.isInteger(people) || people < 1 || people > 20) {
+  if (!date || !Number.isInteger(people) || people < publicReservationSettings.min_people || people > publicReservationSettings.max_people) {
     timeSelect.innerHTML = '<option value="">Nejdřív vyber datum a počet osob</option>';
     timeSelect.disabled = true;
     setAvailableTimesStatus("");
@@ -354,14 +430,15 @@ async function loadAvailableReservationTimes() {
 
     const openMinutes = timeToMinutes(hours.open_time);
     const closeMinutes = timeToMinutes(hours.close_time);
-    const duration = PUBLIC_RESERVATION_DURATION_MINUTES;
+    const duration = getPublicReservationDuration(people);
     const now = new Date();
-    const localToday = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split("T")[0];
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
     const slots = [];
 
     for (let start = openMinutes; start + duration <= closeMinutes; start += 30) {
-      if (date === localToday && start <= currentMinutes) continue;
+      const slotTime = `${String(Math.floor(start / 60)).padStart(2, "0")}:${String(start % 60).padStart(2, "0")}`;
+      const slotDateTime = new Date(`${date}T${slotTime}:00`);
+      const earliestAllowed = Date.now() + (Number(publicReservationSettings.min_advance_minutes || 0) * 60000);
+      if (slotDateTime.getTime() < earliestAllowed) continue;
       const end = start + duration;
       const blocked = blocks.some(block => {
         const blockStart = timeToMinutes(block.start_time);
@@ -391,7 +468,7 @@ async function loadAvailableReservationTimes() {
     timeSelect.innerHTML = '<option value="">Vyber čas</option>' + slots.map(slot => `<option value="${slot}">${slot}</option>`).join("");
     timeSelect.disabled = false;
     if (slots.includes(previousValue)) timeSelect.value = previousValue;
-    setAvailableTimesStatus(`${slots.length} volných termínů · délka rezervace 2 hodiny`, "success");
+    setAvailableTimesStatus(`${slots.length} volných termínů`, "success");
   } catch (error) {
     console.error(error);
     timeSelect.innerHTML = '<option value="">Časy se nepodařilo načíst</option>';
@@ -433,6 +510,7 @@ async function publicReservationAlreadyExists({ name, date, time, phone, email }
 
 async function ulozitRezervaci() {
   if (reservationSubmissionInProgress) return;
+  await loadPublicReservationSettings();
 
   const name = document.getElementById("jmeno").value.trim();
   const people = document.getElementById("osoby").value.trim();
@@ -464,14 +542,12 @@ async function ulozitRezervaci() {
     return;
   }
 
-  const maxDate = new Date();
-  maxDate.setFullYear(maxDate.getFullYear() + 1);
-  const localMaxDate = new Date(
-    maxDate.getTime() - maxDate.getTimezoneOffset() * 60000
-  ).toISOString().split("T")[0];
+  const localMaxDate = localDateString(
+    addLocalDays(new Date(), publicReservationSettings.max_advance_days)
+  );
 
   if (date > localMaxDate) {
-    showPublicReservationNotice("Rezervaci lze vytvořit maximálně 1 rok dopředu.");
+    showPublicReservationNotice(`Rezervaci lze vytvořit maximálně ${publicReservationSettings.max_advance_days} dní dopředu.`);
     return;
   }
 
@@ -489,8 +565,8 @@ async function ulozitRezervaci() {
   }
 
   const peopleNumber = Number(people);
-  if (!Number.isInteger(peopleNumber) || peopleNumber < 1 || peopleNumber > 20) {
-    showPublicReservationNotice("Počet osob musí být od 1 do 20.");
+  if (!Number.isInteger(peopleNumber) || peopleNumber < publicReservationSettings.min_people || peopleNumber > publicReservationSettings.max_people) {
+    showPublicReservationNotice(`Počet osob musí být od ${publicReservationSettings.min_people} do ${publicReservationSettings.max_people}.`);
     return;
   }
 
@@ -511,13 +587,21 @@ async function ulozitRezervaci() {
     return;
   }
 
+  const reservationDurationMinutes = getPublicReservationDuration(peopleNumber);
+  const requestedStart = new Date(`${date}T${time}:00`);
+  const earliestAllowed = Date.now() + (Number(publicReservationSettings.min_advance_minutes || 0) * 60000);
+  if (requestedStart.getTime() < earliestAllowed) {
+    showPublicReservationNotice(`Rezervaci je potřeba vytvořit alespoň ${publicReservationSettings.min_advance_minutes} minut předem.`);
+    return;
+  }
+
   setPublicReservationSubmitting(true);
 
   try {
     const openingAvailability = await checkPublicOpeningAvailability({
       date,
       time,
-      durationMinutes: PUBLIC_RESERVATION_DURATION_MINUTES
+      durationMinutes: reservationDurationMinutes
     });
 
     if (!openingAvailability.ok) {
@@ -555,7 +639,8 @@ async function ulozitRezervaci() {
     const automaticallySelectedTable = await findBestPublicTable({
       people: peopleNumber,
       date,
-      time
+      time,
+      durationMinutes: reservationDurationMinutes
     });
 
     if (!automaticallySelectedTable) {
@@ -577,7 +662,7 @@ async function ulozitRezervaci() {
         people: peopleNumber,
         date,
         time,
-        duration_minutes: PUBLIC_RESERVATION_DURATION_MINUTES,
+        duration_minutes: reservationDurationMinutes,
         table_id: Number(automaticallySelectedTable.id),
         phone,
         email,
@@ -640,17 +725,16 @@ async function ulozitRezervaci() {
 }
 
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadPublicReservationSettings();
   const dateInput = document.getElementById("datum");
   const peopleInput = document.getElementById("osoby");
   const timeSelect = document.getElementById("cas");
 
   if (dateInput) {
     const now = new Date();
-    const localToday = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split("T")[0];
-    const max = new Date(now);
-    max.setFullYear(max.getFullYear() + 1);
-    const localMax = new Date(max.getTime() - max.getTimezoneOffset() * 60000).toISOString().split("T")[0];
+    const localToday = localDateString(now);
+    const localMax = localDateString(addLocalDays(now, publicReservationSettings.max_advance_days));
     dateInput.min = localToday;
     dateInput.max = localMax;
     dateInput.addEventListener("change", loadAvailableReservationTimes);
