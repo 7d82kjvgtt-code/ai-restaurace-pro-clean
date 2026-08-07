@@ -2162,3 +2162,27 @@ tbody tr:hover {
   .upcoming-time-block strong { font-size: 18px; }
   .upcoming-main-info strong { font-size: 16px; }
 }
+
+
+/* =========================================================
+   NASTAVENÍ REZERVACÍ
+========================================================= */
+.reservation-settings-panel { display:block; }
+.reservation-settings-help { color:#94a3b8; margin:0 0 22px; max-width:900px; line-height:1.6; }
+.reservation-settings-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-bottom:18px; }
+.reservation-settings-card { padding:20px; border:1px solid #334155; border-radius:18px; background:#111827; }
+.reservation-settings-card h3 { margin:0 0 16px; }
+.reservation-settings-fields { display:grid; gap:12px; }
+.reservation-settings-fields label { display:grid; grid-template-columns:minmax(130px,1fr) 120px 55px; gap:10px; align-items:center; color:#e2e8f0; font-weight:700; }
+.reservation-settings-fields input { width:100%; padding:11px 12px; border:1px solid #334155; border-radius:10px; background:#0f172a; color:#fff; }
+.reservation-settings-fields label span { color:#94a3b8; font-size:13px; font-weight:600; }
+.reservation-settings-summary { display:grid; gap:5px; padding:15px 16px; margin:0 0 18px; border:1px solid rgba(245,158,11,.28); border-radius:14px; background:rgba(245,158,11,.08); color:#fde68a; }
+.reservation-settings-summary span { color:#cbd5e1; line-height:1.45; }
+@media(max-width:850px){
+  .reservation-settings-grid{grid-template-columns:1fr}
+  .reservation-settings-fields label{grid-template-columns:minmax(110px,1fr) 100px 45px}
+}
+@media(max-width:520px){
+  .reservation-settings-card{padding:15px}
+  .reservation-settings-fields label{grid-template-columns:1fr 90px 42px;font-size:14px}
+}
