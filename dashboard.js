@@ -8,6 +8,8 @@ let customerProfiles = [];
 
 let currentRestaurantId = null;
 let currentUserRole = null;
+let currentUserId = null;
+let teamMembers = [];
 
 let editingFoodId = null;
 let editingImageUrl = "";
@@ -225,10 +227,12 @@ async function loadDashboardData() {
     loadBlockedTimes(),
     loadReservationSettings(),
     loadReservationHistory(),
-    loadCustomerProfiles()
+    loadCustomerProfiles(),
+    loadTeamMembers()
   ]);
 
   await loadReservations();
+  applyRolePermissions();
 }
 
 function setupMobileNavigation() {
@@ -349,50 +353,61 @@ async function loadRestaurantContext() {
   const token = getAccessToken();
   const payload = parseJwt(token);
 
-  if (!payload?.sub) {
-    return false;
-  }
+  if (!payload?.sub) return false;
 
   try {
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(payload.sub)}&select=restaurant_id,role`,
-      {
-        method: "GET",
-        headers: getHeaders()
-      }
+    // Pokud už je týmový systém nainstalovaný, členství v něm je hlavní zdroj oprávnění.
+    const teamResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/restaurant_team?user_id=eq.${encodeURIComponent(payload.sub)}&active=eq.true&select=restaurant_id,role&limit=1`,
+      { method: "GET", headers: getHeaders() }
     );
 
-    if (!response.ok) {
-      throw new Error(await response.text());
+    if (teamResponse.ok) {
+      const memberships = await teamResponse.json();
+      const membership = memberships[0];
+
+      if (!membership?.restaurant_id) {
+        console.error("Uživatel nemá aktivní členství v týmu.");
+        showDashboardNotice("Přístup k restauraci není aktivní.");
+        return false;
+      }
+
+      const role = String(membership.role || "").toLowerCase().trim();
+      if (!["owner", "manager", "staff"].includes(role)) return false;
+
+      currentUserId = payload.sub;
+      currentRestaurantId = membership.restaurant_id;
+      currentUserRole = role;
+      return true;
     }
+
+    // Zpětná kompatibilita před spuštěním supabase-team-roles.sql.
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(payload.sub)}&select=restaurant_id,role`,
+      { method: "GET", headers: getHeaders() }
+    );
+
+    if (!response.ok) throw new Error(await response.text());
 
     const profiles = await response.json();
     const profile = profiles[0];
+    const role = String(profile?.role || "").toLowerCase().trim();
 
-    if (!profile?.restaurant_id) {
+    if (!profile?.restaurant_id || !["owner", "manager", "staff"].includes(role)) {
       console.error("Uživatel není přiřazený k restauraci.");
       return false;
     }
-    
-    const userRole = String(profile.role || "").toLowerCase().trim();
 
-if (userRole !== "owner") {
-    console.error("Uživatel nemá oprávnění otevřít Dashboard.");
-    showDashboardNotice("Do administrace má přístup pouze majitel restaurace.");
-    return false;
-}
+    currentUserId = payload.sub;
     currentRestaurantId = profile.restaurant_id;
-    currentUserRole = userRole;
-
-    console.log("Aktivní restaurace:", currentRestaurantId);
-    console.log("Role uživatele:", currentUserRole);
-
+    currentUserRole = role;
     return true;
   } catch (error) {
     console.error("Nepodařilo se načíst restauraci:", error);
     return false;
   }
 }
+
 function tokenNeedsRefresh() {
   const token = getAccessToken();
 
@@ -4227,13 +4242,248 @@ function getCalendarStatusLabel(status) {
 
     return "Čeká";
 }
+
+/* =========================================================
+   TÝM / ROLE
+========================================================= */
+
+const ROLE_LABELS = {
+  owner: "Majitel",
+  manager: "Manažer",
+  staff: "Obsluha"
+};
+
+const ROLE_ALLOWED_SECTIONS = {
+  owner: new Set(["prehled", "grafy", "rezervace", "historie", "customers", "team", "kalendar", "stoly", "mapa", "provoz", "reservationSettings", "menu"]),
+  manager: new Set(["prehled", "grafy", "rezervace", "historie", "customers", "kalendar", "stoly", "mapa", "provoz", "reservationSettings", "menu"]),
+  staff: new Set(["prehled", "rezervace", "customers", "kalendar", "stoly", "mapa"])
+};
+
+function roleLabel(role) {
+  return ROLE_LABELS[String(role || "").toLowerCase()] || "Neznámá role";
+}
+
+function canAccessSection(sectionId) {
+  const allowed = ROLE_ALLOWED_SECTIONS[currentUserRole] || ROLE_ALLOWED_SECTIONS.staff;
+  return allowed.has(sectionId);
+}
+
+function applyRolePermissions() {
+  document.querySelectorAll('.sidebar nav a[data-section]').forEach(link => {
+    const section = link.dataset.section;
+    link.hidden = !canAccessSection(section);
+  });
+
+  const badge = document.getElementById('currentUserRoleBadge');
+  if (badge) badge.textContent = roleLabel(currentUserRole);
+
+  // Sekce Tým je určena pouze majiteli.
+  const teamSection = document.getElementById('team');
+  if (teamSection && currentUserRole !== 'owner') teamSection.style.display = 'none';
+}
+
+function getCurrentUserEmail() {
+  return String(parseJwt(getAccessToken())?.email || '').trim().toLowerCase();
+}
+
+function renderTeamMembers() {
+  const list = document.getElementById('teamMemberList');
+  const count = document.getElementById('teamMemberCount');
+  if (!list) return;
+
+  if (count) count.textContent = String(teamMembers.filter(member => member.active !== false).length);
+
+  if (!teamMembers.length) {
+    list.innerHTML = `<div class="history-empty">Zatím tu není žádný člen týmu.</div>`;
+    return;
+  }
+
+  list.innerHTML = teamMembers.map(member => {
+    const isCurrent = member.user_id && member.user_id === currentUserId;
+    const isOwner = member.role === 'owner';
+    const status = member.active === false ? 'Neaktivní' : (member.user_id ? 'Aktivní' : 'Pozván');
+    const statusClass = member.active === false ? 'inactive' : (member.user_id ? 'active' : 'pending');
+    const safeId = Number(member.id);
+
+    return `
+      <article class="team-member-card ${member.active === false ? 'is-inactive' : ''}">
+        <div class="team-member-main">
+          <div class="team-avatar">${escapeHtml((member.full_name || member.email || '?').trim().charAt(0).toUpperCase())}</div>
+          <div>
+            <div class="team-name-line">
+              <h3>${escapeHtml(member.full_name || member.email || 'Člen týmu')}</h3>
+              ${isCurrent ? '<span class="team-you-badge">Ty</span>' : ''}
+            </div>
+            <div class="team-email">${escapeHtml(member.email || '')}</div>
+          </div>
+        </div>
+
+        <div class="team-controls">
+          <span class="team-status team-status--${statusClass}">${status}</span>
+          <select aria-label="Role zaměstnance" onchange="updateTeamMemberRole(${safeId}, this.value)" ${isOwner || isCurrent ? 'disabled' : ''}>
+            <option value="manager" ${member.role === 'manager' ? 'selected' : ''}>Manažer</option>
+            <option value="staff" ${member.role === 'staff' ? 'selected' : ''}>Obsluha</option>
+            ${isOwner ? '<option value="owner" selected>Majitel</option>' : ''}
+          </select>
+          ${!isOwner && !isCurrent ? `
+            <button type="button" class="${member.active === false ? 'successButton' : 'dangerButton'} team-action-button" onclick="toggleTeamMemberActive(${safeId}, ${member.active === false ? 'true' : 'false'})">
+              ${member.active === false ? 'Aktivovat' : 'Deaktivovat'}
+            </button>
+          ` : ''}
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+async function loadTeamMembers() {
+  if (!currentRestaurantId || currentUserRole !== 'owner') {
+    teamMembers = [];
+    renderTeamMembers();
+    return;
+  }
+
+  const list = document.getElementById('teamMemberList');
+  if (list) list.innerHTML = `<div class="history-empty">Načítám tým…</div>`;
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/restaurant_team?restaurant_id=eq.${currentRestaurantId}&select=*&order=created_at.asc`,
+      { headers: getHeaders() }
+    );
+
+    if (!response.ok) throw new Error(await response.text());
+    teamMembers = await response.json();
+    renderTeamMembers();
+  } catch (error) {
+    console.error('Tým se nepodařilo načíst:', error);
+    teamMembers = [];
+    if (list) list.innerHTML = `<div class="history-empty">Tým zatím není připravený. Spusť SQL soubor supabase-team-roles.sql.</div>`;
+  }
+}
+
+async function inviteTeamMember(event) {
+  event?.preventDefault();
+  if (currentUserRole !== 'owner') {
+    showDashboardNotice('Pozvat zaměstnance může pouze majitel.');
+    return;
+  }
+
+  const nameInput = document.getElementById('teamInviteName');
+  const emailInput = document.getElementById('teamInviteEmail');
+  const roleInput = document.getElementById('teamInviteRole');
+  const button = document.getElementById('teamInviteButton');
+
+  const fullName = nameInput?.value.trim() || '';
+  const email = emailInput?.value.trim().toLowerCase() || '';
+  const role = roleInput?.value || 'staff';
+
+  if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+    showDashboardNotice('Zadej platný e-mail zaměstnance.');
+    return;
+  }
+
+  if (!['manager', 'staff'].includes(role)) {
+    showDashboardNotice('Vyber platnou roli.');
+    return;
+  }
+
+  if (email === getCurrentUserEmail()) {
+    showDashboardNotice('Tento e-mail patří aktuálně přihlášenému majiteli.');
+    return;
+  }
+
+  button.disabled = true;
+  const oldText = button.textContent;
+  button.textContent = 'Odesílám pozvánku…';
+
+  try {
+    const response = await fetch('/api/invite-team-member', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getAccessToken()}`
+      },
+      body: JSON.stringify({ full_name: fullName, email, role })
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Pozvánku se nepodařilo odeslat.');
+
+    nameInput.value = '';
+    emailInput.value = '';
+    roleInput.value = 'staff';
+    await loadTeamMembers();
+    showDashboardNotice(data.message || 'Pozvánka zaměstnanci byla odeslána.', 'success');
+  } catch (error) {
+    console.error(error);
+    const msg = String(error.message || 'Pozvánku se nepodařilo odeslat.');
+    showDashboardNotice(msg.includes('SUPABASE_SERVICE_ROLE_KEY')
+      ? 'Na Vercelu chybí bezpečný klíč pro pozvánky. Přidej SUPABASE_SERVICE_ROLE_KEY do Environment Variables.'
+      : msg);
+  } finally {
+    button.disabled = false;
+    button.textContent = oldText;
+  }
+}
+
+async function updateTeamMemberRole(memberId, role) {
+  if (currentUserRole !== 'owner' || !['manager', 'staff'].includes(role)) return;
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/restaurant_team?id=eq.${Number(memberId)}&restaurant_id=eq.${currentRestaurantId}`,
+      {
+        method: 'PATCH',
+        headers: getHeaders({ Prefer: 'return=representation' }),
+        body: JSON.stringify({ role })
+      }
+    );
+    if (!response.ok) throw new Error(await response.text());
+    await loadTeamMembers();
+    showDashboardNotice('Role zaměstnance byla změněna.', 'success');
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice('Roli zaměstnance se nepodařilo změnit.');
+    await loadTeamMembers();
+  }
+}
+
+async function toggleTeamMemberActive(memberId, active) {
+  if (currentUserRole !== 'owner') return;
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/restaurant_team?id=eq.${Number(memberId)}&restaurant_id=eq.${currentRestaurantId}`,
+      {
+        method: 'PATCH',
+        headers: getHeaders({ Prefer: 'return=representation' }),
+        body: JSON.stringify({ active: Boolean(active) })
+      }
+    );
+    if (!response.ok) throw new Error(await response.text());
+    await loadTeamMembers();
+    showDashboardNotice(active ? 'Zaměstnanec byl aktivován.' : 'Zaměstnanec byl deaktivován.', 'success');
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice('Stav zaměstnance se nepodařilo změnit.');
+    await loadTeamMembers();
+  }
+}
+
 function showDashboardSection(sectionId) {
+    if (currentUserRole && !canAccessSection(sectionId)) {
+        showDashboardNotice("Pro tuto část nemáš oprávnění.");
+        sectionId = "prehled";
+    }
+
     const sectionIds = [
         "prehled",
         "grafy",
         "rezervace",
         "historie",
         "customers",
+        "team",
         "novaRezervace",
         "kalendar",
         "stoly",
