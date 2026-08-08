@@ -2321,3 +2321,60 @@ tbody tr:hover {
   .customer-note-row { grid-template-columns:1fr; }
   .customer-reservation-row { grid-template-columns:1fr 1fr; }
 }
+
+
+/* =========================================================
+   TÝM / ROLE
+========================================================= */
+.current-role-badge {
+  display: inline-flex;
+  margin-top: 7px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 122, 63, .28);
+  border-radius: 999px;
+  color: #ff9b6f;
+  background: rgba(255, 90, 31, .08);
+  font-size: 12px;
+  font-weight: 800;
+}
+.team-heading { align-items: flex-end; gap: 18px; }
+.team-help { margin-top: 6px; opacity: .75; max-width: 720px; }
+.team-count-box { min-width: 150px; padding: 14px 18px; border-radius: 16px; background: rgba(9,19,38,.45); border: 1px solid rgba(255,255,255,.1); display:flex; flex-direction:column; }
+.team-count-box strong { font-size: 28px; }
+.team-count-box span { opacity: .68; font-size: 12px; }
+.team-invite-form { margin-top: 18px; padding: 18px; border-radius: 18px; border: 1px solid rgba(255,255,255,.1); background: rgba(8,18,36,.45); }
+.team-invite-grid { display:grid; grid-template-columns:1fr 1.25fr .8fr auto; gap:12px; align-items:end; }
+.team-invite-grid label { display:flex; flex-direction:column; gap:7px; font-weight:700; }
+.team-invite-grid input, .team-invite-grid select { width:100%; }
+.team-invite-grid .primary-btn { min-height: 48px; white-space: nowrap; }
+.team-role-help { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+.team-role-help > div { padding:12px 14px; border-radius:12px; background:rgba(255,255,255,.035); display:flex; flex-direction:column; gap:3px; }
+.team-role-help span { opacity:.68; font-size:12px; }
+.team-member-list { display:grid; gap:12px; margin-top:18px; }
+.team-member-card { display:flex; justify-content:space-between; align-items:center; gap:20px; padding:16px 18px; border-radius:16px; border:1px solid rgba(255,255,255,.1); background:rgba(12,24,45,.56); }
+.team-member-card.is-inactive { opacity:.58; }
+.team-member-main { display:flex; align-items:center; gap:12px; min-width:0; }
+.team-avatar { width:46px; height:46px; flex:0 0 46px; border-radius:14px; display:grid; place-items:center; font-weight:900; font-size:20px; background:rgba(255,90,31,.16); color:#ff8b58; }
+.team-name-line { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.team-name-line h3 { margin:0; font-size:18px; }
+.team-email { margin-top:4px; opacity:.66; font-size:13px; overflow-wrap:anywhere; }
+.team-you-badge { padding:3px 7px; border-radius:999px; background:rgba(46,204,113,.13); color:#5de28f; font-size:11px; font-weight:800; }
+.team-controls { display:flex; gap:9px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+.team-controls select { min-width:130px; }
+.team-status { padding:6px 9px; border-radius:999px; font-size:11px; font-weight:800; }
+.team-status--active { color:#5de28f; background:rgba(46,204,113,.13); }
+.team-status--pending { color:#ffbf4a; background:rgba(255,166,0,.13); }
+.team-status--inactive { color:#ff7777; background:rgba(255,70,70,.12); }
+.team-action-button { min-height:40px; padding:8px 12px; }
+.successButton { background:#19a957; color:#fff; border:0; border-radius:10px; font-weight:800; cursor:pointer; }
+@media (max-width: 900px) {
+  .team-invite-grid { grid-template-columns:1fr 1fr; }
+  .team-member-card { align-items:flex-start; flex-direction:column; }
+  .team-controls { width:100%; justify-content:flex-start; }
+}
+@media (max-width: 620px) {
+  .team-heading { flex-direction:column; align-items:stretch; }
+  .team-count-box { width:100%; }
+  .team-invite-grid, .team-role-help { grid-template-columns:1fr; }
+  .team-controls select, .team-controls button { width:100%; }
+}
