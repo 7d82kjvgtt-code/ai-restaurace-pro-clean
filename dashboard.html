@@ -60,6 +60,7 @@
     <a href="#rezervace" data-section="rezervace">📅 Rezervace</a>
     <a href="#historie" data-section="historie">🕘 Historie</a>
     <a href="#customers" data-section="customers">👤 Zákazníci</a>
+    <a href="#team" data-section="team">👥 Tým</a>
     <a href="#kalendar" data-section="kalendar">🗓️ Kalendář</a>
     <a href="#stoly" data-section="stoly">🪑 Stoly</a>
     <a href="#mapa" data-section="mapa">🗺️ Mapa stolů</a>
@@ -77,6 +78,7 @@
       <div>
         <h1>Vítejte zpět 👋</h1>
         <p>Přehled provozu restaurace</p>
+        <span class="current-role-badge" id="currentUserRoleBadge"></span>
       </div>
 
       <div class="topbar-actions">
@@ -343,6 +345,48 @@
       <div class="customer-summary" id="customerSummary"></div>
       <div id="customerList" class="customer-list">
         <div class="history-empty">Načítám zákazníky…</div>
+      </div>
+    </section>
+
+
+
+    <section class="panel team-panel" id="team" style="display:none;">
+      <div class="section-heading panel-top team-heading">
+        <div>
+          <span class="eyebrow">SPRÁVA PŘÍSTUPŮ</span>
+          <h2>👥 Tým restaurace</h2>
+          <p class="team-help">Majitel může pozvat zaměstnance, změnit jejich roli nebo dočasně vypnout přístup.</p>
+        </div>
+        <div class="team-count-box"><strong id="teamMemberCount">0</strong><span>aktivních členů</span></div>
+      </div>
+
+      <form class="team-invite-form" onsubmit="inviteTeamMember(event)">
+        <div class="team-invite-grid">
+          <label>
+            Jméno
+            <input id="teamInviteName" type="text" placeholder="Např. Petra Nováková">
+          </label>
+          <label>
+            E-mail
+            <input id="teamInviteEmail" type="email" placeholder="zamestnanec@restaurace.cz" required>
+          </label>
+          <label>
+            Role
+            <select id="teamInviteRole">
+              <option value="staff">Obsluha</option>
+              <option value="manager">Manažer</option>
+            </select>
+          </label>
+          <button id="teamInviteButton" type="submit" class="primary-btn">Pozvat zaměstnance</button>
+        </div>
+        <div class="team-role-help">
+          <div><strong>Manažer</strong><span>Rezervace, zákazníci, stoly, provozní doba, menu a nastavení.</span></div>
+          <div><strong>Obsluha</strong><span>Rezervace, kalendář, zákazníci, stoly a mapa stolů.</span></div>
+        </div>
+      </form>
+
+      <div id="teamMemberList" class="team-member-list">
+        <div class="history-empty">Načítám tým…</div>
       </div>
     </section>
 
