@@ -113,7 +113,8 @@
   const SUPABASE_ANON_KEY = "sb_publishable_l6ko8NS_92RjQBM2rEzAvA_Sd2hYicb";
   const supabaseClient = supabase.createClient(
     SUPABASE_URL,
-    SUPABASE_ANON_KEY
+    SUPABASE_ANON_KEY,
+    { auth: { detectSessionInUrl: true, persistSession: true } }
   );
 
   const btn = document.getElementById("activateBtn");
@@ -123,6 +124,32 @@
     message.textContent = text;
     message.className = "message " + type;
   }
+
+  function saveDashboardSession(session) {
+    if (!session?.access_token) return false;
+    sessionStorage.setItem("dashboardLoggedIn", "true");
+    sessionStorage.setItem("supabaseAccessToken", session.access_token);
+    if (session.refresh_token) {
+      sessionStorage.setItem("supabaseRefreshToken", session.refresh_token);
+    }
+    return true;
+  }
+
+  async function ensureInviteSession() {
+    // Supabase zpracuje token z pozvánky v URL a vytvoří session.
+    // Počkáme na ni dřív, než dovolíme nastavit heslo.
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (error) return null;
+    return data?.session || null;
+  }
+
+  window.addEventListener("DOMContentLoaded", async () => {
+    const session = await ensureInviteSession();
+    if (!session) {
+      showMessage("Pozvánka není platná nebo už vypršela. Požádej majitele o novou pozvánku.", "error");
+      btn.disabled = true;
+    }
+  });
 
   btn.addEventListener("click", async () => {
     const password = document.getElementById("password").value;
@@ -142,9 +169,15 @@
     btn.textContent = "Aktivuji účet...";
 
     try {
-      const { data, error } = await supabaseClient.auth.updateUser({
-        password
-      });
+      const inviteSession = await ensureInviteSession();
+      if (!inviteSession) {
+        showMessage("Pozvánka není platná nebo už vypršela. Požádej majitele o novou pozvánku.", "error");
+        btn.disabled = false;
+        btn.textContent = "Aktivovat účet";
+        return;
+      }
+
+      const { error } = await supabaseClient.auth.updateUser({ password });
 
       if (error) {
         showMessage(error.message || "Účet se nepodařilo aktivovat.", "error");
@@ -153,14 +186,24 @@
         return;
       }
 
-      showMessage(
-        "✅ Účet je připraven. Přesměrovávám do administrace...",
-        "success"
-      );
+      // Po změně hesla si vezmeme aktuální session a uložíme ji stejným
+      // způsobem, jaký používá dashboard. Díky tomu není potřeba žádný refresh
+      // ani další přihlášení po přijetí pozvánky.
+      const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+      const session = sessionData?.session || null;
+
+      if (sessionError || !saveDashboardSession(session)) {
+        showMessage("Účet je aktivovaný, ale nepodařilo se dokončit přihlášení. Přihlas se prosím svým e-mailem a novým heslem.", "error");
+        btn.disabled = false;
+        btn.textContent = "Aktivovat účet";
+        return;
+      }
+
+      showMessage("✅ Účet je připraven. Otevírám administraci…", "success");
 
       setTimeout(() => {
-        window.location.href = "/dashboard#prehled";
-      }, 1500);
+        window.location.replace("/dashboard#prehled");
+      }, 650);
 
     } catch (err) {
       showMessage("Něco se pokazilo. Zkuste to znovu.", "error");
