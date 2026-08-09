@@ -312,11 +312,46 @@ function hideLogin() {
   document.getElementById("loginScreen").style.display = "none";
 }
 
+function consumeDashboardSessionHandoff() {
+  try {
+    const raw = localStorage.getItem("dashboardSessionHandoff");
+    if (!raw) return false;
+
+    const handoff = JSON.parse(raw);
+    const age = Date.now() - Number(handoff?.created_at || 0);
+
+    // Předání je jen krátkodobé a jednorázové.
+    if (!handoff?.access_token || age < 0 || age > 10 * 60 * 1000) {
+      localStorage.removeItem("dashboardSessionHandoff");
+      return false;
+    }
+
+    sessionStorage.setItem("dashboardLoggedIn", "true");
+    sessionStorage.setItem("supabaseAccessToken", handoff.access_token);
+    if (handoff.refresh_token) {
+      sessionStorage.setItem("supabaseRefreshToken", handoff.refresh_token);
+    }
+
+    localStorage.removeItem("dashboardSessionHandoff");
+    return true;
+  } catch (error) {
+    localStorage.removeItem("dashboardSessionHandoff");
+    return false;
+  }
+}
+
 function getAccessToken() {
-  return sessionStorage.getItem("supabaseAccessToken");
+  let token = sessionStorage.getItem("supabaseAccessToken");
+  if (!token && consumeDashboardSessionHandoff()) {
+    token = sessionStorage.getItem("supabaseAccessToken");
+  }
+  return token;
 }
 
 function getRefreshToken() {
+  if (!sessionStorage.getItem("supabaseRefreshToken")) {
+    consumeDashboardSessionHandoff();
+  }
   return sessionStorage.getItem("supabaseRefreshToken");
 }
 
@@ -324,10 +359,9 @@ function clearSession() {
   sessionStorage.removeItem("dashboardLoggedIn");
   sessionStorage.removeItem("supabaseAccessToken");
   sessionStorage.removeItem("supabaseRefreshToken");
-  currentUserId = null;
-  currentRestaurantId = null;
-  currentUserRole = null;
+  localStorage.removeItem("dashboardSessionHandoff");
 }
+
 
 function getHeaders(extra = {}) {
   return {
