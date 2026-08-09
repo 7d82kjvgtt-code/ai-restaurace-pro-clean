@@ -220,6 +220,13 @@ document.querySelectorAll(".room-switch").forEach((button) => {
 });
 
 async function loadDashboardData() {
+  // Role a navigace se aplikují HNED po načtení kontextu uživatele.
+  // Zaměstnanec tak po aktivaci pozvánky neuvidí výchozí stav Majitele
+  // a nemusí stránku ručně obnovovat.
+  applyRolePermissions();
+  const requestedSection = window.location.hash.replace("#", "") || "prehled";
+  showDashboardSection(requestedSection, { notifyDenied: true });
+
   await Promise.all([
     loadTables(),
     loadFoods(),
@@ -232,13 +239,10 @@ async function loadDashboardData() {
   ]);
 
   await loadReservations();
-  applyRolePermissions();
 
-  // Role se načte až po přihlášení. Proto po načtení dat znovu
-  // vyhodnotíme URL. Pokud uživatel otevřel zakázanou sekci ručně,
-  // okamžitě ho pošleme na Přehled místo prázdné stránky.
-  const requestedSection = window.location.hash.replace("#", "") || "prehled";
-  showDashboardSection(requestedSection, { notifyDenied: true });
+  // Po načtení dat ještě jednou sjednotíme navigaci a oprávnění.
+  applyRolePermissions();
+  showDashboardSection(window.location.hash.replace("#", "") || "prehled", { notifyDenied: false });
 }
 
 function setupMobileNavigation() {
@@ -317,6 +321,9 @@ function clearSession() {
   sessionStorage.removeItem("dashboardLoggedIn");
   sessionStorage.removeItem("supabaseAccessToken");
   sessionStorage.removeItem("supabaseRefreshToken");
+  currentUserId = null;
+  currentRestaurantId = null;
+  currentUserRole = null;
 }
 
 function getHeaders(extra = {}) {
@@ -413,6 +420,50 @@ async function loadRestaurantContext() {
     return false;
   }
 }
+
+let roleRefreshInProgress = false;
+let lastRoleRefreshAt = 0;
+
+async function refreshCurrentUserContext(options = {}) {
+  const { force = false } = options;
+  if (!getAccessToken() || roleRefreshInProgress) return;
+  if (!force && Date.now() - lastRoleRefreshAt < 5000) return;
+
+  roleRefreshInProgress = true;
+  try {
+    if (!(await ensureValidSession())) return;
+    const previousRole = currentUserRole;
+    const previousRestaurantId = currentRestaurantId;
+    const ok = await loadRestaurantContext();
+
+    if (!ok) {
+      clearSession();
+      showLogin();
+      return;
+    }
+
+    lastRoleRefreshAt = Date.now();
+    applyRolePermissions();
+    showDashboardSection(window.location.hash.replace("#", "") || "prehled", { notifyDenied: false });
+
+    // Když majitel změnil zaměstnanci roli nebo restauraci, přenačteme data
+    // automaticky při návratu do aplikace.
+    if (previousRole && (previousRole !== currentUserRole || previousRestaurantId !== currentRestaurantId)) {
+      await loadDashboardData();
+      showDashboardNotice(`Přístup byl aktualizován: ${roleLabel(currentUserRole)}.`, "success");
+    }
+  } catch (error) {
+    console.error("Aktualizace role se nepodařila:", error);
+  } finally {
+    roleRefreshInProgress = false;
+  }
+}
+
+window.addEventListener("focus", () => refreshCurrentUserContext());
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") refreshCurrentUserContext();
+});
+window.addEventListener("pageshow", () => refreshCurrentUserContext({ force: true }));
 
 function tokenNeedsRefresh() {
   const token = getAccessToken();
@@ -604,6 +655,17 @@ async function login(event) {
 
     passwordInput.value = "";
     error.textContent = "";
+
+    // Po přihlášení MUSÍME nejdřív načíst restauraci a roli. Dříve se
+    // dashboard načetl bez nového kontextu a správná role se někdy objevila
+    // až po ručním refreshi.
+    const restaurantLoaded = await loadRestaurantContext();
+    if (!restaurantLoaded) {
+      clearSession();
+      showLogin();
+      error.textContent = "Účet není přiřazený k aktivní restauraci.";
+      return;
+    }
 
     hideLogin();
     await loadDashboardData();
