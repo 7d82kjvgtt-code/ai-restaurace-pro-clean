@@ -91,7 +91,8 @@
             aria-expanded="false"
             onclick="toggleReservationNotifications(event)"
           >
-            <span aria-hidden="true">🔔</span>
+            <span class="reservation-notification-icon" aria-hidden="true">🔔</span>
+            <span class="reservation-notification-label">Upozornění</span>
             <span class="reservation-notification-badge" id="reservationNotificationBadge" hidden>0</span>
           </button>
 
@@ -171,6 +172,20 @@
         </div>
       </article>
 
+    </section>
+
+    <section class="panel reservation-alert-panel" id="reservationAlertOverview">
+      <div class="reservation-alert-overview-copy">
+        <span class="reservation-alert-overview-icon">🔔</span>
+        <div>
+          <span class="eyebrow">Nové rezervace</span>
+          <h2 id="reservationAlertOverviewTitle">Žádná nepřečtená upozornění</h2>
+          <p id="reservationAlertOverviewText">Jakmile přijde nová rezervace, objeví se tady i ve zvonku nahoře.</p>
+        </div>
+      </div>
+      <button type="button" class="secondaryButton reservation-alert-overview-button" onclick="toggleReservationNotifications(event)">
+        Otevřít upozornění
+      </button>
     </section>
 
     <section class="panel upcoming-panel" id="upcomingReservationsPanel">

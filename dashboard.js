@@ -820,12 +820,32 @@ function getUnreadReservationNotifications() {
 
 function updateReservationNotificationBadge() {
   const badge = document.getElementById("reservationNotificationBadge");
+  const button = document.getElementById("reservationNotificationButton");
+  const overview = document.getElementById("reservationAlertOverview");
+  const overviewTitle = document.getElementById("reservationAlertOverviewTitle");
+  const overviewText = document.getElementById("reservationAlertOverviewText");
   const count = getUnreadReservationNotifications().length;
-  if (!badge) return;
 
-  badge.textContent = count > 99 ? "99+" : String(count);
-  badge.hidden = count === 0;
-  badge.setAttribute("aria-label", `${count} nepřečtených upozornění`);
+  if (badge) {
+    badge.textContent = count > 99 ? "99+" : String(count);
+    badge.hidden = count === 0;
+    badge.setAttribute("aria-label", `${count} nepřečtených upozornění`);
+  }
+
+  if (button) {
+    button.classList.toggle("has-unread", count > 0);
+    button.setAttribute("aria-label", count > 0
+      ? `Upozornění na nové rezervace, ${count} nepřečtených`
+      : "Upozornění na nové rezervace");
+  }
+
+  if (overview) overview.classList.toggle("has-unread", count > 0);
+  if (overviewTitle) overviewTitle.textContent = count > 0
+    ? `${count} ${count === 1 ? "nová rezervace" : count >= 2 && count <= 4 ? "nové rezervace" : "nových rezervací"}`
+    : "Žádná nepřečtená upozornění";
+  if (overviewText) overviewText.textContent = count > 0
+    ? "Klikni na upozornění a otevři detail nové rezervace."
+    : "Jakmile přijde nová rezervace, objeví se tady i ve zvonku nahoře.";
 }
 
 function renderReservationNotifications() {
@@ -885,10 +905,10 @@ async function loadReservationNotifications({ silent = false } = {}) {
     ]);
 
     if (!notificationsResponse.ok || !readsResponse.ok) {
-      // Pokud ještě není spuštěný SQL soubor, dashboard dál normálně funguje.
-      if (!silent) {
-        console.warn("Upozornění na rezervace zatím nejsou připravená v databázi.");
-      }
+      const notificationError = !notificationsResponse.ok ? await notificationsResponse.text().catch(() => "") : "";
+      const readsError = !readsResponse.ok ? await readsResponse.text().catch(() => "") : "";
+      console.warn("Upozornění na rezervace se nenačetla.", { notificationError, readsError });
+      if (!silent) showDashboardNotice("Upozornění se nepodařilo načíst. Ostatní části dashboardu fungují dál.", "error");
       return;
     }
 
