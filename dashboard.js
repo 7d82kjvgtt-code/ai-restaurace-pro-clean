@@ -248,8 +248,15 @@ async function loadDashboardData() {
   ]);
 
   await loadReservations();
-  await loadReservationNotifications();
-  startReservationNotificationPolling();
+  if (["owner", "manager"].includes(String(currentUserRole || "").toLowerCase())) {
+    await loadReservationNotifications();
+    startReservationNotificationPolling();
+  } else {
+    stopReservationNotificationPolling();
+    reservationNotifications = [];
+    reservationNotificationReads.clear();
+    renderReservationNotifications();
+  }
 
   // Po načtení dat ještě jednou sjednotíme navigaci a oprávnění.
   applyRolePermissions();
@@ -4669,6 +4676,21 @@ function canAccessSection(sectionId) {
   return allowed.has(sectionId);
 }
 
+function updateReservationNotificationVisibility(sectionId = null) {
+  const wrapper = document.getElementById("reservationNotificationWrapper");
+  const overview = document.getElementById("reservationAlertOverview");
+  const section = sectionId || (window.location.hash.replace("#", "") || "prehled");
+  const roleCanSeeNotifications = ["owner", "manager"].includes(String(currentUserRole || "").toLowerCase());
+  const shouldShow = roleCanSeeNotifications && section === "prehled";
+
+  if (wrapper) wrapper.style.display = shouldShow ? "" : "none";
+  if (overview) overview.style.display = shouldShow ? "" : "none";
+
+  if (!shouldShow) {
+    document.getElementById("reservationNotificationPanel")?.classList.remove("open");
+  }
+}
+
 function applyRolePermissions() {
   document.querySelectorAll('.sidebar nav a[data-section]').forEach(link => {
     const section = link.dataset.section;
@@ -4677,6 +4699,8 @@ function applyRolePermissions() {
 
   const badge = document.getElementById('currentUserRoleBadge');
   if (badge) badge.textContent = roleLabel(currentUserRole);
+
+  updateReservationNotificationVisibility();
 
   // Tým smí spravovat pouze majitel. Zobrazení samotné sekce ale vždy
   // řídí showDashboardSection(), aby po změně role nezůstával starý stav.
@@ -4920,6 +4944,8 @@ function showDashboardSection(sectionId, options = {}) {
     document.querySelectorAll(".sidebar nav a").forEach(link => {
         link.classList.toggle("active", link.dataset.section === resolvedSection);
     });
+
+    updateReservationNotificationVisibility(resolvedSection);
 
     const targetHash = `#${resolvedSection}`;
     if (window.location.hash !== targetHash) {
