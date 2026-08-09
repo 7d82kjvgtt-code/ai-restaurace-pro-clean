@@ -143,6 +143,35 @@
     return data?.session || null;
   }
 
+  async function waitForTeamMembership(session, attempts = 8) {
+    if (!session?.user?.id || !session?.access_token) return false;
+
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      try {
+        const response = await fetch(
+          `${SUPABASE_URL}/rest/v1/restaurant_team?user_id=eq.${encodeURIComponent(session.user.id)}&active=eq.true&select=restaurant_id,role&limit=1`,
+          {
+            headers: {
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${session.access_token}`
+            }
+          }
+        );
+
+        if (response.ok) {
+          const rows = await response.json();
+          if (rows[0]?.restaurant_id && rows[0]?.role) return true;
+        }
+      } catch (_) {}
+
+      if (attempt < attempts - 1) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+
+    return false;
+  }
+
   window.addEventListener("DOMContentLoaded", async () => {
     const session = await ensureInviteSession();
     if (!session) {
@@ -201,9 +230,12 @@
 
       showMessage("✅ Účet je připraven. Otevírám administraci…", "success");
 
-      setTimeout(() => {
-        window.location.replace("/dashboard#prehled");
-      }, 650);
+      // Než otevřeme dashboard, krátce ověříme, že je týmové členství opravdu
+      // dostupné. Tím odstraníme situaci, kdy zaměstnanec vidí správnou roli
+      // až po ručním refreshi.
+      await waitForTeamMembership(session);
+
+      window.location.replace("/dashboard#prehled");
 
     } catch (err) {
       showMessage("Něco se pokazilo. Zkuste to znovu.", "error");
