@@ -82,7 +82,7 @@ module.exports = async function handler(req, res) {
     }
 
     const origin = req.headers.origin || `https://${req.headers.host}`;
-    const inviteResponse = await supabase(`/auth/v1/invite?redirect_to=${encodeURIComponent(`${origin}/dashboard.html`)}`, {
+    const inviteResponse = await supabase(`/auth/v1/invite?redirect_to=${encodeURIComponent(`${origin}/invite.html`)}`, {
       method: "POST",
       body: JSON.stringify({
         email,
@@ -109,7 +109,7 @@ module.exports = async function handler(req, res) {
         role,
         active: true,
         invited_at: new Date().toISOString(),
-        joined_at: userId ? new Date().toISOString() : null
+        joined_at: null
       })
     });
 
