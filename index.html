@@ -3,6 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  // Záchranná brána pro Supabase pozvánky. Když Supabase kvůli nastavení
+  // Redirect URLs pošle pozvánku na hlavní stránku, zachováme tokeny a
+  // okamžitě ji přesuneme na stránku pro vytvoření hesla.
+  (function redirectSupabaseInvite() {
+    const hash = window.location.hash || "";
+    const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
+    const type = (hashParams.get("type") || params.get("type") || "").toLowerCase();
+    const hasAuthPayload = Boolean(
+      hashParams.get("access_token") ||
+      hashParams.get("refresh_token") ||
+      params.get("code") ||
+      params.get("token_hash")
+    );
+
+    if (type === "invite" || (hasAuthPayload && (type === "signup" || type === "recovery"))) {
+      window.location.replace("/invite.html" + window.location.search + window.location.hash);
+    }
+  })();
+</script>
 <title>AI Restaurace PRO</title>
 <link rel="stylesheet" href="style.css">
 </head>
