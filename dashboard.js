@@ -233,6 +233,12 @@ async function loadDashboardData() {
 
   await loadReservations();
   applyRolePermissions();
+
+  // Role se načte až po přihlášení. Proto po načtení dat znovu
+  // vyhodnotíme URL. Pokud uživatel otevřel zakázanou sekci ručně,
+  // okamžitě ho pošleme na Přehled místo prázdné stránky.
+  const requestedSection = window.location.hash.replace("#", "") || "prehled";
+  showDashboardSection(requestedSection, { notifyDenied: true });
 }
 
 function setupMobileNavigation() {
@@ -4277,7 +4283,8 @@ function applyRolePermissions() {
   const badge = document.getElementById('currentUserRoleBadge');
   if (badge) badge.textContent = roleLabel(currentUserRole);
 
-  // Sekce Tým je určena pouze majiteli.
+  // Tým smí spravovat pouze majitel. Zobrazení samotné sekce ale vždy
+  // řídí showDashboardSection(), aby po změně role nezůstával starý stav.
   const teamSection = document.getElementById('team');
   if (teamSection && currentUserRole !== 'owner') teamSection.style.display = 'none';
 }
@@ -4471,10 +4478,15 @@ async function toggleTeamMemberActive(memberId, active) {
   }
 }
 
-function showDashboardSection(sectionId) {
-    if (currentUserRole && !canAccessSection(sectionId)) {
-        showDashboardNotice("Pro tuto část nemáš oprávnění.");
-        sectionId = "prehled";
+function showDashboardSection(sectionId, options = {}) {
+    const { notifyDenied = true } = options;
+    const requestedSection = String(sectionId || "prehled").replace(/^#/, "");
+    const sectionExists = document.getElementById(requestedSection);
+    const denied = Boolean(currentUserRole) && (!sectionExists || !canAccessSection(requestedSection));
+    const resolvedSection = denied ? "prehled" : (sectionExists ? requestedSection : "prehled");
+
+    if (denied && notifyDenied) {
+        showDashboardNotice("Pro tuto část nemáš oprávnění.", "info");
     }
 
     const sectionIds = [
@@ -4495,52 +4507,48 @@ function showDashboardSection(sectionId) {
 
     sectionIds.forEach(id => {
         const section = document.getElementById(id);
-
         if (!section) return;
 
-        if (sectionId === "rezervace" && id === "novaRezervace") {
+        if (resolvedSection === "rezervace" && id === "novaRezervace") {
             section.style.display = "none";
             return;
         }
 
-        section.style.display =
-            id === sectionId ? "" : "none";
+        section.style.display = id === resolvedSection ? "" : "none";
     });
 
-    // Panel s blížícími se rezervacemi patří pouze na Přehled.
     const upcomingPanel = document.getElementById("upcomingReservationsPanel");
     if (upcomingPanel) {
-        upcomingPanel.style.display = sectionId === "prehled" ? "" : "none";
+        upcomingPanel.style.display = resolvedSection === "prehled" ? "" : "none";
     }
 
-    document
-        .querySelectorAll(".sidebar nav a")
-        .forEach(link => {
-            link.classList.toggle(
-                "active",
-                link.dataset.section === sectionId
-            );
-        });
-
-    history.replaceState(null, "", `#${sectionId}`);
-}
-
-document
-    .querySelectorAll(".sidebar nav a[data-section]")
-    .forEach(link => {
-        link.addEventListener("click", event => {
-            event.preventDefault();
-
-            const sectionId = link.dataset.section;
-
-            showDashboardSection(sectionId);
-        });
+    document.querySelectorAll(".sidebar nav a").forEach(link => {
+        link.classList.toggle("active", link.dataset.section === resolvedSection);
     });
 
-const initialDashboardSection =
-    window.location.hash.replace("#", "") || "prehled";
+    const targetHash = `#${resolvedSection}`;
+    if (window.location.hash !== targetHash) {
+        history.replaceState(null, "", targetHash);
+    }
+}
 
-showDashboardSection(initialDashboardSection);
+document.querySelectorAll(".sidebar nav a[data-section]").forEach(link => {
+    link.addEventListener("click", event => {
+        event.preventDefault();
+        showDashboardSection(link.dataset.section);
+    });
+});
+
+// Pokud někdo ručně změní hash v URL (např. #team), oprávnění se
+// zkontrolují okamžitě a zakázaná sekce skončí na #prehled.
+window.addEventListener("hashchange", () => {
+    if (!currentUserRole) return;
+    showDashboardSection(window.location.hash.replace("#", "") || "prehled");
+});
+
+// Před načtením role zobrazíme bezpečně Přehled. Po přihlášení a načtení
+// role loadDashboardData() zpracuje skutečně požadovaný hash.
+showDashboardSection("prehled", { notifyDenied: false });
 let draggedTable = null;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
