@@ -1020,9 +1020,8 @@ async function markAllReservationNotificationsRead() {
 }
 
 async function openReservationNotification(notificationId, reservationId) {
-  await markReservationNotificationRead(notificationId);
-  closeReservationNotifications();
-
+  // Nejprve dohledáme skutečnou rezervaci. Notifikaci označíme jako přečtenou
+  // až ve chvíli, kdy lze detail opravdu otevřít.
   let reservation = reservations.find(item => Number(item.id) === Number(reservationId));
   if (!reservation) {
     await loadReservations();
@@ -1030,11 +1029,20 @@ async function openReservationNotification(notificationId, reservationId) {
   }
 
   if (!reservation) {
+    closeReservationNotifications();
     showDashboardNotice("Rezervace už není dostupná.", "error");
     return;
   }
 
-  editReservation(Number(reservationId));
+  // Přepneme dashboard na Rezervace, zavřeme dropdown a otevřeme přesně
+  // rezervaci svázanou přes reservation_id. Funguje pro všechny role, které
+  // mají přístup k sekci Rezervace.
+  showDashboardSection("rezervace", { notifyDenied: false });
+  closeReservationNotifications();
+  editReservation(Number(reservation.id));
+
+  // Badge se po úspěšném otevření okamžitě sníží. Zápis je per-user.
+  await markReservationNotificationRead(notificationId);
 }
 
 // Zavření panelu kliknutím mimo něj.
