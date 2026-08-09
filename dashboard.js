@@ -204,19 +204,22 @@ document.querySelectorAll(".room-switch").forEach((button) => {
     ?.addEventListener("change", applyFilters);
 
   if (await ensureValidSession()) {
-  const restaurantLoaded = await loadRestaurantContext();
+    // Po návratu z pozvánky může členství dorazit o zlomek sekundy později.
+    // Krátký retry odstraní nutnost ručního refreshu.
+    const restaurantLoaded = await loadRestaurantContextWithRetry();
 
-  if (restaurantLoaded) {
-    hideLogin();
-    await loadDashboardData();
+    if (restaurantLoaded) {
+      hideLogin();
+      history.replaceState(null, "", "#prehled");
+      await loadDashboardData();
+    } else {
+      clearSession();
+      showLogin();
+      showDashboardNotice("Účet není přiřazený k žádné aktivní restauraci.");
+    }
   } else {
-    clearSession();
     showLogin();
-    showDashboardNotice("Účet není přiřazený k žádné restauraci.");
   }
-} else {
-  showLogin();
-}
 });
 
 async function loadDashboardData() {
@@ -421,6 +424,16 @@ async function loadRestaurantContext() {
   }
 }
 
+async function loadRestaurantContextWithRetry(attempts = 5, delayMs = 350) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    if (await loadRestaurantContext()) return true;
+    if (attempt < attempts - 1) {
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  return false;
+}
+
 let roleRefreshInProgress = false;
 let lastRoleRefreshAt = 0;
 
@@ -434,7 +447,7 @@ async function refreshCurrentUserContext(options = {}) {
     if (!(await ensureValidSession())) return;
     const previousRole = currentUserRole;
     const previousRestaurantId = currentRestaurantId;
-    const ok = await loadRestaurantContext();
+    const ok = await loadRestaurantContextWithRetry(3, 250);
 
     if (!ok) {
       clearSession();
@@ -449,6 +462,7 @@ async function refreshCurrentUserContext(options = {}) {
     // Když majitel změnil zaměstnanci roli nebo restauraci, přenačteme data
     // automaticky při návratu do aplikace.
     if (previousRole && (previousRole !== currentUserRole || previousRestaurantId !== currentRestaurantId)) {
+      history.replaceState(null, "", "#prehled");
       await loadDashboardData();
       showDashboardNotice(`Přístup byl aktualizován: ${roleLabel(currentUserRole)}.`, "success");
     }
@@ -464,6 +478,14 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") refreshCurrentUserContext();
 });
 window.addEventListener("pageshow", () => refreshCurrentUserContext({ force: true }));
+
+// Role se může změnit na jiném zařízení (např. Majitel změní Obsluhu na Manažera).
+// Pravidelná tichá kontrola znamená, že zaměstnanec nemusí ručně obnovovat stránku.
+const roleRefreshTimer = setInterval(() => {
+  if (document.visibilityState === "visible" && getAccessToken()) {
+    refreshCurrentUserContext();
+  }
+}, 10000);
 
 function tokenNeedsRefresh() {
   const token = getAccessToken();
@@ -659,7 +681,7 @@ async function login(event) {
     // Po přihlášení MUSÍME nejdřív načíst restauraci a roli. Dříve se
     // dashboard načetl bez nového kontextu a správná role se někdy objevila
     // až po ručním refreshi.
-    const restaurantLoaded = await loadRestaurantContext();
+    const restaurantLoaded = await loadRestaurantContextWithRetry();
     if (!restaurantLoaded) {
       clearSession();
       showLogin();
@@ -668,6 +690,7 @@ async function login(event) {
     }
 
     hideLogin();
+    history.replaceState(null, "", "#prehled");
     await loadDashboardData();
   } catch (loginError) {
     console.error(loginError);
