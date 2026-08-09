@@ -82,6 +82,38 @@
       </div>
 
       <div class="topbar-actions">
+        <div class="reservation-notification-wrapper" id="reservationNotificationWrapper">
+          <button
+            type="button"
+            class="reservation-notification-button"
+            id="reservationNotificationButton"
+            aria-label="Upozornění na nové rezervace"
+            aria-expanded="false"
+            onclick="toggleReservationNotifications(event)"
+          >
+            <span aria-hidden="true">🔔</span>
+            <span class="reservation-notification-badge" id="reservationNotificationBadge" hidden>0</span>
+          </button>
+
+          <div class="reservation-notification-panel" id="reservationNotificationPanel">
+            <div class="reservation-notification-panel-head">
+              <div>
+                <span class="eyebrow">Živě</span>
+                <strong>Nové rezervace</strong>
+              </div>
+              <button type="button" class="reservation-notification-read-all" onclick="markAllReservationNotificationsRead()">
+                Přečíst vše
+              </button>
+            </div>
+            <div class="reservation-notification-list" id="reservationNotificationList">
+              <div class="reservation-notification-empty">
+                <span>…</span>
+                <div><strong>Načítám upozornění</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <a class="secondaryButton" href="index.html">
           ⬅️ Zpět na web
         </a>

@@ -26,6 +26,12 @@ let selectedTablesForMerge = [];
 let upcomingReservationTimer = null;
 const shownUpcomingReservationAlerts = new Set();
 
+let reservationNotificationTimer = null;
+let reservationNotifications = [];
+let reservationNotificationReads = new Set();
+let reservationNotificationsInitialized = false;
+const knownReservationNotificationIds = new Set();
+
 function showDashboardNotice(message, type = "auto") {
   const text = String(message || "").trim();
   if (!text) return;
@@ -242,6 +248,8 @@ async function loadDashboardData() {
   ]);
 
   await loadReservations();
+  await loadReservationNotifications();
+  startReservationNotificationPolling();
 
   // Po načtení dat ještě jednou sjednotíme navigaci a oprávnění.
   applyRolePermissions();
@@ -737,6 +745,14 @@ async function login(event) {
 }
 
 function logoutDashboard() {
+  if (reservationNotificationTimer) {
+    clearInterval(reservationNotificationTimer);
+    reservationNotificationTimer = null;
+  }
+  reservationNotifications = [];
+  reservationNotificationReads.clear();
+  reservationNotificationsInitialized = false;
+  knownReservationNotificationIds.clear();
   clearSession();
   location.reload();
 }
@@ -774,6 +790,238 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
+/* =========================================================
+   UPOZORNĚNÍ NA NOVÉ REZERVACE
+========================================================= */
+
+function formatNotificationCreatedAt(value) {
+  if (!value) return "Právě teď";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Právě teď";
+
+  const now = new Date();
+  const diffMinutes = Math.max(0, Math.floor((now - date) / 60000));
+  if (diffMinutes < 1) return "Právě teď";
+  if (diffMinutes < 60) return `Před ${diffMinutes} min`;
+  if (diffMinutes < 24 * 60) return `Před ${Math.floor(diffMinutes / 60)} h`;
+
+  return date.toLocaleString("cs-CZ", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function getUnreadReservationNotifications() {
+  return reservationNotifications.filter(item => !reservationNotificationReads.has(Number(item.id)));
+}
+
+function updateReservationNotificationBadge() {
+  const badge = document.getElementById("reservationNotificationBadge");
+  const count = getUnreadReservationNotifications().length;
+  if (!badge) return;
+
+  badge.textContent = count > 99 ? "99+" : String(count);
+  badge.hidden = count === 0;
+  badge.setAttribute("aria-label", `${count} nepřečtených upozornění`);
+}
+
+function renderReservationNotifications() {
+  const list = document.getElementById("reservationNotificationList");
+  if (!list) return;
+
+  if (!reservationNotifications.length) {
+    list.innerHTML = `
+      <div class="reservation-notification-empty">
+        <span>✓</span>
+        <div>
+          <strong>Žádné nové rezervace</strong>
+          <small>Nové rezervace se tu objeví automaticky.</small>
+        </div>
+      </div>
+    `;
+    updateReservationNotificationBadge();
+    return;
+  }
+
+  list.innerHTML = reservationNotifications.slice(0, 30).map(item => {
+    const unread = !reservationNotificationReads.has(Number(item.id));
+    const people = Number(item.people || 0);
+    const dateLabel = item.reservation_date ? formatDate(String(item.reservation_date).slice(0, 10)) : "—";
+    const timeLabel = item.reservation_time ? String(item.reservation_time).slice(0, 5) : "—";
+
+    return `
+      <button
+        type="button"
+        class="reservation-notification-item${unread ? " unread" : ""}"
+        onclick="openReservationNotification(${Number(item.id)}, ${Number(item.reservation_id)})"
+      >
+        <span class="reservation-notification-dot" aria-hidden="true"></span>
+        <span class="reservation-notification-copy">
+          <strong>Nová rezervace · ${escapeHtml(item.name || "Bez jména")}</strong>
+          <small>${people} ${people === 1 ? "osoba" : people >= 2 && people <= 4 ? "osoby" : "osob"} · ${escapeHtml(dateLabel)} · ${escapeHtml(timeLabel)}</small>
+          <em>${escapeHtml(formatNotificationCreatedAt(item.created_at))}</em>
+        </span>
+      </button>
+    `;
+  }).join("");
+
+  updateReservationNotificationBadge();
+}
+
+async function loadReservationNotifications({ silent = false } = {}) {
+  if (!currentRestaurantId || !currentUserId) return;
+
+  try {
+    const [notificationsResponse, readsResponse] = await Promise.all([
+      authorizedFetch(
+        `${SUPABASE_URL}/rest/v1/reservation_notifications?restaurant_id=eq.${currentRestaurantId}&select=*&order=created_at.desc&limit=50`
+      ),
+      authorizedFetch(
+        `${SUPABASE_URL}/rest/v1/reservation_notification_reads?user_id=eq.${encodeURIComponent(currentUserId)}&select=notification_id`
+      )
+    ]);
+
+    if (!notificationsResponse.ok || !readsResponse.ok) {
+      // Pokud ještě není spuštěný SQL soubor, dashboard dál normálně funguje.
+      if (!silent) {
+        console.warn("Upozornění na rezervace zatím nejsou připravená v databázi.");
+      }
+      return;
+    }
+
+    const [notificationsData, readsData] = await Promise.all([
+      notificationsResponse.json(),
+      readsResponse.json()
+    ]);
+
+    const nextNotifications = Array.isArray(notificationsData) ? notificationsData : [];
+    reservationNotificationReads = new Set(
+      (Array.isArray(readsData) ? readsData : []).map(row => Number(row.notification_id))
+    );
+
+    if (reservationNotificationsInitialized) {
+      nextNotifications
+        .filter(item => !knownReservationNotificationIds.has(Number(item.id)))
+        .reverse()
+        .forEach(item => {
+          if (reservationNotificationReads.has(Number(item.id))) return;
+          showDashboardNotice(
+            `Nová rezervace: ${item.name || "Bez jména"} · ${item.people || 0} osob · ${String(item.reservation_time || "").slice(0, 5)}`,
+            "info"
+          );
+        });
+    }
+
+    reservationNotifications = nextNotifications;
+    nextNotifications.forEach(item => knownReservationNotificationIds.add(Number(item.id)));
+    reservationNotificationsInitialized = true;
+    renderReservationNotifications();
+  } catch (error) {
+    if (!silent) console.error("Načítání upozornění selhalo:", error);
+  }
+}
+
+function startReservationNotificationPolling() {
+  if (reservationNotificationTimer) return;
+
+  reservationNotificationTimer = window.setInterval(async () => {
+    if (document.hidden || !getAccessToken()) return;
+    await loadReservationNotifications({ silent: true });
+  }, 15000);
+}
+
+function toggleReservationNotifications(event) {
+  event?.stopPropagation();
+  const panel = document.getElementById("reservationNotificationPanel");
+  const button = document.getElementById("reservationNotificationButton");
+  if (!panel || !button) return;
+
+  const willOpen = !panel.classList.contains("open");
+  panel.classList.toggle("open", willOpen);
+  button.setAttribute("aria-expanded", willOpen ? "true" : "false");
+
+  if (willOpen) loadReservationNotifications({ silent: true });
+}
+
+function closeReservationNotifications() {
+  const panel = document.getElementById("reservationNotificationPanel");
+  const button = document.getElementById("reservationNotificationButton");
+  panel?.classList.remove("open");
+  button?.setAttribute("aria-expanded", "false");
+}
+
+async function markReservationNotificationRead(notificationId) {
+  const id = Number(notificationId);
+  if (!id || !currentUserId || reservationNotificationReads.has(id)) return;
+
+  const response = await authorizedFetch(
+    `${SUPABASE_URL}/rest/v1/reservation_notification_reads?on_conflict=notification_id,user_id`,
+    {
+      method: "POST",
+      headers: getHeaders({ Prefer: "resolution=merge-duplicates,return=minimal" }),
+      body: JSON.stringify({ notification_id: id, user_id: currentUserId })
+    }
+  );
+
+  if (response.ok) {
+    reservationNotificationReads.add(id);
+    renderReservationNotifications();
+  }
+}
+
+async function markAllReservationNotificationsRead() {
+  const unread = getUnreadReservationNotifications();
+  if (!unread.length || !currentUserId) return;
+
+  const rows = unread.map(item => ({
+    notification_id: Number(item.id),
+    user_id: currentUserId
+  }));
+
+  const response = await authorizedFetch(
+    `${SUPABASE_URL}/rest/v1/reservation_notification_reads?on_conflict=notification_id,user_id`,
+    {
+      method: "POST",
+      headers: getHeaders({ Prefer: "resolution=merge-duplicates,return=minimal" }),
+      body: JSON.stringify(rows)
+    }
+  );
+
+  if (!response.ok) {
+    showDashboardNotice("Upozornění se nepodařilo označit jako přečtená.", "error");
+    return;
+  }
+
+  rows.forEach(row => reservationNotificationReads.add(Number(row.notification_id)));
+  renderReservationNotifications();
+}
+
+async function openReservationNotification(notificationId, reservationId) {
+  await markReservationNotificationRead(notificationId);
+  closeReservationNotifications();
+
+  let reservation = reservations.find(item => Number(item.id) === Number(reservationId));
+  if (!reservation) {
+    await loadReservations();
+    reservation = reservations.find(item => Number(item.id) === Number(reservationId));
+  }
+
+  if (!reservation) {
+    showDashboardNotice("Rezervace už není dostupná.", "error");
+    return;
+  }
+
+  editReservation(Number(reservationId));
+}
+
+// Zavření panelu kliknutím mimo něj.
+document.addEventListener("click", event => {
+  const wrapper = document.getElementById("reservationNotificationWrapper");
+  if (wrapper && !wrapper.contains(event.target)) closeReservationNotifications();
+});
 
 /* =========================================================
    REZERVACE

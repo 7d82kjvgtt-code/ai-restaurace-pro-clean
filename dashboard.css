@@ -142,7 +142,202 @@ th,
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  align-items: center;
 }
+
+.reservation-notification-wrapper {
+  position: relative;
+}
+
+.reservation-notification-button {
+  position: relative;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  background: #1e293b;
+  border: 1px solid rgba(148, 163, 184, .22);
+  box-shadow: none;
+}
+
+.reservation-notification-button:hover {
+  background: #334155;
+}
+
+.reservation-notification-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  border: 2px solid #0f172a;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+}
+
+.reservation-notification-panel {
+  position: absolute;
+  z-index: 3000;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(390px, calc(100vw - 28px));
+  max-height: min(560px, 72vh);
+  overflow: hidden;
+  border-radius: 18px;
+  background: #111827;
+  border: 1px solid rgba(148, 163, 184, .2);
+  box-shadow: 0 24px 70px rgba(0,0,0,.45);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px) scale(.98);
+  transform-origin: top right;
+  transition: opacity .16s ease, transform .16s ease, visibility .16s ease;
+}
+
+.reservation-notification-panel.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.reservation-notification-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  padding: 16px 16px 13px;
+  border-bottom: 1px solid rgba(148, 163, 184, .14);
+}
+
+.reservation-notification-panel-head strong {
+  display: block;
+  font-size: 17px;
+  margin-top: 2px;
+}
+
+.reservation-notification-read-all {
+  width: auto;
+  min-width: 0;
+  height: auto;
+  padding: 7px 9px;
+  border-radius: 9px;
+  background: rgba(255, 90, 31, .14);
+  color: #ff8a5b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.reservation-notification-list {
+  max-height: 470px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.reservation-notification-item {
+  width: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr);
+  gap: 10px;
+  text-align: left;
+  padding: 12px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+
+.reservation-notification-item:hover {
+  background: rgba(148, 163, 184, .08);
+}
+
+.reservation-notification-item.unread {
+  background: rgba(255, 90, 31, .08);
+  border-color: rgba(255, 90, 31, .14);
+}
+
+.reservation-notification-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.reservation-notification-item.unread .reservation-notification-dot {
+  background: #ff5a1f;
+  box-shadow: 0 0 0 4px rgba(255, 90, 31, .12);
+}
+
+.reservation-notification-copy {
+  min-width: 0;
+}
+
+.reservation-notification-copy strong,
+.reservation-notification-copy small,
+.reservation-notification-copy em {
+  display: block;
+}
+
+.reservation-notification-copy strong {
+  color: #f8fafc;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.reservation-notification-copy small {
+  color: #cbd5e1;
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 3px;
+}
+
+.reservation-notification-copy em {
+  color: #64748b;
+  font-size: 11px;
+  font-style: normal;
+  margin-top: 5px;
+}
+
+.reservation-notification-empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 14px;
+  color: #94a3b8;
+}
+
+.reservation-notification-empty > span {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(34, 197, 94, .12);
+  color: #4ade80;
+  font-weight: 800;
+}
+
+.reservation-notification-empty strong,
+.reservation-notification-empty small {
+  display: block;
+}
+
+.reservation-notification-empty strong { color: #e2e8f0; }
+.reservation-notification-empty small { margin-top: 3px; font-size: 11px; }
 
 .secondaryButton {
   display: inline-flex;
@@ -2377,4 +2572,24 @@ tbody tr:hover {
   .team-count-box { width:100%; }
   .team-invite-grid, .team-role-help { grid-template-columns:1fr; }
   .team-controls select, .team-controls button { width:100%; }
+}
+
+
+@media (max-width: 700px) {
+  .reservation-notification-panel {
+    position: fixed;
+    top: max(72px, calc(env(safe-area-inset-top) + 58px));
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: 70vh;
+    transform-origin: top center;
+  }
+
+  .reservation-notification-button {
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    min-height: 42px;
+  }
 }
