@@ -3595,3 +3595,155 @@ tbody tr:hover {
   .reservation-settings-fields label input { width: 74px; }
   #floorMap .table { width: 78px; height: 78px; }
 }
+
+
+/* =========================================================
+   MOBILE V8 — FINAL HEADER FIX
+   Fixes duplicated "Zpět na web" / "Odhlásit" text and keeps
+   the mobile header clean without changing desktop behavior.
+   ========================================================= */
+@media (max-width: 760px) {
+  .topbar {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .topbar > div:first-child {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .topbar h1 {
+    margin: 0 !important;
+    font-size: 22px !important;
+    line-height: 1.08 !important;
+    white-space: nowrap !important;
+  }
+
+  .topbar p {
+    margin: 4px 0 0 !important;
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+  }
+
+  .current-role-badge {
+    margin-top: 8px !important;
+  }
+
+  .topbar-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    align-self: stretch !important;
+  }
+
+  .topbar-actions .reservation-notification-wrapper {
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    flex: 0 0 40px !important;
+  }
+
+  .topbar-actions .reservation-notification-button {
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    flex: 0 0 40px !important;
+    padding: 0 !important;
+    border-radius: 11px !important;
+  }
+
+  .reservation-notification-button .reservation-notification-label {
+    display: none !important;
+  }
+
+  .reservation-notification-button .reservation-notification-icon {
+    font-size: 18px !important;
+    line-height: 1 !important;
+  }
+
+  /* Hide original HTML label completely; render one short mobile label only. */
+  .topbar-actions > .secondaryButton {
+    width: auto !important;
+    min-width: 72px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    flex: 0 0 auto !important;
+    padding: 0 12px !important;
+    border-radius: 11px !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-decoration: none !important;
+  }
+
+  .topbar-actions > .secondaryButton::before {
+    content: "← Web" !important;
+    display: inline-block !important;
+    font-size: 13px !important;
+    line-height: 1 !important;
+    font-weight: 800 !important;
+  }
+
+  .topbar-actions > .dangerButton {
+    width: auto !important;
+    min-width: 84px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    flex: 0 0 auto !important;
+    padding: 0 13px !important;
+    border-radius: 11px !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+  }
+
+  .topbar-actions > .dangerButton::before {
+    content: "Odhlásit" !important;
+    display: inline-block !important;
+    font-size: 13px !important;
+    line-height: 1 !important;
+    font-weight: 800 !important;
+  }
+
+  .reservation-notification-panel {
+    right: 0 !important;
+    left: auto !important;
+    max-width: min(340px, calc(100vw - 32px)) !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .topbar h1 {
+    font-size: 20px !important;
+  }
+
+  .topbar-actions {
+    gap: 6px !important;
+  }
+
+  .topbar-actions > .secondaryButton {
+    min-width: 68px !important;
+    padding: 0 10px !important;
+  }
+
+  .topbar-actions > .dangerButton {
+    min-width: 78px !important;
+    padding: 0 11px !important;
+  }
+
+  .topbar-actions > .secondaryButton::before,
+  .topbar-actions > .dangerButton::before {
+    font-size: 12px !important;
+  }
+}
