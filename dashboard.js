@@ -1261,7 +1261,7 @@ function renderReservations(data) {
 
           <td data-label="Jméno">
             ${escapeHtml(
-              reservation.name || "-"
+              getReservationFullName(reservation) || "-"
             )}
           </td>
 
