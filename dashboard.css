@@ -3217,3 +3217,231 @@ tbody tr:hover {
   .calendar-controls .neutralButton { font-size: 10px; padding-left: 5px; padding-right: 5px; }
   .calendar-controls #calendarDate { font-size: 11px; }
 }
+
+/* =========================================================
+   MOBILE UI V6 — final production polish
+   Compact, consistent, touch-friendly. Desktop untouched.
+========================================================= */
+@media (max-width: 700px) {
+  /* ---------- global rhythm ---------- */
+  .main {
+    padding-top: 10px;
+    padding-left: 9px;
+    padding-right: 9px;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+  .panel { padding: 12px; border-radius: 14px; }
+  .section-heading { margin-bottom: 10px; }
+  .section-heading h2, .panel h2 { font-size: 19px; line-height: 1.15; }
+  .eyebrow { font-size: 9px; letter-spacing: .08em; }
+
+  /* ---------- header ---------- */
+  .topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 10px;
+    align-items: start;
+    margin-bottom: 12px;
+    min-height: 0;
+  }
+  .topbar > div:first-child { min-width: 0; padding-top: 0; }
+  .topbar h1 { font-size: 19px; line-height: 1.08; margin: 0; white-space: normal; }
+  .topbar p { margin: 3px 0 0; font-size: 10px; line-height: 1.25; }
+  .current-role-badge { margin-top: 6px; padding: 4px 8px; font-size: 10px; }
+  .topbar-actions {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: auto;
+    gap: 5px;
+    margin: 0;
+  }
+  .topbar-actions .reservation-notification-wrapper,
+  .topbar-actions .reservation-notification-button {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    min-height: 36px;
+    flex: 0 0 36px;
+    border-radius: 10px;
+  }
+  .topbar-actions > .secondaryButton,
+  .topbar-actions > .dangerButton {
+    height: 36px;
+    min-height: 36px;
+    padding: 0 10px;
+    border-radius: 10px;
+  }
+  .topbar-actions > .secondaryButton::before { font-size: 11px; }
+  .topbar-actions > .dangerButton::before { font-size: 11px; }
+
+  /* ---------- dashboard cards ---------- */
+  .cards { gap: 7px; margin-bottom: 10px; }
+  .card { padding: 10px; gap: 8px; min-height: 70px; }
+  .cardIcon { width: 34px; height: 34px; flex-basis: 34px; font-size: 16px; }
+  .card p { font-size: 10px; }
+  .card h2 { font-size: 20px; }
+  .reservation-alert-panel { margin-bottom: 10px; }
+
+  /* ---------- charts / stats ---------- */
+  .charts-grid { gap: 10px; margin-bottom: 10px; }
+  .chart-wrap { height: 195px; }
+  .chart-card, .statistics-card { padding: 12px; }
+
+  /* ---------- reservation list ---------- */
+  #rezervace .panel { padding: 11px; }
+  #rezervace .panel-top { gap: 8px; }
+  #rezervace .filter-actions { gap: 6px; }
+  #rezervace .filter-actions input,
+  #rezervace .filter-actions select,
+  #rezervace .filter-actions button { min-height: 38px; height: 38px; }
+  #rezervace tbody { gap: 8px; }
+  #rezervace tr {
+    gap: 5px;
+    padding: 9px;
+    border-radius: 13px;
+  }
+  #rezervace td {
+    gap: 2px;
+    padding: 6px 7px;
+    border-radius: 8px;
+    font-size: 12px;
+    min-height: 0;
+  }
+  #rezervace td::before { font-size: 8px; }
+  #rezervace td:first-child { padding: 2px 2px 5px; font-size: 16px; }
+  #rezervace .tableSelect { min-height: 35px; height: 35px; padding: 5px 8px; font-size: 12px; }
+  #rezervace .tableActions { grid-template-columns: repeat(5, 34px); gap: 5px; }
+  #rezervace .tableActions button {
+    width: 34px; min-width: 34px; height: 34px; min-height: 34px;
+    border-radius: 9px; font-size: 14px;
+  }
+
+  /* ---------- history ---------- */
+  .history-list, #historyList { gap: 8px; }
+  .history-item, .history-card { padding: 11px; border-radius: 12px; }
+
+  /* ---------- customers ---------- */
+  .customer-summary { gap: 6px; margin: 10px 0; }
+  .customer-summary > div { padding: 8px; }
+  .customer-summary strong { font-size: 18px; }
+  .customer-list { gap: 8px; }
+  .customer-card { padding: 10px; }
+  .customer-name-line h3 { font-size: 16px; }
+  .customer-contact { margin-top: 4px; font-size: 11px; }
+  .customer-stats-grid { gap: 5px; margin-top: 8px; }
+  .customer-stats-grid > div { padding: 7px; }
+  .customer-stats-grid strong { font-size: 14px; }
+  .customer-note-row { margin-top: 7px; gap: 6px; }
+  .customer-note-row textarea { min-height: 48px; max-height: 72px; padding: 8px 9px; }
+  .customer-note-row button { min-height: 36px; padding: 7px 10px; }
+  .customer-history-toggle { margin-top: 4px; padding: 4px 0; font-size: 11px; }
+
+  /* ---------- team ---------- */
+  .team-panel { padding: 12px; }
+  .team-invite-form { padding: 10px; }
+  .team-invite-grid { gap: 7px; }
+  .team-invite-grid label { font-size: 11px; }
+  .team-invite-grid input,
+  .team-invite-grid select { min-height: 38px; height: 38px; }
+  .team-invite-form .primary-btn { min-height: 38px; }
+  .team-role-help { gap: 6px; margin-top: 8px; }
+  .team-role-help > div { padding: 8px; }
+  .team-member-list { gap: 8px; }
+
+  /* ---------- calendar ---------- */
+  #kalendar.panel { padding: 11px 8px 12px; }
+  .calendar-title { gap: 7px; }
+  .calendar-live-badge { padding: 4px 8px; font-size: 10px; }
+  .calendar-controls { gap: 6px; margin-bottom: 8px; }
+  .calendar-controls .neutralButton,
+  .calendar-controls #calendarDate { min-height: 38px; height: 38px; }
+  .calendar-reservation { padding: 5px 7px; border-radius: 8px; }
+
+  /* ---------- table editor/list ---------- */
+  .table-form-panel { padding: 12px; }
+  .table-form-panel .form-grid { gap: 7px; }
+  .table-form-panel input,
+  .table-form-panel select { min-height: 38px; height: 38px; }
+  .table-form-panel textarea { min-height: 58px; }
+  .table-form-panel .form-actions button { min-height: 38px; }
+  .tableItem { padding: 9px; }
+
+  /* ---------- map ---------- */
+  #mapa.panel { padding: 12px; }
+  #floorMap.floor-map { padding: 10px; gap: 9px; }
+  #floorMap .table { width: 86px; height: 86px; }
+  .map-live-badge { padding: 4px 8px; font-size: 10px; }
+
+  /* ---------- opening hours ---------- */
+  .opening-hours-grid { gap: 7px; }
+  .opening-day {
+    grid-template-columns: minmax(0,1fr) auto;
+    grid-template-areas:
+      "day toggle"
+      "from to";
+    gap: 7px 8px;
+    padding: 10px;
+    border-radius: 12px;
+  }
+  .opening-day > strong { font-size: 14px; }
+  .opening-day .opening-toggle { gap: 5px; font-size: 11px; }
+  .opening-day .opening-toggle input { width: 20px; height: 20px; }
+  .opening-day .opening-time-field { gap: 3px; }
+  .opening-day .opening-time-field > span { font-size: 9px; }
+  .opening-day .opening-time-field input[type="time"] {
+    min-height: 36px; height: 36px; padding: 5px 7px; font-size: 12px;
+  }
+
+  /* ---------- reservation rules / operational inputs ---------- */
+  .reservation-rules-grid, .reservation-settings-grid { gap: 7px; }
+  .reservation-rules-grid input,
+  .reservation-settings-grid input,
+  .reservation-rules-grid select,
+  .reservation-settings-grid select { min-height: 36px; height: 36px; padding: 6px 8px; }
+
+  /* ---------- food/menu editor ---------- */
+  .menu-grid { gap: 10px; }
+  .food-form-panel { padding: 12px; }
+  .food-form-panel .form-grid { gap: 7px; }
+  .food-form-panel input,
+  .food-form-panel select { min-height: 38px; height: 38px; padding: 7px 9px; }
+  .food-form-panel textarea { min-height: 54px; max-height: 76px; padding: 8px 9px; }
+  .food-form-panel input[type="file"] { min-height: 40px; height: auto; padding: 7px; }
+  .food-form-panel .form-actions { margin-top: 7px; }
+  .food-form-panel .form-actions button { min-height: 38px; }
+  .foodItem { padding: 9px; }
+
+  /* ---------- floating menu ---------- */
+  .mobile-menu-button {
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    width: 44px; min-width: 44px; height: 44px; min-height: 44px;
+    border-radius: 50%;
+    box-shadow: 0 8px 20px rgba(0,0,0,.28);
+  }
+  .mobile-menu-button::before { content: "☰"; font-size: 19px; }
+
+  /* ---------- safety ---------- */
+  .panel, .card, .customer-card, .tableItem, .foodItem,
+  .team-invite-form, .team-member-card, .opening-day {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 390px) {
+  .topbar { grid-template-columns: minmax(0,1fr) auto; gap: 6px; }
+  .topbar h1 { font-size: 18px; }
+  .topbar-actions { gap: 4px; }
+  .topbar-actions .reservation-notification-wrapper,
+  .topbar-actions .reservation-notification-button { width: 34px; min-width: 34px; height: 34px; min-height: 34px; flex-basis: 34px; }
+  .topbar-actions > .secondaryButton,
+  .topbar-actions > .dangerButton { height: 34px; min-height: 34px; padding: 0 8px; }
+  .topbar-actions > .secondaryButton::before,
+  .topbar-actions > .dangerButton::before { font-size: 10px; }
+  .chart-wrap { height: 180px; }
+  #floorMap .table { width: 82px; height: 82px; }
+}
