@@ -513,6 +513,7 @@ async function ulozitRezervaci() {
   await loadPublicReservationSettings();
 
   const name = document.getElementById("jmeno").value.trim();
+  const lastName = document.getElementById("prijmeni").value.trim();
   const people = document.getElementById("osoby").value.trim();
   const date = document.getElementById("datum").value;
   const time = document.getElementById("cas").value;
@@ -524,6 +525,12 @@ async function ulozitRezervaci() {
   if (!namePattern.test(name)) {
     showPublicReservationNotice("Zadej platné jméno alespoň o 2 písmenech.");
     document.getElementById("jmeno").value = "";
+    return;
+  }
+
+  if (!namePattern.test(lastName)) {
+    showPublicReservationNotice("Zadej platné příjmení alespoň o 2 písmenech.");
+    document.getElementById("prijmeni").value = "";
     return;
   }
 
@@ -582,8 +589,8 @@ async function ulozitRezervaci() {
     return;
   }
 
-  if (!name || !people || !date || !time || !phone || !email) {
-    showPublicReservationNotice("Vyplň jméno, počet osob, datum, čas, telefon a e-mail.");
+  if (!name || !lastName || !people || !date || !time || !phone || !email) {
+    showPublicReservationNotice("Vyplň jméno, příjmení, počet osob, datum, čas, telefon a e-mail.");
     return;
   }
 
@@ -659,6 +666,7 @@ async function ulozitRezervaci() {
       },
       body: JSON.stringify({
         name,
+        last_name: lastName,
         people: peopleNumber,
         date,
         time,
@@ -684,7 +692,7 @@ async function ulozitRezervaci() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
+          name: `${name} ${lastName}`.trim(),
           people: peopleNumber,
           date,
           time,
@@ -710,7 +718,7 @@ async function ulozitRezervaci() {
         : `✅ Rezervace uložena. Automaticky byl vybrán ${automaticallySelectedTable.name}. Potvrzovací e-mail se ale nepodařilo odeslat.`
     );
 
-    ["jmeno", "osoby", "datum", "cas", "telefon", "email", "poznamka"]
+    ["jmeno", "prijmeni", "osoby", "datum", "cas", "telefon", "email", "poznamka"]
       .forEach(id => {
         const input = document.getElementById(id);
         if (input) input.value = "";

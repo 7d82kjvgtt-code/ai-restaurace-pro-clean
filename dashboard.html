@@ -245,7 +245,7 @@
           <input
             id="search"
             type="search"
-            placeholder="Jméno, telefon nebo e-mail"
+            placeholder="Jméno, příjmení, telefon nebo e-mail"
           >
 
           <select id="statusFilter">
@@ -337,6 +337,8 @@
     <div class="form-grid">
         <input id="newName" type="text" placeholder="Jméno">
 
+        <input id="newLastName" type="text" placeholder="Příjmení">
+
         <input id="newPeople" type="number" placeholder="Počet osob">
 
         <input id="newDate" type="date">
@@ -380,7 +382,7 @@
           <p class="customers-help">Přehled hostů vytvořený z rezervací. Poznámky a označení stálého hosta se ukládají zvlášť.</p>
         </div>
         <div class="customer-toolbar">
-          <input id="customerSearch" type="search" placeholder="Hledat jméno, telefon nebo e-mail">
+          <input id="customerSearch" type="search" placeholder="Hledat jméno, příjmení, telefon nebo e-mail">
           <select id="customerTypeFilter" aria-label="Filtrovat zákazníky">
             <option value="">Všichni zákazníci</option>
             <option value="regular">⭐ Stálí hosté</option>
@@ -927,6 +929,11 @@
             <label>
                 Jméno
                 <input id="editReservationName" type="text">
+            </label>
+
+            <label>
+                Příjmení
+                <input id="editReservationLastName" type="text">
             </label>
 
             <label>

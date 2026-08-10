@@ -1186,7 +1186,7 @@ function renderUpcomingReservations() {
           <small>${escapeHtml(formatUpcomingTime(minutesUntil))}</small>
         </span>
         <span class="upcoming-main-info">
-          <strong>${escapeHtml(reservation.name || "Bez jména")}</strong>
+          <strong>${escapeHtml(getReservationFullName(reservation))}</strong>
           <small>${people} ${people === 1 ? "osoba" : people >= 2 && people <= 4 ? "osoby" : "osob"} · ${escapeHtml(getReservationTableLabel(reservation))}</small>
         </span>
         <span class="upcoming-status">${isImminent ? "Brzy přijde" : escapeHtml(getCalendarStatusLabel(reservation.status))}</span>
@@ -1479,6 +1479,7 @@ function historyActionLabel(action) {
 function historyFieldLabel(field) {
   const labels = {
     name: "Jméno",
+    last_name: "Příjmení",
     people: "Počet osob",
     date: "Datum",
     time: "Čas",
@@ -1507,7 +1508,7 @@ function getHistoryChanges(entry) {
 
   const before = entry.before_data || {};
   const after = entry.after_data || {};
-  const tracked = ["name", "people", "date", "time", "duration_minutes", "table_id", "status", "phone", "email", "note"];
+  const tracked = ["name", "last_name", "people", "date", "time", "duration_minutes", "table_id", "status", "phone", "email", "note"];
 
   return tracked
     .filter(field => String(before[field] ?? "") !== String(after[field] ?? ""))
@@ -1528,7 +1529,8 @@ function renderReservationHistory() {
 
   list.innerHTML = data.map(entry => {
     const changes = getHistoryChanges(entry);
-    const name = entry.reservation_name || entry.after_data?.name || entry.before_data?.name || "Rezervace";
+    const sourceReservation = entry.after_data || entry.before_data || {};
+    const name = entry.reservation_name || getReservationFullName(sourceReservation) || "Rezervace";
     const actor = entry.actor_email || (entry.action === "created" ? "Veřejný formulář / systém" : "Systém");
     const when = entry.created_at ? new Date(entry.created_at).toLocaleString("cs-CZ", { dateStyle: "short", timeStyle: "short" }) : "—";
 
@@ -1584,13 +1586,20 @@ function normalizeCustomerPhone(value) {
   return String(value || "").replace(/\D/g, "");
 }
 
+function getReservationFullName(reservation) {
+  return [reservation?.name, reservation?.last_name]
+    .map(value => String(value || "").trim())
+    .filter(Boolean)
+    .join(" ") || "Host";
+}
+
 function getCustomerKey(reservation) {
   const email = String(reservation?.email || "").trim().toLowerCase();
   const phone = normalizeCustomerPhone(reservation?.phone);
-  const name = String(reservation?.name || "").trim().toLowerCase();
+  const fullName = getReservationFullName(reservation).toLowerCase();
   if (email) return `email:${email}`;
   if (phone) return `phone:${phone}`;
-  return `name:${name}`;
+  return `name:${fullName}`;
 }
 
 function getCustomerProfile(customerKey) {
@@ -1607,7 +1616,7 @@ function buildCustomers() {
     if (!groups.has(key)) {
       groups.set(key, {
         key,
-        name: reservation.name || "Host",
+        name: getReservationFullName(reservation),
         phone: reservation.phone || "",
         email: reservation.email || "",
         reservations: [],
@@ -1620,7 +1629,7 @@ function buildCustomers() {
     customer.totalPeople += Number(reservation.people || 0);
     if (!customer.phone && reservation.phone) customer.phone = reservation.phone;
     if (!customer.email && reservation.email) customer.email = reservation.email;
-    if (reservation.name) customer.name = reservation.name;
+    if (reservation.name || reservation.last_name) customer.name = getReservationFullName(reservation);
   });
 
   return [...groups.values()].map(customer => {
@@ -1867,7 +1876,7 @@ function getFilteredReservations() {
       getTableName(reservation.table_id);
 
     const text = [
-      reservation.name,
+      getReservationFullName(reservation),
       reservation.phone,
       reservation.email,
       reservation.note,
@@ -1919,6 +1928,9 @@ function editReservation(id) {
 
     document.getElementById("editReservationName").value =
         reservation.name || "";
+
+    document.getElementById("editReservationLastName").value =
+        reservation.last_name || "";
 
     document.getElementById("editReservationPeople").value =
         reservation.people || "";
@@ -2054,6 +2066,12 @@ async function saveReservationChanges() {
             .value
             .trim();
 
+    const lastName =
+        document
+            .getElementById("editReservationLastName")
+            .value
+            .trim();
+
     const people = Number(
         document.getElementById("editReservationPeople").value
     );
@@ -2097,19 +2115,21 @@ const durationMinutes = Number(
 
     if (
         !name ||
+        !lastName ||
         !date ||
         !time ||
         !Number.isInteger(people) ||
         people < 1 ||
         people > 30
     ) {
-        showDashboardNotice("Vyplň správně jméno, počet osob, datum a čas.");
+        showDashboardNotice("Vyplň správně jméno, příjmení, počet osob, datum a čas.");
         return;
     }
 
    const updatedReservation = {
   id,
   name,
+  last_name: lastName,
   people,
   date,
   time,
@@ -2244,7 +2264,7 @@ function exportReservations() {
   ];
 
   const rows = data.map(reservation => [
-    reservation.name || "",
+    getReservationFullName(reservation),
     reservation.people || "",
     reservation.date || "",
     reservation.time || "",
@@ -2844,7 +2864,7 @@ function openTable(tableId) {
 
     if (reservation) {
         document.getElementById("tableModalCapacity").innerHTML =
-            `👤 ${reservation.name || "-"}<br>
+            `👤 ${getReservationFullName(reservation)}<br>
              👥 ${reservation.people || "-"} osoby<br>
              🕒 ${reservation.time || "-"}<br>
              📞 ${reservation.phone || "-"}`;
@@ -2980,6 +3000,7 @@ function createReservationFromTable() {
 }
 async function saveNewReservation() {
     const name = document.getElementById("newName").value.trim();
+    const lastName = document.getElementById("newLastName").value.trim();
     const people = Number(document.getElementById("newPeople").value);
     const date = document.getElementById("newDate").value;
     const time = document.getElementById("newTime").value;
@@ -2991,8 +3012,8 @@ async function saveNewReservation() {
     const email = document.getElementById("newEmail").value.trim();
     const note = document.getElementById("newNote").value.trim();
 
-    if (!name || !date || !time || !Number.isInteger(people) || people < 1) {
-        showDashboardNotice("Vyplň jméno, počet osob, datum a čas.");
+    if (!name || !lastName || !date || !time || !Number.isInteger(people) || people < 1) {
+        showDashboardNotice("Vyplň jméno, příjmení, počet osob, datum a čas.");
         return;
     }
 
@@ -3051,6 +3072,7 @@ async function saveNewReservation() {
 
     const newReservation = {
         name,
+        last_name: lastName,
         people,
         date,
         time,
@@ -3091,6 +3113,7 @@ async function saveNewReservation() {
 
         [
             "newName",
+            "newLastName",
             "newPeople",
             "newDate",
             "newTime",
@@ -4557,12 +4580,12 @@ function renderCalendar() {
           data-reservation-id="${escapeHtml(r.id)}"
           data-duration="${event.duration}"
           onclick="handleCalendarReservationClick(event, '${r.id}')"
-          aria-label="Upravit rezervaci ${escapeHtml(r.name || "")}" 
+          aria-label="Upravit rezervaci ${escapeHtml(getReservationFullName(r))}" 
         >
           <span class="calendar-time">${escapeHtml(r.time || "")}</span>
 
           <span class="calendar-info">
-            <strong>${escapeHtml(r.name || "Bez jména")}</strong>
+            <strong>${escapeHtml(getReservationFullName(r))}</strong>
             <small>👥 ${escapeHtml(r.people || 0)} osob${tableName}</small>
           </span>
 
