@@ -2786,3 +2786,177 @@ tbody tr:hover {
   .reservation-modal-full { grid-column: auto; }
   .customer-stats-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* =========================================================
+   MOBILE UI V3 — cleaner header + compact reservation cards
+========================================================= */
+@media (max-width: 700px) {
+  /* Header: keep identity left, actions as three compact icons right. */
+  .topbar {
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .topbar > div:first-child {
+    padding-top: 4px;
+  }
+  .topbar h1 {
+    font-size: 20px;
+    white-space: nowrap;
+  }
+  .topbar p { font-size: 11px; }
+  .current-role-badge { margin-top: 7px; }
+
+  .topbar-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    width: auto;
+  }
+  .topbar-actions .reservation-notification-wrapper,
+  .topbar-actions > .secondaryButton,
+  .topbar-actions > .dangerButton {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 40px;
+  }
+  .topbar-actions .reservation-notification-button {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    border-radius: 11px;
+  }
+  .topbar-actions > .secondaryButton,
+  .topbar-actions > .dangerButton {
+    font-size: 0;
+    text-decoration: none;
+  }
+  .topbar-actions > .secondaryButton::before {
+    content: "↩";
+    font-size: 20px;
+    line-height: 1;
+  }
+  .topbar-actions > .dangerButton::before {
+    content: "⎋";
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  /* Reservation page toolbar: cleaner, no cramped giant controls. */
+  #rezervace .panel-top {
+    align-items: stretch;
+    gap: 10px;
+  }
+  #rezervace .filter-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(105px, .55fr);
+    gap: 7px;
+  }
+  #rezervace .filter-actions > * {
+    min-width: 0;
+  }
+  #rezervace .filter-actions button {
+    min-height: 40px;
+  }
+
+  /* Compact two-column reservation cards. */
+  #rezervace tbody {
+    display: grid;
+    gap: 10px;
+  }
+  #rezervace tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    padding: 11px;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  #rezervace td {
+    width: auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 9px;
+    border-radius: 9px;
+    background: rgba(15, 23, 42, .34);
+    font-size: 13px;
+    line-height: 1.25;
+  }
+  #rezervace td::before {
+    font-size: 9px;
+    line-height: 1;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    opacity: .85;
+  }
+  #rezervace td:first-child {
+    grid-column: 1 / -1;
+    background: transparent;
+    padding: 3px 2px 7px;
+    font-size: 17px;
+    font-weight: 900;
+  }
+  #rezervace td:first-child::before { display: none; }
+
+  /* Table selector and note/status/actions deserve full width. */
+  #rezervace td:nth-child(5),
+  #rezervace td:nth-child(8),
+  #rezervace td:nth-child(9),
+  #rezervace td:nth-child(10) {
+    grid-column: 1 / -1;
+  }
+  #rezervace .tableSelect {
+    width: 100%;
+    min-height: 38px;
+    padding: 7px 9px;
+  }
+  #rezervace .contactLink {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #rezervace .tableActions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(5, 38px);
+    gap: 6px;
+    justify-content: start;
+  }
+  #rezervace .tableActions button {
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    min-height: 38px;
+    padding: 0;
+    border-radius: 10px;
+  }
+}
+
+@media (max-width: 390px) {
+  .topbar-actions .reservation-notification-wrapper,
+  .topbar-actions > .secondaryButton,
+  .topbar-actions > .dangerButton,
+  .topbar-actions .reservation-notification-button {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    min-height: 36px;
+    flex-basis: 36px;
+  }
+  #rezervace tr { padding: 9px; gap: 6px; }
+  #rezervace td { padding: 7px; }
+}
