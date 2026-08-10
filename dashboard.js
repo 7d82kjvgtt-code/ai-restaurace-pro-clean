@@ -5426,10 +5426,10 @@ function renderOpeningHours() {
     const row = byDay.get(day) || { is_open: true, open_time: "10:00", close_time: "22:00" };
     return `<div class="opening-day" data-day="${day}">
       <strong>${name}</strong>
-      <label><input class="day-open" type="checkbox" ${row.is_open ? "checked" : ""}> Otevřeno</label>
-      <input class="day-from" type="time" value="${String(row.open_time).slice(0,5)}">
-      <span>–</span>
-      <input class="day-to" type="time" value="${String(row.close_time).slice(0,5)}">
+      <label class="opening-toggle"><input class="day-open" type="checkbox" ${row.is_open ? "checked" : ""}> <span>Otevřeno</span></label>
+      <div class="opening-time-field"><span>Od</span><input class="day-from" type="time" value="${String(row.open_time).slice(0,5)}"></div>
+      <span class="opening-time-separator">–</span>
+      <div class="opening-time-field"><span>Do</span><input class="day-to" type="time" value="${String(row.close_time).slice(0,5)}"></div>
     </div>`;
   }).join("");
 }
