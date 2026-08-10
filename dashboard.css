@@ -2634,3 +2634,155 @@ tbody tr:hover {
   .reservation-alert-panel h2 { font-size:17px; }
   .reservation-alert-panel p { font-size:13px; }
 }
+
+/* =========================================================
+   MOBILE UI V2 — compact app-like dashboard
+   Keeps desktop layout unchanged.
+========================================================= */
+@media (max-width: 700px) {
+  html { font-size: 14px; }
+  body { min-width: 0; }
+  .main { padding: 12px 10px calc(86px + env(safe-area-inset-bottom)); }
+
+  .topbar {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    min-height: 44px;
+  }
+  .topbar > div:first-child { min-width: 0; flex: 1; }
+  .topbar h1 { font-size: 20px; line-height: 1.15; margin: 0 0 2px; }
+  .topbar p { font-size: 11px; line-height: 1.3; }
+  .topbar-actions { width: auto; flex: 0 0 auto; gap: 6px; }
+  .topbar-actions > * { flex: 0 0 auto; }
+  .topbar-actions button { min-height: 38px; height: 38px; padding: 0 10px; font-size: 12px; border-radius: 10px; }
+
+  .panel { padding: 14px; border-radius: 14px; }
+  .section-heading { margin-bottom: 12px; }
+  .section-heading h2, .panel h2 { font-size: 20px; line-height: 1.2; }
+  .eyebrow { font-size: 10px; }
+
+  /* Overview cards: 2 columns instead of giant one-per-row cards. */
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .card { min-width: 0; padding: 12px; gap: 9px; border-radius: 13px; }
+  .cardIcon { width: 36px; height: 36px; flex-basis: 36px; font-size: 17px; border-radius: 10px; }
+  .card p { font-size: 11px; line-height: 1.2; }
+  .card h2 { margin-top: 2px; font-size: 22px; line-height: 1; }
+  .cards .card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+  .charts-grid, .tables-grid, .menu-grid { gap: 12px; margin-bottom: 12px; }
+  .chart-wrap { height: 220px; }
+  .reservations-panel { margin-bottom: 12px; }
+
+  input, select, textarea { min-height: 40px; padding: 9px 10px; border-radius: 9px; font-size: 14px; }
+  textarea { min-height: 70px; }
+  button, .secondaryButton { min-height: 40px; padding: 9px 12px; border-radius: 9px; font-size: 13px; }
+  .form-grid { gap: 9px; margin-bottom: 9px; }
+  .form-actions { gap: 8px; margin-top: 8px; }
+
+  /* Reservation toolbar stays compact. */
+  .panel-top { gap: 10px; }
+  .filter-actions { grid-template-columns: minmax(0,1fr) 108px; gap: 7px; }
+  .filter-actions button { width: auto; }
+  .filter-actions > *:nth-child(n+3) { grid-column: span 1; }
+
+  /* Reservation cards */
+  #rezervace tbody { gap: 9px; }
+  #rezervace tr { padding: 11px 12px; border-radius: 13px; }
+  #rezervace td { grid-template-columns: 78px minmax(0,1fr); gap: 7px; padding: 5px 0; font-size: 13px; }
+  #rezervace td::before { font-size: 11px; }
+  #rezervace td:first-child { font-size: 16px; }
+  #rezervace .tableActions { gap: 5px; }
+  #rezervace .tableActions button { width: 34px; min-width: 34px; height: 34px; min-height: 34px; }
+
+  /* Customers */
+  .customers-heading { gap: 10px; }
+  .customer-summary { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 7px; margin: 12px 0; }
+  .customer-summary > div { padding: 10px; border-radius: 11px; }
+  .customer-summary strong { font-size: 20px; }
+  .customer-summary span { font-size: 10px; }
+  .customer-list { gap: 10px; }
+  .customer-card { padding: 12px; border-radius: 13px; }
+  .customer-card-head { gap: 8px; }
+  .customer-name-line h3 { font-size: 17px; }
+  .customer-contact { gap: 7px 12px; margin-top: 5px; font-size: 12px; }
+  .customer-stats-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; margin-top: 10px; }
+  .customer-stats-grid > div { padding: 8px; border-radius: 9px; }
+  .customer-stats-grid strong { font-size: 15px; }
+  .customer-stats-grid span { font-size: 10px; }
+  .customer-note-row { margin-top: 9px; gap: 7px; }
+  .customer-note-row textarea { min-height: 58px; }
+  .customer-history-toggle { margin-top: 6px; padding: 6px 0; font-size: 12px; }
+
+  /* Calendar */
+  #kalendar.panel { padding: 12px 8px 14px; }
+  .calendarHour { grid-template-columns: 48px 1fr; }
+  .calendarEventsLayer { left: 48px; right: 4px; }
+  .calendar-reservation { padding: 6px 8px; border-radius: 9px; }
+  .calendar-info strong { font-size: 12px; }
+  .calendar-info small { font-size: 10px; }
+
+  /* Tables and menu cards */
+  .foodItem, .tableItem { grid-template-columns: 54px minmax(0,1fr); gap: 10px; padding: 10px; }
+  .foodPhoto { width: 54px; height: 54px; }
+  .foodInfo b { font-size: 15px; }
+  .foodActions, .tableActions { justify-content: flex-start; }
+
+  /* Floor map */
+  #floorMap.floor-map { padding: 12px; gap: 10px; border-radius: 13px; }
+  #floorMap .table { width: 92px; height: 92px; font-size: 13px; }
+  .table-map-name { font-size: 13px; }
+  .table-map-capacity, .table-map-status { font-size: 10px; }
+
+  /* Modals: fit inside phone viewport and scroll internally. */
+  .table-modal { padding: 8px; align-items: flex-end; }
+  .table-modal-content, .reservation-modal-content {
+    max-width: none;
+    max-height: calc(100dvh - 16px);
+    overflow-y: auto;
+    padding: 18px 14px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 18px 18px 12px 12px;
+  }
+  .table-modal-content h2 { margin: 0 38px 14px 0; font-size: 20px; }
+  .table-modal-close { top: 7px; right: 8px; width: 38px; height: 38px; min-height: 38px; padding: 0; font-size: 24px; }
+  .reservation-modal-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  .reservation-modal-grid label { min-width: 0; font-size: 11px; font-weight: 700; color: #cbd5e1; }
+  .reservation-modal-grid input, .reservation-modal-grid select, .reservation-modal-grid textarea { margin-top: 4px; }
+  .reservation-modal-full { grid-column: 1 / -1; }
+  .table-modal-actions { gap: 7px; margin-top: 12px; }
+  .table-modal-actions button { padding: 9px 8px; font-size: 12px; }
+
+  /* Notifications */
+  .reservation-notification-panel {
+    position: fixed;
+    top: max(58px, calc(env(safe-area-inset-top) + 52px));
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-height: min(68dvh, 520px);
+    transform-origin: top center;
+  }
+  .reservation-notification-list { max-height: calc(68dvh - 66px); }
+  .reservation-alert-panel { padding: 11px; gap: 10px; }
+  .reservation-alert-panel h2 { font-size: 15px; }
+  .reservation-alert-panel p { font-size: 11px; }
+
+  /* Floating menu button: clean icon, smaller and unobtrusive. */
+  .mobile-menu-button { right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); width: 50px; min-width: 50px; height: 50px; min-height: 50px; }
+  .mobile-menu-button::before { content: "☰"; font-size: 22px; }
+  .sidebar { width: min(84vw, 300px); padding: max(24px, env(safe-area-inset-top)) 14px 24px; }
+  .sidebar h2 { margin: 18px 0 20px; font-size: 22px; }
+  .sidebar nav { gap: 5px; }
+  .sidebar a { padding: 10px 11px; font-size: 14px; border-radius: 9px; }
+}
+
+@media (max-width: 390px) {
+  .main { padding-left: 8px; padding-right: 8px; }
+  .card { padding: 10px; }
+  .cardIcon { width: 32px; height: 32px; flex-basis: 32px; }
+  .card h2 { font-size: 20px; }
+  .reservation-modal-grid { grid-template-columns: 1fr; }
+  .reservation-modal-full { grid-column: auto; }
+  .customer-stats-grid { grid-template-columns: 1fr 1fr; }
+}
