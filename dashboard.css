@@ -3445,3 +3445,153 @@ tbody tr:hover {
   .chart-wrap { height: 180px; }
   #floorMap .table { width: 82px; height: 82px; }
 }
+
+/* =========================================================
+   MOBILE UI V7 — final polish
+   Final compact pass for first production-ready mobile build.
+========================================================= */
+@media (max-width: 700px) {
+  /* Header: consistent spacing and compact action strip. */
+  .topbar {
+    gap: 6px 8px;
+    margin-bottom: 10px;
+  }
+  .topbar h1 { font-size: 18px; }
+  .topbar p { font-size: 9.5px; }
+  .topbar-actions { gap: 4px; align-self: start; }
+  .topbar-actions .reservation-notification-wrapper,
+  .topbar-actions .reservation-notification-button {
+    width: 34px; min-width: 34px; height: 34px; min-height: 34px; flex-basis: 34px;
+    border-radius: 9px;
+  }
+  .topbar-actions > .secondaryButton,
+  .topbar-actions > .dangerButton {
+    height: 34px; min-height: 34px; padding: 0 9px; border-radius: 9px; font-size: 11px;
+  }
+
+  /* Stats: slightly denser but keep charts legible. */
+  .chart-card, .statistics-card { padding: 10px; }
+  .chart-wrap { height: 178px; }
+  .charts-grid { gap: 8px; }
+
+  /* Reservations: one card should expose all useful info without feeling huge. */
+  #rezervace tr { padding: 8px; gap: 4px; }
+  #rezervace td { padding: 5px 6px; }
+  #rezervace td:first-child { font-size: 15px; padding-bottom: 4px; }
+  #rezervace .tableActions { grid-template-columns: repeat(5, 31px); gap: 4px; }
+  #rezervace .tableActions button {
+    width: 31px; min-width: 31px; height: 31px; min-height: 31px; border-radius: 8px; font-size: 13px;
+  }
+  #rezervace .tableSelect { height: 33px; min-height: 33px; }
+
+  /* History */
+  .history-item, .history-card { padding: 9px; }
+  .history-list, #historyList { gap: 7px; }
+
+  /* CRM cards: preserve readability, remove wasted vertical space. */
+  .customer-card { padding: 9px; }
+  .customer-note-row textarea {
+    min-height: 42px; max-height: 58px; padding: 7px 8px; resize: vertical;
+  }
+  .customer-note-row button { min-height: 34px; }
+  .customer-history-toggle { font-size: 10.5px; }
+
+  /* Team */
+  .team-invite-form { padding: 9px; }
+  .team-invite-grid input, .team-invite-grid select { height: 36px; min-height: 36px; }
+  .team-role-help > div { padding: 7px 8px; }
+
+  /* Calendar: keep live badge, slightly denser controls. */
+  .calendar-controls .neutralButton,
+  .calendar-controls #calendarDate { height: 36px; min-height: 36px; }
+  .calendar-controls { gap: 5px; }
+  .calendar-reservation { padding: 5px 6px; }
+
+  /* Tables editor */
+  .table-form-panel .form-grid { gap: 6px; }
+  .table-form-panel input, .table-form-panel select { height: 36px; min-height: 36px; }
+  .table-form-panel textarea { min-height: 48px; max-height: 64px; }
+  .table-form-panel .form-actions button { min-height: 36px; }
+
+  /* Map: retain large enough touch targets while reducing blank space. */
+  #floorMap.floor-map { padding: 9px; gap: 8px; }
+  #floorMap .table { width: 82px; height: 82px; }
+
+  /* Opening hours: true two-column mobile row, no oversized/overlapping time controls. */
+  .opening-day {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "day toggle"
+      "from to";
+    gap: 6px 7px;
+    padding: 9px;
+  }
+  .opening-day > strong { align-self: center; }
+  .opening-day .opening-toggle { justify-self: end; }
+  .opening-day .opening-time-field { width: 100%; min-width: 0; }
+  .opening-day .opening-time-field input[type="time"] {
+    width: 100%; min-width: 0; box-sizing: border-box;
+    height: 34px; min-height: 34px; padding: 4px 6px; font-size: 11px; text-align: center;
+  }
+  .opening-day .opening-time-field > span { margin-bottom: 2px; }
+  .blocked-time-form { gap: 6px; }
+  .blocked-time-form input, .blocked-time-form button { min-height: 36px; height: 36px; }
+
+  /* Reservation settings: compact rows, consistent numbers/units. */
+  .reservation-settings-panel { padding: 11px; }
+  .reservation-settings-grid { gap: 8px; }
+  .reservation-settings-card { padding: 10px; border-radius: 12px; }
+  .reservation-settings-card h3 { margin-bottom: 8px; font-size: 15px; }
+  .reservation-settings-fields { gap: 6px; }
+  .reservation-settings-fields label {
+    grid-template-columns: minmax(0, 1fr) 82px 46px;
+    gap: 7px;
+    align-items: center;
+    font-size: 11px;
+  }
+  .reservation-settings-fields label input {
+    width: 82px; height: 34px; min-height: 34px; padding: 4px 7px; font-size: 12px;
+  }
+  .reservation-settings-fields label span { font-size: 10px; }
+  .reservation-settings-summary { padding: 9px 10px; font-size: 11px; line-height: 1.4; }
+  .reservation-settings-panel > .successButton { min-height: 36px; padding: 7px 10px; }
+
+  /* Menu editor: biggest remaining vertical-space win. */
+  .food-form-panel { padding: 10px; }
+  .food-form-panel .section-heading { margin-bottom: 8px; }
+  .food-form-panel .form-grid { gap: 6px; }
+  .food-form-panel input,
+  .food-form-panel select {
+    height: 36px; min-height: 36px; padding: 6px 8px; font-size: 12px;
+  }
+  .food-form-panel textarea {
+    min-height: 44px; max-height: 60px; padding: 7px 8px; font-size: 12px; resize: vertical;
+  }
+  .food-form-panel input[type="file"] {
+    min-height: 36px; height: auto; padding: 5px 6px; font-size: 11px;
+  }
+  .food-form-panel label { font-size: 11px; }
+  .food-form-panel .form-actions { margin-top: 6px; }
+  .food-form-panel .form-actions button,
+  .food-form-panel > .primaryButton,
+  .food-form-panel > .primary-btn { min-height: 36px; padding: 7px 10px; }
+  .foodItem { padding: 8px; }
+
+  /* Final floating menu button: visible but no longer covers content. */
+  .mobile-menu-button {
+    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    width: 40px; min-width: 40px; height: 40px; min-height: 40px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.25);
+  }
+  .mobile-menu-button::before { font-size: 17px; }
+}
+
+@media (max-width: 390px) {
+  .reservation-settings-fields label {
+    grid-template-columns: minmax(0, 1fr) 74px 42px;
+    gap: 5px;
+  }
+  .reservation-settings-fields label input { width: 74px; }
+  #floorMap .table { width: 78px; height: 78px; }
+}
