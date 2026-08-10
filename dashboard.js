@@ -878,6 +878,10 @@ function renderReservationNotifications() {
     const people = Number(item.people || 0);
     const dateLabel = item.reservation_date ? formatDate(String(item.reservation_date).slice(0, 10)) : "—";
     const timeLabel = item.reservation_time ? String(item.reservation_time).slice(0, 5) : "—";
+    const sourceReservation = allReservations.find(reservation => Number(reservation.id) === Number(item.reservation_id));
+    const notificationName = sourceReservation
+      ? getReservationFullName(sourceReservation)
+      : (item.name || "Bez jména");
 
     return `
       <button
@@ -887,7 +891,7 @@ function renderReservationNotifications() {
       >
         <span class="reservation-notification-dot" aria-hidden="true"></span>
         <span class="reservation-notification-copy">
-          <strong>Nová rezervace · ${escapeHtml(item.name || "Bez jména")}</strong>
+          <strong>Nová rezervace · ${escapeHtml(notificationName)}</strong>
           <small>${people} ${people === 1 ? "osoba" : people >= 2 && people <= 4 ? "osoby" : "osob"} · ${escapeHtml(dateLabel)} · ${escapeHtml(timeLabel)}</small>
           <em>${escapeHtml(formatNotificationCreatedAt(item.created_at))}</em>
         </span>
@@ -935,8 +939,12 @@ async function loadReservationNotifications({ silent = false } = {}) {
         .reverse()
         .forEach(item => {
           if (reservationNotificationReads.has(Number(item.id))) return;
+          const sourceReservation = allReservations.find(reservation => Number(reservation.id) === Number(item.reservation_id));
+          const notificationName = sourceReservation
+            ? getReservationFullName(sourceReservation)
+            : (item.name || "Bez jména");
           showDashboardNotice(
-            `Nová rezervace: ${item.name || "Bez jména"} · ${item.people || 0} osob · ${String(item.reservation_time || "").slice(0, 5)}`,
+            `Nová rezervace: ${notificationName} · ${item.people || 0} osob · ${String(item.reservation_time || "").slice(0, 5)}`,
             "info"
           );
         });
@@ -1203,7 +1211,7 @@ function renderUpcomingReservations() {
     shownUpcomingReservationAlerts.add(alertKey);
     const tableLabel = getReservationTableLabel(reservation);
     showDashboardNotice(
-      `${formatUpcomingTime(minutesUntil)} přijde ${reservation.name || "rezervace"} – ${reservation.people || 0} osob, ${tableLabel}.`,
+      `${formatUpcomingTime(minutesUntil)} přijde ${getReservationFullName(reservation) || "rezervace"} – ${reservation.people || 0} osob, ${tableLabel}.`,
       "info"
     );
   });
@@ -1530,7 +1538,7 @@ function renderReservationHistory() {
   list.innerHTML = data.map(entry => {
     const changes = getHistoryChanges(entry);
     const sourceReservation = entry.after_data || entry.before_data || {};
-    const name = entry.reservation_name || getReservationFullName(sourceReservation) || "Rezervace";
+    const name = getReservationFullName(sourceReservation) || entry.reservation_name || "Rezervace";
     const actor = entry.actor_email || (entry.action === "created" ? "Veřejný formulář / systém" : "Systém");
     const when = entry.created_at ? new Date(entry.created_at).toLocaleString("cs-CZ", { dateStyle: "short", timeStyle: "short" }) : "—";
 
