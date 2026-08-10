@@ -1601,17 +1601,42 @@ function getReservationFullName(reservation) {
     .join(" ") || "Host";
 }
 
-function getCustomerKey(reservation) {
-  const email = String(reservation?.email || "").trim().toLowerCase();
-  const phone = normalizeCustomerPhone(reservation?.phone);
-  const fullName = getReservationFullName(reservation).toLowerCase();
-  if (email) return `email:${email}`;
-  if (phone) return `phone:${phone}`;
-  return `name:${fullName}`;
+function normalizeCustomerEmail(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
-function getCustomerProfile(customerKey) {
-  return customerProfiles.find(item => item.customer_key === customerKey) || null;
+function getCustomerKey(reservation) {
+  // Telefon je primární identifikátor. Jméno ani příjmení se nikdy nepoužívá
+  // ke slučování zákazníků, protože více lidí může mít stejné jméno.
+  const phone = normalizeCustomerPhone(reservation?.phone);
+  const email = normalizeCustomerEmail(reservation?.email);
+  if (phone) return `phone:${phone}`;
+  if (email) return `email:${email}`;
+
+  // Pokud chybí telefon i e-mail, držíme rezervaci jako samostatného hosta.
+  // Tím zabráníme chybnému sloučení dvou lidí jen podle jména.
+  if (reservation?.id != null) return `reservation:${reservation.id}`;
+  return null;
+}
+
+function getCustomerProfile(customerKey, customer = null) {
+  const exact = customerProfiles.find(item => item.customer_key === customerKey);
+  if (exact) return exact;
+
+  // Kompatibilita se staršími profily, které mohly být uložené pod e-mailem.
+  // Díky tomu se po změně na telefon jako primární klíč neztratí poznámky
+  // ani označení stálého hosta.
+  if (customer) {
+    const phone = normalizeCustomerPhone(customer.phone);
+    const email = normalizeCustomerEmail(customer.email);
+    return customerProfiles.find(item => {
+      const profilePhone = normalizeCustomerPhone(item.phone);
+      const profileEmail = normalizeCustomerEmail(item.email);
+      return (phone && profilePhone === phone) || (email && profileEmail === email);
+    }) || null;
+  }
+
+  return null;
 }
 
 function buildCustomers() {
@@ -1619,7 +1644,7 @@ function buildCustomers() {
 
   reservations.forEach(reservation => {
     const key = getCustomerKey(reservation);
-    if (!key || key === "name:") return;
+    if (!key) return;
 
     if (!groups.has(key)) {
       groups.set(key, {
@@ -1644,7 +1669,7 @@ function buildCustomers() {
     const sorted = [...customer.reservations].sort((a, b) => {
       return String(`${b.date || ""} ${b.time || ""}`).localeCompare(String(`${a.date || ""} ${a.time || ""}`));
     });
-    const profile = getCustomerProfile(customer.key);
+    const profile = getCustomerProfile(customer.key, customer);
     const completedOrActive = sorted.filter(item => !isCancelledReservation(item));
 
     return {
@@ -1796,7 +1821,7 @@ async function saveCustomerProfile(customerKey, changes) {
   const customer = buildCustomers().find(item => item.key === customerKey);
   if (!customer) return;
 
-  const existing = getCustomerProfile(customerKey);
+  const existing = getCustomerProfile(customerKey, customer);
   const payload = {
     restaurant_id: Number(currentRestaurantId),
     customer_key: customerKey,
