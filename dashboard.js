@@ -24,6 +24,7 @@ let mergeModeActive = false;
 let selectedTablesForMerge = [];
 
 let upcomingReservationTimer = null;
+let liveReservationRefreshTimer = null;
 const shownUpcomingReservationAlerts = new Set();
 
 let reservationNotificationTimer = null;
@@ -1094,6 +1095,7 @@ renderCharts();
 renderFloorMap();
 renderUpcomingReservations();
 startUpcomingReservationTimer();
+startLiveReservationRefresh();
 renderCustomers();
   } catch (error) {
     console.error(error);
@@ -1223,6 +1225,18 @@ function startUpcomingReservationTimer() {
   upcomingReservationTimer = window.setInterval(() => {
     renderUpcomingReservations();
   }, 60000);
+}
+
+// Živé rezervace / mapa stolů: každých 30 sekund načteme aktuální rezervace,
+// takže stav Volný / Rezervace brzy / Obsazený reaguje i na rezervaci
+// vytvořenou na jiném zařízení bez ručního refreshu stránky.
+function startLiveReservationRefresh() {
+  if (liveReservationRefreshTimer) return;
+
+  liveReservationRefreshTimer = window.setInterval(async () => {
+    if (document.hidden || !currentRestaurantId || !getAccessToken()) return;
+    await loadReservations();
+  }, 30000);
 }
 
 function updateStatistics() {
@@ -1629,11 +1643,22 @@ function getCustomerProfile(customerKey, customer = null) {
   if (customer) {
     const phone = normalizeCustomerPhone(customer.phone);
     const email = normalizeCustomerEmail(customer.email);
-    return customerProfiles.find(item => {
-      const profilePhone = normalizeCustomerPhone(item.phone);
-      const profileEmail = normalizeCustomerEmail(item.email);
-      return (phone && profilePhone === phone) || (email && profileEmail === email);
-    }) || null;
+
+    // Pokud má host telefon, profil párujeme pouze podle stejného telefonu.
+    // E-mail už zde nesmí spojit dva různé lidi, protože stejný e-mail může
+    // být použitý u více hostů (např. rodina / testovací rezervace).
+    if (phone) {
+      return customerProfiles.find(item =>
+        normalizeCustomerPhone(item.phone) === phone
+      ) || null;
+    }
+
+    // E-mail použijeme jen pokud telefon opravdu chybí.
+    if (email) {
+      return customerProfiles.find(item =>
+        normalizeCustomerEmail(item.email) === email
+      ) || null;
+    }
   }
 
   return null;

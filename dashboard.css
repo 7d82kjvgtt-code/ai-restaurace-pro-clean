@@ -2960,3 +2960,108 @@ tbody tr:hover {
   #rezervace tr { padding: 9px; gap: 6px; }
   #rezervace td { padding: 7px; }
 }
+
+/* =========================================================
+   MOBILE UI V4 — real phone width + safer CRM + live tables
+========================================================= */
+.map-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 10px;
+  padding: 5px 9px;
+  border: 1px solid rgba(34,197,94,.42);
+  border-radius: 999px;
+  background: rgba(34,197,94,.12);
+  color: #86efac;
+  font-size: 11px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+.map-live-badge i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 5px rgba(34,197,94,.10);
+}
+
+@media (max-width: 700px) {
+  /* Header actions are one clean horizontal row below the title. */
+  .topbar {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    align-items: start;
+    gap: 9px;
+  }
+  .topbar-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 7px;
+  }
+  .topbar-actions .reservation-notification-wrapper,
+  .topbar-actions .reservation-notification-button {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    flex: 0 0 40px;
+  }
+  .topbar-actions > .secondaryButton,
+  .topbar-actions > .dangerButton {
+    width: auto;
+    min-width: 0;
+    height: 40px;
+    min-height: 40px;
+    flex: 0 0 auto;
+    padding: 0 12px;
+    font-size: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .topbar-actions > .secondaryButton::before {
+    content: "← Web";
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .topbar-actions > .dangerButton::before {
+    content: "Odhlásit";
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  /* Critical Safari fix: desktop table min-width:1140px must not survive mobile.
+     Otherwise Safari scales the whole reservation page down. */
+  #rezervace .table-wrapper,
+  #rezervace table,
+  #rezervace thead,
+  #rezervace tbody,
+  #rezervace tr,
+  #rezervace td {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+  #rezervace table {
+    width: 100% !important;
+    table-layout: fixed;
+  }
+  #rezervace .panel-top,
+  #rezervace .filter-actions {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Map live badge stays compact on phones. */
+  #mapa .map-toolbar h2 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+  }
+  #mapa .map-live-badge { margin-left: 0; }
+}
