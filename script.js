@@ -11,7 +11,7 @@ let menu = [];
 
 
 const PUBLIC_RESTAURANT_ID = 1;
-console.info("[AI Restaurace PRO] SERVER-TABLE-CHECK v6 loaded");
+console.info("[AI Restaurace PRO] TABLE-FIX FINAL v7 loaded");
 const DEFAULT_PUBLIC_RESERVATION_SETTINGS = {
   duration_1_2: 90,
   duration_3_4: 120,
@@ -641,37 +641,10 @@ async function ulozitRezervaci() {
 
     const automaticallySelectedTable = createData.table || {};
 
-    let emailSent = false;
-
-    try {
-      const emailRes = await fetch("/api/send-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: `${name} ${lastName}`.trim(),
-          people: peopleNumber,
-          date,
-          time,
-          phone,
-          email,
-          note
-        })
-      });
-
-      const emailData = await emailRes.json().catch(() => ({}));
-      emailSent = emailRes.ok;
-
-      if (!emailRes.ok) {
-        console.error("E-mail se nepodařilo odeslat:", emailData);
-      }
-    } catch (emailError) {
-      console.error("E-mail se nepodařilo odeslat:", emailError);
-    }
-
+    // E-mailové potvrzení je zatím záměrně vypnuté.
+    // Chyba e-mailové služby nesmí blokovat rezervaci ani testování stolů.
     showPublicReservationNotice(
-      emailSent
-        ? `✅ Rezervace uložena. Automaticky byl vybrán ${automaticallySelectedTable.name} a potvrzení bylo odesláno e-mailem!`
-        : `✅ Rezervace uložena. Automaticky byl vybrán ${automaticallySelectedTable.name}. Potvrzovací e-mail se ale nepodařilo odeslat.`
+      `✅ Rezervace uložena. Automaticky byl vybrán ${automaticallySelectedTable.name}.`
     );
 
     ["jmeno", "prijmeni", "osoby", "datum", "cas", "telefon", "email", "poznamka"]
