@@ -160,9 +160,17 @@ async function findBestPublicTable({ people, date, time, durationMinutes }) {
     duration_minutes: Number(durationMinutes || getPublicReservationDuration(people))
   };
 
+  const normalizeTableName = value => String(value || "").trim().toLocaleLowerCase("cs-CZ");
+
   return tables.find(table => {
+    const logicalTableIds = new Set(
+      tables
+        .filter(candidate => normalizeTableName(candidate.name) === normalizeTableName(table.name))
+        .map(candidate => String(candidate.id))
+    );
+
     return !reservationsForDate.some(reservation => {
-      if (Number(reservation.table_id) !== Number(table.id)) {
+      if (!logicalTableIds.has(String(reservation.table_id))) {
         return false;
       }
 
@@ -658,26 +666,41 @@ async function ulozitRezervaci() {
       return;
     }
 
-    // FINAL HARD CHECK: re-read the selected table immediately before INSERT.
-    // This prevents assigning a table that overlaps an existing reservation.
+    // FINAL HARD CHECK: re-read the whole day immediately before INSERT.
+    // A table is treated as the same logical table by ID OR by its visible name.
+    // This also protects against accidental duplicate rows such as two records named "Stůl 3".
     const finalConflictUrl =
       `${SUPABASE_URL}/rest/v1/reservations` +
       `?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}` +
       `&date=eq.${encodeURIComponent(date)}` +
-      `&table_id=eq.${Number(automaticallySelectedTable.id)}` +
       `&status=neq.${encodeURIComponent("Zrušeno")}` +
       `&select=id,date,time,duration_minutes,people,table_id,status`;
 
-    const finalConflictResponse = await fetch(finalConflictUrl, {
-      headers,
-      cache: "no-store"
-    });
+    const finalTablesUrl =
+      `${SUPABASE_URL}/rest/v1/restaurant_tables` +
+      `?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}` +
+      `&active=eq.true` +
+      `&select=id,name,capacity,active`;
 
-    if (!finalConflictResponse.ok) {
+    const [finalConflictResponse, finalTablesResponse] = await Promise.all([
+      fetch(finalConflictUrl, { headers, cache: "no-store" }),
+      fetch(finalTablesUrl, { headers, cache: "no-store" })
+    ]);
+
+    if (!finalConflictResponse.ok || !finalTablesResponse.ok) {
       throw new Error("Nepodařilo se provést finální kontrolu stolu.");
     }
 
     const finalTableReservations = await finalConflictResponse.json();
+    const finalTables = await finalTablesResponse.json();
+    const selectedName = String(automaticallySelectedTable.name || "").trim().toLocaleLowerCase("cs-CZ");
+    const selectedLogicalIds = new Set(
+      finalTables
+        .filter(table => String(table.name || "").trim().toLocaleLowerCase("cs-CZ") === selectedName)
+        .map(table => String(table.id))
+    );
+    selectedLogicalIds.add(String(automaticallySelectedTable.id));
+
     const finalDraft = {
       date,
       time,
@@ -686,6 +709,7 @@ async function ulozitRezervaci() {
     };
 
     const finalConflict = finalTableReservations.some(existing =>
+      selectedLogicalIds.has(String(existing.table_id)) &&
       publicReservationsOverlap(finalDraft, existing)
     );
 
