@@ -1,3 +1,5 @@
+const PUBLIC_BUILD_VERSION = "collision-v2-20260811";
+console.info("AI Restaurace PRO build", PUBLIC_BUILD_VERSION);
 const SUPABASE_URL = "https://decpnnbaejxjbpmyjocs.supabase.co";
 const SUPABASE_KEY = "sb_publishable_l6ko8NS_92RjQBM2rEzAvA_Sd2hYicb";
 
@@ -96,6 +98,15 @@ function timeToMinutes(value) {
   return (hours * 60) + minutes;
 }
 
+function samePublicTableId(first, second) {
+  return String(first ?? "").trim() === String(second ?? "").trim();
+}
+
+function publicTableIdForPayload(value) {
+  const raw = String(value ?? "").trim();
+  return /^\d+$/.test(raw) ? Number(raw) : raw;
+}
+
 function getExistingReservationDuration(reservation) {
   const storedDuration = Number(reservation?.duration_minutes);
   const people = Number(reservation?.people || 1);
@@ -166,12 +177,13 @@ async function findBestPublicTable({ people, date, time, durationMinutes }) {
   const draft = {
     date,
     time,
+    people: Number(people),
     duration_minutes: Number(durationMinutes || getPublicReservationDuration(people))
   };
 
   return tables.find(table => {
     return !reservationsForDate.some(reservation => {
-      if (Number(reservation.table_id) !== Number(table.id)) {
+      if (!samePublicTableId(reservation.table_id, table.id)) {
         return false;
       }
 
@@ -185,7 +197,6 @@ async function verifyPublicTableStillAvailable({ tableId, date, time, durationMi
     `${SUPABASE_URL}/rest/v1/reservations` +
     `?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}` +
     `&date=eq.${encodeURIComponent(date)}` +
-    `&table_id=eq.${Number(tableId)}` +
     `&status=neq.${encodeURIComponent("Zrušeno")}` +
     `&select=id,date,time,people,duration_minutes,table_id,status`;
 
@@ -207,7 +218,10 @@ async function verifyPublicTableStillAvailable({ tableId, date, time, durationMi
     duration_minutes: Number(durationMinutes || getPublicReservationDuration(people))
   };
 
-  return !reservations.some(reservation => publicReservationsOverlap(draft, reservation));
+  return !reservations.some(reservation =>
+    samePublicTableId(reservation.table_id, tableId) &&
+    publicReservationsOverlap(draft, reservation)
+  );
 }
 
 async function checkPublicOpeningAvailability({ date, time, durationMinutes }) {
@@ -487,7 +501,7 @@ async function loadAvailableReservationTimes() {
       if (blocked) continue;
 
       const availableTable = tables.find(table => !reservations.some(reservation => {
-        if (Number(reservation.table_id) !== Number(table.id)) return false;
+        if (!samePublicTableId(reservation.table_id, table.id)) return false;
         const reservationStart = timeToMinutes(reservation.time);
         const reservationEnd = reservationStart + getExistingReservationDuration(reservation);
         return start < reservationEnd && reservationStart < end;
@@ -728,7 +742,7 @@ async function ulozitRezervaci() {
         date,
         time,
         duration_minutes: reservationDurationMinutes,
-        table_id: Number(automaticallySelectedTable.id),
+        table_id: publicTableIdForPayload(automaticallySelectedTable.id),
         phone,
         email,
         note,

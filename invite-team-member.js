@@ -81,8 +81,10 @@ module.exports = async function handler(req, res) {
       if (existing?.active) return send(res, 409, { error: "Tento e-mail už je v týmu." });
     }
 
-    const origin = req.headers.origin || `https://${req.headers.host}`;
-    const inviteResponse = await supabase(`/auth/v1/invite?redirect_to=${encodeURIComponent(`${origin}/invite.html`)}`, {
+    const requestOrigin = req.headers.origin || `https://${req.headers.host}`;
+    const appOrigin = String(process.env.APP_URL || requestOrigin).replace(/\/$/, "");
+    const inviteRedirectUrl = `${appOrigin}/invite.html`;
+    const inviteResponse = await supabase(`/auth/v1/invite?redirect_to=${encodeURIComponent(inviteRedirectUrl)}`, {
       method: "POST",
       body: JSON.stringify({
         email,
