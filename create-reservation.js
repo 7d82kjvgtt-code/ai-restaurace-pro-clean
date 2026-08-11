@@ -1,194 +1,160 @@
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://decpnnbaejxjbpmyjocs.supabase.co";
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://decpnnbaejxjbpmyjocs.supabase.co';
+const PUBLIC_KEY = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_l6ko8NS_92RjQBM2rEzAvA_Sd2hYicb';
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const API_KEY = SERVICE_ROLE_KEY || PUBLIC_KEY;
 const RESTAURANT_ID = 1;
 
 function send(res, status, body) {
-  return res.status(status).json(body);
+  res.status(status).json(body);
 }
 
-function minutes(value) {
-  const [h, m] = String(value || "00:00").slice(0, 5).split(":").map(Number);
-  return (Number(h) || 0) * 60 + (Number(m) || 0);
+function headers(extra = {}) {
+  return {
+    apikey: API_KEY,
+    Authorization: `Bearer ${API_KEY}`,
+    'Content-Type': 'application/json',
+    ...extra
+  };
 }
 
-function validDate(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
-}
-
-function validTime(value) {
-  return /^\d{2}:\d{2}$/.test(String(value || ""));
-}
-
-function durationForPeople(people, settings) {
-  const p = Number(people);
-  if (p <= 2) return Math.max(30, Number(settings.duration_1_2 || 90));
-  if (p <= 4) return Math.max(30, Number(settings.duration_3_4 || 120));
-  if (p <= 6) return Math.max(30, Number(settings.duration_5_6 || 150));
-  return Math.max(30, Number(settings.duration_7_plus || 180));
-}
-
-function effectiveExistingDuration(reservation, settings) {
-  const stored = Number(reservation.duration_minutes || 0);
-  const byPeople = durationForPeople(Number(reservation.people || 1), settings);
-  return Math.max(30, Number.isFinite(stored) ? stored : 0, byPeople);
-}
-
-function overlaps(startA, durationA, startB, durationB) {
-  const endA = startA + durationA;
-  const endB = startB + durationB;
-  return startA < endB && startB < endA;
-}
-
-async function supabase(path, options = {}) {
+async function sb(path, options = {}) {
   return fetch(`${SUPABASE_URL}${path}`, {
     ...options,
-    headers: {
-      apikey: SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    }
+    headers: headers(options.headers || {})
   });
 }
 
-async function jsonOrThrow(response, label) {
-  const text = await response.text();
-  let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
-  if (!response.ok) {
-    throw new Error(`${label}: ${typeof data === "string" ? data : JSON.stringify(data)}`);
-  }
-  return data;
+function toMinutes(value) {
+  const [h, m] = String(value || '00:00').slice(0, 5).split(':').map(Number);
+  return (h * 60) + m;
+}
+
+function durationForPeople(people, settings) {
+  const n = Number(people || 1);
+  if (n <= 2) return Math.max(30, Number(settings.duration_1_2 || 90));
+  if (n <= 4) return Math.max(30, Number(settings.duration_3_4 || 120));
+  if (n <= 6) return Math.max(30, Number(settings.duration_5_6 || 150));
+  return Math.max(30, Number(settings.duration_7_plus || 180));
+}
+
+function overlaps(aStart, aDuration, bStart, bDuration) {
+  const a1 = toMinutes(aStart);
+  const a2 = a1 + Number(aDuration || 0);
+  const b1 = toMinutes(bStart);
+  const b2 = b1 + Number(bDuration || 0);
+  return a1 < b2 && b1 < a2;
 }
 
 module.exports = async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return send(res, 405, { error: "Použij POST." });
-  }
-
-  if (!SERVICE_ROLE_KEY) {
-    return send(res, 500, { error: "Na Vercelu chybí SUPABASE_SERVICE_ROLE_KEY." });
-  }
-
-  const body = req.body || {};
-  const name = String(body.name || "").trim().slice(0, 80);
-  const lastName = String(body.last_name || "").trim().slice(0, 80);
-  const people = Number(body.people);
-  const date = String(body.date || "").trim();
-  const time = String(body.time || "").trim().slice(0, 5);
-  const phone = String(body.phone || "").trim().slice(0, 40);
-  const email = String(body.email || "").trim().toLowerCase().slice(0, 160);
-  const note = String(body.note || "").trim().slice(0, 1000);
-
-  if (!name || !lastName || !Number.isInteger(people) || people < 1 || people > 30 || !validDate(date) || !validTime(time) || !phone || !/^\S+@\S+\.\S+$/.test(email)) {
-    return send(res, 400, { error: "Neplatné údaje rezervace." });
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return send(res, 405, { error: 'Použij POST.' });
   }
 
   try {
-    const settingsResponse = await supabase(`/rest/v1/reservation_settings?restaurant_id=eq.${RESTAURANT_ID}&select=*&limit=1`);
-    const settingsRows = await jsonOrThrow(settingsResponse, "reservation_settings");
-    const settings = settingsRows?.[0] || {};
-    const duration = durationForPeople(people, settings);
-    const requestedStart = minutes(time);
+    const name = String(req.body?.name || '').trim();
+    const lastName = String(req.body?.last_name || '').trim();
+    const people = Number(req.body?.people || 0);
+    const date = String(req.body?.date || '').trim();
+    const time = String(req.body?.time || '').trim().slice(0, 5);
+    const phone = String(req.body?.phone || '').trim();
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const note = String(req.body?.note || '').trim();
 
-    // Otevírací doba + blokace se kontrolují i na serveru, ne jen v prohlížeči.
-    const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
-    const [hoursResponse, blocksResponse] = await Promise.all([
-      supabase(`/rest/v1/opening_hours?restaurant_id=eq.${RESTAURANT_ID}&day_of_week=eq.${dayOfWeek}&select=is_open,open_time,close_time&limit=1`),
-      supabase(`/rest/v1/blocked_times?restaurant_id=eq.${RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&select=start_time,end_time,reason`)
-    ]);
-    const hoursRows = await jsonOrThrow(hoursResponse, "opening_hours");
-    const blocks = await jsonOrThrow(blocksResponse, "blocked_times");
-    const hours = hoursRows?.[0] || { is_open: true, open_time: "10:00:00", close_time: "22:00:00" };
-
-    if (hours.is_open === false) {
-      return send(res, 409, { error: "V tento den má restaurace zavřeno." });
+    if (!name || !lastName || !Number.isInteger(people) || people < 1 || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) {
+      return send(res, 400, { error: 'Neplatné údaje rezervace.' });
     }
 
-    const open = minutes(hours.open_time);
-    const close = minutes(hours.close_time);
-    if (requestedStart < open || requestedStart + duration > close) {
-      return send(res, 409, { error: "Rezervace se nevejde do provozní doby." });
-    }
+    const settingsResponse = await sb(`/rest/v1/reservation_settings?restaurant_id=eq.${RESTAURANT_ID}&select=duration_1_2,duration_3_4,duration_5_6,duration_7_plus&limit=1`);
+    const settingsRows = settingsResponse.ok ? await settingsResponse.json() : [];
+    const settings = settingsRows[0] || {};
+    const newDuration = durationForPeople(people, settings);
 
-    const blocked = (blocks || []).some(block =>
-      overlaps(requestedStart, duration, minutes(block.start_time), Math.max(0, minutes(block.end_time) - minutes(block.start_time)))
+    const tablesResponse = await sb(
+      `/rest/v1/restaurant_tables?restaurant_id=eq.${RESTAURANT_ID}&active=eq.true&capacity=gte.${people}&select=id,name,capacity&order=capacity.asc,id.asc`
     );
-    if (blocked) {
-      return send(res, 409, { error: "Tento čas je restaurací zablokovaný." });
+    if (!tablesResponse.ok) {
+      return send(res, 500, { error: `Nepodařilo se načíst stoly: ${await tablesResponse.text()}` });
     }
 
-    const [tablesResponse, reservationsResponse] = await Promise.all([
-      supabase(`/rest/v1/restaurant_tables?restaurant_id=eq.${RESTAURANT_ID}&active=eq.true&capacity=gte.${people}&select=id,name,capacity,active&order=capacity.asc,id.asc`),
-      supabase(`/rest/v1/reservations?restaurant_id=eq.${RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,people,table_id,status`)
-    ]);
-
-    const tables = await jsonOrThrow(tablesResponse, "restaurant_tables");
-    const reservations = await jsonOrThrow(reservationsResponse, "reservations");
-
-    if (!Array.isArray(tables) || tables.length === 0) {
-      return send(res, 409, { error: "Pro tento počet hostů není žádný vhodný aktivní stůl." });
+    const reservationsResponse = await sb(
+      `/rest/v1/reservations?restaurant_id=eq.${RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent('Zrušeno')}&select=id,time,duration_minutes,people,table_id,status`
+    );
+    if (!reservationsResponse.ok) {
+      return send(res, 500, { error: `Nepodařilo se načíst rezervace: ${await reservationsResponse.text()}` });
     }
 
-    const selectedTable = tables.find(table => {
-      return !(reservations || []).some(existing => {
-        if (Number(existing.table_id) !== Number(table.id)) return false;
-        const existingStart = minutes(existing.time);
-        const existingDuration = effectiveExistingDuration(existing, settings);
-        return overlaps(requestedStart, duration, existingStart, existingDuration);
+    const tables = await tablesResponse.json();
+    const reservations = await reservationsResponse.json();
+
+    const freeTable = tables.find((table) => {
+      return !reservations.some((r) => {
+        if (Number(r.table_id) !== Number(table.id)) return false;
+        const stored = Number(r.duration_minutes || 0);
+        const byPeople = durationForPeople(Number(r.people || 1), settings);
+        const existingDuration = Math.max(30, stored || 0, byPeople || 0);
+        return overlaps(time, newDuration, String(r.time || '').slice(0, 5), existingDuration);
       });
     });
 
-    if (!selectedTable) {
-      return send(res, 409, { error: "V tomto čase už není volný vhodný stůl. Vyber jiný čas." });
+    if (!freeTable) {
+      return send(res, 409, { error: 'V tomto čase už není volný vhodný stůl. Vyber jiný čas.' });
     }
 
-    // Druhá kontrola těsně před INSERTem, aby se zmenšilo riziko souběžného obsazení.
-    const finalCheckResponse = await supabase(`/rest/v1/reservations?restaurant_id=eq.${RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&table_id=eq.${selectedTable.id}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,time,duration_minutes,people,table_id,status`);
-    const latestOnTable = await jsonOrThrow(finalCheckResponse, "final_table_check");
-    const conflictNow = (latestOnTable || []).some(existing =>
-      overlaps(requestedStart, duration, minutes(existing.time), effectiveExistingDuration(existing, settings))
+    // Poslední kontrola těsně před zápisem.
+    const finalCheckResponse = await sb(
+      `/rest/v1/reservations?restaurant_id=eq.${RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&table_id=eq.${Number(freeTable.id)}&status=neq.${encodeURIComponent('Zrušeno')}&select=id,time,duration_minutes,people,table_id`
     );
-
-    if (conflictNow) {
-      return send(res, 409, { error: `${selectedTable.name} byl právě obsazen. Zkus rezervaci znovu.` });
+    if (!finalCheckResponse.ok) {
+      return send(res, 500, { error: `Nepodařilo se ověřit stůl: ${await finalCheckResponse.text()}` });
+    }
+    const finalRows = await finalCheckResponse.json();
+    const conflict = finalRows.some((r) => {
+      const stored = Number(r.duration_minutes || 0);
+      const byPeople = durationForPeople(Number(r.people || 1), settings);
+      const existingDuration = Math.max(30, stored || 0, byPeople || 0);
+      return overlaps(time, newDuration, String(r.time || '').slice(0, 5), existingDuration);
+    });
+    if (conflict) {
+      return send(res, 409, { error: 'Vybraný stůl byl mezitím obsazen. Zkus rezervaci znovu.' });
     }
 
-    const payload = {
-      name,
-      last_name: lastName,
-      people,
-      date,
-      time,
-      duration_minutes: duration,
-      table_id: Number(selectedTable.id),
-      phone,
-      email,
-      note,
-      status: "Čeká",
-      restaurant_id: RESTAURANT_ID
-    };
-
-    const insertResponse = await supabase(`/rest/v1/reservations`, {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify(payload)
+    const insertResponse = await sb('/rest/v1/reservations', {
+      method: 'POST',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({
+        name,
+        last_name: lastName,
+        people,
+        date,
+        time,
+        duration_minutes: newDuration,
+        table_id: Number(freeTable.id),
+        phone,
+        email,
+        note,
+        status: 'Čeká',
+        restaurant_id: RESTAURANT_ID
+      })
     });
-    const inserted = await jsonOrThrow(insertResponse, "insert_reservation");
+
+    const insertText = await insertResponse.text();
+    if (!insertResponse.ok) {
+      return send(res, insertResponse.status || 500, { error: `Uložení do databáze selhalo: ${insertText}` });
+    }
+
+    let inserted = null;
+    try { inserted = JSON.parse(insertText)?.[0] || null; } catch (_) {}
 
     return send(res, 200, {
       ok: true,
-      reservation: Array.isArray(inserted) ? inserted[0] : inserted,
-      table: {
-        id: Number(selectedTable.id),
-        name: selectedTable.name,
-        capacity: Number(selectedTable.capacity)
-      },
-      duration_minutes: duration
+      reservation: inserted,
+      table: { id: Number(freeTable.id), name: freeTable.name, capacity: Number(freeTable.capacity) },
+      duration_minutes: newDuration,
+      used_service_role: Boolean(SERVICE_ROLE_KEY)
     });
   } catch (error) {
-    console.error("create-reservation error", error);
-    return send(res, 500, { error: "Rezervaci se nepodařilo uložit.", detail: String(error.message || error) });
+    console.error('create-reservation error:', error);
+    return send(res, 500, { error: `Serverová chyba rezervace: ${error.message || String(error)}` });
   }
 };

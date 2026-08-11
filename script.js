@@ -11,7 +11,7 @@ let menu = [];
 
 
 const PUBLIC_RESTAURANT_ID = 1;
-console.info("[AI Restaurace PRO] TABLE-FIX FINAL v7 loaded");
+console.info("[AI Restaurace PRO] SERVER-TABLE-CHECK v6 loaded");
 const DEFAULT_PUBLIC_RESERVATION_SETTINGS = {
   duration_1_2: 90,
   duration_3_4: 120,
@@ -641,10 +641,8 @@ async function ulozitRezervaci() {
 
     const automaticallySelectedTable = createData.table || {};
 
-    // E-mailové potvrzení je zatím záměrně vypnuté.
-    // Chyba e-mailové služby nesmí blokovat rezervaci ani testování stolů.
     showPublicReservationNotice(
-      `✅ Rezervace uložena. Automaticky byl vybrán ${automaticallySelectedTable.name}.`
+      `✅ Rezervace uložena. Automaticky byl vybrán ${automaticallySelectedTable.name || "volný stůl"}.`
     );
 
     ["jmeno", "prijmeni", "osoby", "datum", "cas", "telefon", "email", "poznamka"]
