@@ -13,7 +13,7 @@ let menu = [];
 const PUBLIC_RESTAURANT_ID = 1;
 const DEFAULT_PUBLIC_RESERVATION_SETTINGS = {
   duration_1_2: 90,
-  duration_3_4: 120,
+  duration_3_4: 90,
   duration_5_6: 150,
   duration_7_plus: 180,
   min_advance_minutes: 60,
@@ -28,7 +28,7 @@ let publicReservationSettingsLoaded = false;
 function getPublicReservationDuration(people) {
   const count = Number(people || 1);
   if (count <= 2) return Number(publicReservationSettings.duration_1_2 || 90);
-  if (count <= 4) return Number(publicReservationSettings.duration_3_4 || 120);
+  if (count <= 4) return Number(publicReservationSettings.duration_3_4 || 90);
   if (count <= 6) return Number(publicReservationSettings.duration_5_6 || 150);
   return Number(publicReservationSettings.duration_7_plus || 180);
 }
@@ -71,7 +71,7 @@ async function loadPublicReservationSettings(force = false) {
     const row = rows[0] || {};
     publicReservationSettings = {
       duration_1_2: Math.max(30, Number(row.duration_1_2 || 90)),
-      duration_3_4: Math.max(30, Number(row.duration_3_4 || 120)),
+      duration_3_4: Math.max(30, Number(row.duration_3_4 || 90)),
       duration_5_6: Math.max(30, Number(row.duration_5_6 || 150)),
       duration_7_plus: Math.max(30, Number(row.duration_7_plus || 180)),
       min_advance_minutes: Math.max(0, Number(row.min_advance_minutes ?? 60)),
@@ -96,6 +96,21 @@ function timeToMinutes(value) {
   return (hours * 60) + minutes;
 }
 
+function getExistingReservationDuration(reservation) {
+  const storedDuration = Number(reservation?.duration_minutes);
+  const people = Number(reservation?.people || 1);
+  const configuredDuration = getPublicReservationDuration(people);
+
+  // Konzervativní ochrana proti starším rezervacím, které mohly mít
+  // duration_minutes prázdné nebo příliš krátké. Nikdy je nebereme jako
+  // kratší než aktuální automatické pravidlo pro jejich počet osob.
+  return Math.max(
+    30,
+    Number.isFinite(storedDuration) ? storedDuration : 0,
+    Number.isFinite(configuredDuration) ? configuredDuration : 0
+  );
+}
+
 function publicReservationsOverlap(first, second) {
   if (!first?.date || !second?.date || first.date !== second.date) {
     return false;
@@ -103,14 +118,8 @@ function publicReservationsOverlap(first, second) {
 
   const firstStart = timeToMinutes(first.time);
   const secondStart = timeToMinutes(second.time);
-  const firstEnd = firstStart + Math.max(
-    30,
-    Number(first.duration_minutes || getPublicReservationDuration(first.people || 1))
-  );
-  const secondEnd = secondStart + Math.max(
-    30,
-    Number(second.duration_minutes || getPublicReservationDuration(second.people || 1))
-  );
+  const firstEnd = firstStart + getExistingReservationDuration(first);
+  const secondEnd = secondStart + getExistingReservationDuration(second);
 
   return firstStart < secondEnd && secondStart < firstEnd;
 }
@@ -129,7 +138,7 @@ async function findBestPublicTable({ people, date, time, durationMinutes }) {
     `?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}` +
     `&date=eq.${encodeURIComponent(date)}` +
     `&status=neq.${encodeURIComponent("Zrušeno")}` +
-    `&select=id,date,time,duration_minutes,table_id,status`;
+    `&select=id,date,time,people,duration_minutes,table_id,status`;
 
   const [tablesResponse, reservationsResponse] = await Promise.all([
     fetch(tablesUrl, { headers }),
@@ -169,6 +178,36 @@ async function findBestPublicTable({ people, date, time, durationMinutes }) {
       return publicReservationsOverlap(draft, reservation);
     });
   }) || null;
+}
+
+async function verifyPublicTableStillAvailable({ tableId, date, time, durationMinutes, people }) {
+  const reservationsUrl =
+    `${SUPABASE_URL}/rest/v1/reservations` +
+    `?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}` +
+    `&date=eq.${encodeURIComponent(date)}` +
+    `&table_id=eq.${Number(tableId)}` +
+    `&status=neq.${encodeURIComponent("Zrušeno")}` +
+    `&select=id,date,time,people,duration_minutes,table_id,status`;
+
+  const response = await fetch(reservationsUrl, {
+    method: "GET",
+    headers,
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    throw new Error("Nepodařilo se znovu ověřit dostupnost stolu.");
+  }
+
+  const reservations = await response.json();
+  const draft = {
+    date,
+    time,
+    people: Number(people),
+    duration_minutes: Number(durationMinutes || getPublicReservationDuration(people))
+  };
+
+  return !reservations.some(reservation => publicReservationsOverlap(draft, reservation));
 }
 
 async function checkPublicOpeningAvailability({ date, time, durationMinutes }) {
@@ -405,7 +444,7 @@ async function loadAvailableReservationTimes() {
       `${SUPABASE_URL}/rest/v1/opening_hours?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&day_of_week=eq.${dayOfWeek}&select=is_open,open_time,close_time`,
       `${SUPABASE_URL}/rest/v1/blocked_times?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&select=start_time,end_time,reason`,
       `${SUPABASE_URL}/rest/v1/restaurant_tables?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&active=eq.true&capacity=gte.${people}&select=id,name,capacity,active&order=capacity.asc`,
-      `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,table_id,status`
+      `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,people,duration_minutes,table_id,status`
     ];
 
     const responses = await Promise.all(urls.map(url => fetch(url, { headers })));
@@ -450,7 +489,7 @@ async function loadAvailableReservationTimes() {
       const availableTable = tables.find(table => !reservations.some(reservation => {
         if (Number(reservation.table_id) !== Number(table.id)) return false;
         const reservationStart = timeToMinutes(reservation.time);
-        const reservationEnd = reservationStart + Math.max(30, Number(reservation.duration_minutes || duration));
+        const reservationEnd = reservationStart + getExistingReservationDuration(reservation);
         return start < reservationEnd && reservationStart < end;
       }));
 
@@ -655,6 +694,24 @@ async function ulozitRezervaci() {
         "Pro tento počet osob není v daném čase volný vhodný stůl. " +
         "Vyber jiný čas."
       );
+      return;
+    }
+
+    // Poslední kontrola těsně před uložením. Chrání proti zastaralému seznamu
+    // dostupných časů a proti rezervaci, která mohla vzniknout během vyplňování formuláře.
+    const tableStillAvailable = await verifyPublicTableStillAvailable({
+      tableId: automaticallySelectedTable.id,
+      date,
+      time,
+      durationMinutes: reservationDurationMinutes,
+      people: peopleNumber
+    });
+
+    if (!tableStillAvailable) {
+      showPublicReservationNotice(
+        "Tento stůl byl právě obsazen jinou rezervací. Vyber prosím jiný čas."
+      );
+      await loadAvailableReservationTimes();
       return;
     }
 
