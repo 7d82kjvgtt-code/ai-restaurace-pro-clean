@@ -11,7 +11,7 @@ let menu = [];
 
 
 const PUBLIC_RESTAURANT_ID = 1;
-console.info("[AI Restaurace PRO] TABLE-FIX v5 loaded");
+console.info("[AI Restaurace PRO] SERVER-TABLE-CHECK v6 loaded");
 const DEFAULT_PUBLIC_RESERVATION_SETTINGS = {
   duration_1_2: 90,
   duration_3_4: 120,
@@ -614,125 +614,32 @@ async function ulozitRezervaci() {
   setPublicReservationSubmitting(true);
 
   try {
-    const openingAvailability = await checkPublicOpeningAvailability({
-      date,
-      time,
-      durationMinutes: reservationDurationMinutes
-    });
-
-    if (!openingAvailability.ok) {
-      showPublicReservationNotice(openingAvailability.message);
-      return;
-    }
-    const duplicateExists = await publicReservationAlreadyExists({
-      name,
-      date,
-      time,
-      phone,
-      email
-    });
-
-    if (duplicateExists) {
-      showPublicReservationNotice("Tato rezervace už byla uložena. Není potřeba ji odesílat znovu.");
-      return;
-    }
-
-    const checkRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/reservations?date=eq.${encodeURIComponent(date)}&time=eq.${encodeURIComponent(time)}&status=neq.Zrušeno&select=id`,
-      { method: "GET", headers }
-    );
-
-    if (!checkRes.ok) {
-      throw new Error("Nepodařilo se ověřit dostupnost termínu.");
-    }
-
-    const existingReservations = await checkRes.json();
-    if (existingReservations.length >= 7) {
-      showPublicReservationNotice("Tento termín je už plně obsazený. Vyber jiný čas.");
-      return;
-    }
-
-    const automaticallySelectedTable = await findBestPublicTable({
-      people: peopleNumber,
-      date,
-      time,
-      durationMinutes: reservationDurationMinutes
-    });
-
-    if (!automaticallySelectedTable) {
-      showPublicReservationNotice(
-        "Pro tento počet osob není v daném čase volný vhodný stůl. " +
-        "Vyber jiný čas."
-      );
-      return;
-    }
-
-    // FINAL HARD CHECK: re-read the selected table immediately before INSERT.
-    // This prevents assigning a table that overlaps an existing reservation.
-    const finalConflictUrl =
-      `${SUPABASE_URL}/rest/v1/reservations` +
-      `?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}` +
-      `&date=eq.${encodeURIComponent(date)}` +
-      `&table_id=eq.${Number(automaticallySelectedTable.id)}` +
-      `&status=neq.${encodeURIComponent("Zrušeno")}` +
-      `&select=id,date,time,duration_minutes,people,table_id,status`;
-
-    const finalConflictResponse = await fetch(finalConflictUrl, {
-      headers,
-      cache: "no-store"
-    });
-
-    if (!finalConflictResponse.ok) {
-      throw new Error("Nepodařilo se provést finální kontrolu stolu.");
-    }
-
-    const finalTableReservations = await finalConflictResponse.json();
-    const finalDraft = {
-      date,
-      time,
-      people: peopleNumber,
-      duration_minutes: reservationDurationMinutes
-    };
-
-    const finalConflict = finalTableReservations.some(existing =>
-      publicReservationsOverlap(finalDraft, existing)
-    );
-
-    if (finalConflict) {
-      showPublicReservationNotice(
-        `Stůl ${automaticallySelectedTable.name || automaticallySelectedTable.id} už je v tomto čase obsazený. ` +
-        "Vyber jiný čas."
-      );
-      await loadAvailableReservationTimes();
-      return;
-    }
-
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations`, {
+    // Kritická kontrola kolizí a výběr stolu probíhá na serveru.
+    // Veřejný (anon) Supabase klient kvůli RLS nemusí vidět existující rezervace,
+    // proto už nesmí rozhodovat o tom, který stůl je volný.
+    const createResponse = await fetch("/api/create-reservation", {
       method: "POST",
-      headers: {
-        ...headers,
-        Prefer: "return=minimal"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name,
         last_name: lastName,
         people: peopleNumber,
         date,
         time,
-        duration_minutes: reservationDurationMinutes,
-        table_id: Number(automaticallySelectedTable.id),
         phone,
         email,
-        note,
-        status: "Čeká",
-        restaurant_id: PUBLIC_RESTAURANT_ID
+        note
       })
     });
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error("Chyba rezervace: " + errorText);
+    const createData = await createResponse.json().catch(() => ({}));
+    if (!createResponse.ok) {
+      showPublicReservationNotice(createData.error || "Rezervaci se nepodařilo uložit.");
+      await loadAvailableReservationTimes();
+      return;
     }
+
+    const automaticallySelectedTable = createData.table || {};
 
     let emailSent = false;
 
