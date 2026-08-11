@@ -13,7 +13,7 @@ let menu = [];
 const PUBLIC_RESTAURANT_ID = 1;
 const DEFAULT_PUBLIC_RESERVATION_SETTINGS = {
   duration_1_2: 90,
-  duration_3_4: 90,
+  duration_3_4: 120,
   duration_5_6: 150,
   duration_7_plus: 180,
   min_advance_minutes: 60,
@@ -28,7 +28,7 @@ let publicReservationSettingsLoaded = false;
 function getPublicReservationDuration(people) {
   const count = Number(people || 1);
   if (count <= 2) return Number(publicReservationSettings.duration_1_2 || 90);
-  if (count <= 4) return Number(publicReservationSettings.duration_3_4 || 90);
+  if (count <= 4) return Number(publicReservationSettings.duration_3_4 || 120);
   if (count <= 6) return Number(publicReservationSettings.duration_5_6 || 150);
   return Number(publicReservationSettings.duration_7_plus || 180);
 }
@@ -71,7 +71,7 @@ async function loadPublicReservationSettings(force = false) {
     const row = rows[0] || {};
     publicReservationSettings = {
       duration_1_2: Math.max(30, Number(row.duration_1_2 || 90)),
-      duration_3_4: Math.max(30, Number(row.duration_3_4 || 90)),
+      duration_3_4: Math.max(30, Number(row.duration_3_4 || 120)),
       duration_5_6: Math.max(30, Number(row.duration_5_6 || 150)),
       duration_7_plus: Math.max(30, Number(row.duration_7_plus || 180)),
       min_advance_minutes: Math.max(0, Number(row.min_advance_minutes ?? 60)),
@@ -96,30 +96,6 @@ function timeToMinutes(value) {
   return (hours * 60) + minutes;
 }
 
-function samePublicTableId(firstId, secondId) {
-  if (firstId === null || firstId === undefined || secondId === null || secondId === undefined) {
-    return false;
-  }
-
-  return String(firstId).trim() === String(secondId).trim();
-}
-
-function getStoredPublicReservationDuration(reservation) {
-  const storedDuration = Number(reservation?.duration_minutes);
-  if (Number.isFinite(storedDuration) && storedDuration >= 30) {
-    return storedDuration;
-  }
-
-  const people = Number(reservation?.people);
-  if (Number.isFinite(people) && people > 0) {
-    return Math.max(30, getPublicReservationDuration(people));
-  }
-
-  // Bezpečný fallback pro starší řádky, které nemají ani délku ani počet osob.
-  // Je lepší stůl zablokovat o něco déle než vytvořit dvojitou rezervaci.
-  return Math.max(30, Number(publicReservationSettings.duration_3_4 || 90));
-}
-
 function publicReservationsOverlap(first, second) {
   if (!first?.date || !second?.date || first.date !== second.date) {
     return false;
@@ -127,8 +103,14 @@ function publicReservationsOverlap(first, second) {
 
   const firstStart = timeToMinutes(first.time);
   const secondStart = timeToMinutes(second.time);
-  const firstEnd = firstStart + getStoredPublicReservationDuration(first);
-  const secondEnd = secondStart + getStoredPublicReservationDuration(second);
+  const firstEnd = firstStart + Math.max(
+    30,
+    Number(first.duration_minutes || getPublicReservationDuration(first.people || 1))
+  );
+  const secondEnd = secondStart + Math.max(
+    30,
+    Number(second.duration_minutes || getPublicReservationDuration(second.people || 1))
+  );
 
   return firstStart < secondEnd && secondStart < firstEnd;
 }
@@ -147,11 +129,11 @@ async function findBestPublicTable({ people, date, time, durationMinutes }) {
     `?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}` +
     `&date=eq.${encodeURIComponent(date)}` +
     `&status=neq.${encodeURIComponent("Zrušeno")}` +
-    `&select=id,date,time,people,duration_minutes,table_id,status`;
+    `&select=id,date,time,duration_minutes,people,table_id,status`;
 
   const [tablesResponse, reservationsResponse] = await Promise.all([
     fetch(tablesUrl, { headers }),
-    fetch(reservationsUrl, { headers })
+    fetch(reservationsUrl, { headers, cache: "no-store" })
   ]);
 
   if (!tablesResponse.ok || !reservationsResponse.ok) {
@@ -180,40 +162,13 @@ async function findBestPublicTable({ people, date, time, durationMinutes }) {
 
   return tables.find(table => {
     return !reservationsForDate.some(reservation => {
-      if (!samePublicTableId(reservation.table_id, table.id)) {
+      if (Number(reservation.table_id) !== Number(table.id)) {
         return false;
       }
 
       return publicReservationsOverlap(draft, reservation);
     });
   }) || null;
-}
-
-async function verifyPublicTableStillAvailable({ tableId, people, date, time, durationMinutes }) {
-  const reservationsUrl =
-    `${SUPABASE_URL}/rest/v1/reservations` +
-    `?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}` +
-    `&date=eq.${encodeURIComponent(date)}` +
-    `&status=neq.${encodeURIComponent("Zrušeno")}` +
-    `&select=id,date,time,people,duration_minutes,table_id,status`;
-
-  const response = await fetch(reservationsUrl, { headers });
-  if (!response.ok) {
-    throw new Error("Nepodařilo se finálně ověřit dostupnost stolu.");
-  }
-
-  const reservations = await response.json();
-  const draft = {
-    date,
-    time,
-    people: Number(people),
-    duration_minutes: Number(durationMinutes || getPublicReservationDuration(people))
-  };
-
-  return !reservations.some(reservation => {
-    if (!samePublicTableId(reservation.table_id, tableId)) return false;
-    return publicReservationsOverlap(draft, reservation);
-  });
 }
 
 async function checkPublicOpeningAvailability({ date, time, durationMinutes }) {
@@ -450,10 +405,10 @@ async function loadAvailableReservationTimes() {
       `${SUPABASE_URL}/rest/v1/opening_hours?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&day_of_week=eq.${dayOfWeek}&select=is_open,open_time,close_time`,
       `${SUPABASE_URL}/rest/v1/blocked_times?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&select=start_time,end_time,reason`,
       `${SUPABASE_URL}/rest/v1/restaurant_tables?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&active=eq.true&capacity=gte.${people}&select=id,name,capacity,active&order=capacity.asc`,
-      `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,people,duration_minutes,table_id,status`
+      `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,people,table_id,status`
     ];
 
-    const responses = await Promise.all(urls.map(url => fetch(url, { headers })));
+    const responses = await Promise.all(urls.map(url => fetch(url, { headers, cache: "no-store" })));
     if (responses.some(response => !response.ok)) {
       throw new Error("Nepodařilo se načíst dostupné časy.");
     }
@@ -492,16 +447,11 @@ async function loadAvailableReservationTimes() {
       });
       if (blocked) continue;
 
-      const draftReservation = {
-        date,
-        time: slotTime,
-        people,
-        duration_minutes: duration
-      };
-
       const availableTable = tables.find(table => !reservations.some(reservation => {
-        if (!samePublicTableId(reservation.table_id, table.id)) return false;
-        return publicReservationsOverlap(draftReservation, reservation);
+        if (Number(reservation.table_id) !== Number(table.id)) return false;
+        const reservationStart = timeToMinutes(reservation.time);
+        const reservationEnd = reservationStart + Math.max(30, Number(reservation.duration_minutes || getPublicReservationDuration(reservation.people || 1)));
+        return start < reservationEnd && reservationStart < end;
       }));
 
       if (availableTable) {
@@ -693,7 +643,7 @@ async function ulozitRezervaci() {
       return;
     }
 
-    let automaticallySelectedTable = await findBestPublicTable({
+    const automaticallySelectedTable = await findBestPublicTable({
       people: peopleNumber,
       date,
       time,
@@ -708,46 +658,44 @@ async function ulozitRezervaci() {
       return;
     }
 
-    // Druhá kontrola těsně před zápisem. Chrání i proti tomu, že se stav
-    // změnil mezi načtením dostupných časů a kliknutím na Potvrdit.
-    let selectedTableStillAvailable = await verifyPublicTableStillAvailable({
-      tableId: automaticallySelectedTable.id,
-      people: peopleNumber,
-      date,
-      time,
-      durationMinutes: reservationDurationMinutes
+    // FINAL HARD CHECK: re-read the selected table immediately before INSERT.
+    // This prevents assigning a table that overlaps an existing reservation.
+    const finalConflictUrl =
+      `${SUPABASE_URL}/rest/v1/reservations` +
+      `?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}` +
+      `&date=eq.${encodeURIComponent(date)}` +
+      `&table_id=eq.${Number(automaticallySelectedTable.id)}` +
+      `&status=neq.${encodeURIComponent("Zrušeno")}` +
+      `&select=id,date,time,duration_minutes,people,table_id,status`;
+
+    const finalConflictResponse = await fetch(finalConflictUrl, {
+      headers,
+      cache: "no-store"
     });
 
-    if (!selectedTableStillAvailable) {
-      // Ještě jednou zkusíme najít jiný vhodný stůl podle úplně čerstvých dat.
-      automaticallySelectedTable = await findBestPublicTable({
-        people: peopleNumber,
-        date,
-        time,
-        durationMinutes: reservationDurationMinutes
-      });
+    if (!finalConflictResponse.ok) {
+      throw new Error("Nepodařilo se provést finální kontrolu stolu.");
+    }
 
-      if (!automaticallySelectedTable) {
-        showPublicReservationNotice(
-          "Tento čas se právě obsadil. Vyber prosím jiný dostupný čas."
-        );
-        return;
-      }
+    const finalTableReservations = await finalConflictResponse.json();
+    const finalDraft = {
+      date,
+      time,
+      people: peopleNumber,
+      duration_minutes: reservationDurationMinutes
+    };
 
-      selectedTableStillAvailable = await verifyPublicTableStillAvailable({
-        tableId: automaticallySelectedTable.id,
-        people: peopleNumber,
-        date,
-        time,
-        durationMinutes: reservationDurationMinutes
-      });
+    const finalConflict = finalTableReservations.some(existing =>
+      publicReservationsOverlap(finalDraft, existing)
+    );
 
-      if (!selectedTableStillAvailable) {
-        showPublicReservationNotice(
-          "Tento čas se právě obsadil. Obnov dostupné časy a vyber jiný termín."
-        );
-        return;
-      }
+    if (finalConflict) {
+      showPublicReservationNotice(
+        `Stůl ${automaticallySelectedTable.name || automaticallySelectedTable.id} už je v tomto čase obsazený. ` +
+        "Vyber jiný čas."
+      );
+      await loadAvailableReservationTimes();
+      return;
     }
 
     const res = await fetch(`${SUPABASE_URL}/rest/v1/reservations`, {
