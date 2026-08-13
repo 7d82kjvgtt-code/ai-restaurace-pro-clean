@@ -1,4 +1,7 @@
 const RESEND_API_URL = "https://api.resend.com/emails";
+const SUPABASE_URL = process.env.SUPABASE_URL || "https://decpnnbaejxjbpmyjocs.supabase.co";
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const PUBLIC_RESTAURANT_ID = 1;
 
 function escapeHtml(value = "") {
   return String(value)
@@ -15,6 +18,192 @@ function formatDate(date) {
   return year && month && day ? `${day}.${month}.${year}` : date;
 }
 
+function supabaseHeaders(extra = {}) {
+  if (!SERVICE_ROLE_KEY) return null;
+  return {
+    apikey: SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+    "Content-Type": "application/json",
+    ...extra
+  };
+}
+
+async function supabaseJson(path, options = {}) {
+  const headers = supabaseHeaders(options.headers || {});
+  if (!headers) {
+    throw new Error("Ve Vercelu chybí SUPABASE_SERVICE_ROLE_KEY.");
+  }
+
+  const response = await fetch(`${SUPABASE_URL}${path}`, {
+    ...options,
+    headers
+  });
+
+  const text = await response.text();
+  let data = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = text;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      typeof data === "string"
+        ? data
+        : data?.message || data?.error || `Supabase chyba ${response.status}`
+    );
+  }
+
+  return data;
+}
+
+function timeToMinutes(value) {
+  const [h, m] = String(value || "00:00").split(":").map(Number);
+  return (Number(h) * 60) + Number(m);
+}
+
+function getDurationByPeople(people, settings = {}) {
+  const count = Number(people || 1);
+  if (count <= 2) return Math.max(30, Number(settings.duration_1_2 || 90));
+  if (count <= 4) return Math.max(30, Number(settings.duration_3_4 || 90));
+  if (count <= 6) return Math.max(30, Number(settings.duration_5_6 || 150));
+  return Math.max(30, Number(settings.duration_7_plus || 180));
+}
+
+function effectiveDuration(reservation, settings) {
+  const stored = Number(reservation?.duration_minutes || 0);
+  const byPeople = getDurationByPeople(reservation?.people, settings);
+  return Math.max(30, Number.isFinite(stored) ? stored : 0, byPeople);
+}
+
+function overlaps(a, b, settings) {
+  if (String(a.date) !== String(b.date)) return false;
+  const aStart = timeToMinutes(a.time);
+  const bStart = timeToMinutes(b.time);
+  const aEnd = aStart + effectiveDuration(a, settings);
+  const bEnd = bStart + effectiveDuration(b, settings);
+  return aStart < bEnd && bStart < aEnd;
+}
+
+async function createReservationOnServer(req, res) {
+  const {
+    name = "",
+    last_name = "",
+    people,
+    date = "",
+    time = "",
+    phone = "",
+    email = "",
+    note = ""
+  } = req.body || {};
+
+  const cleanName = String(name).trim();
+  const cleanLastName = String(last_name).trim();
+  const cleanPhone = String(phone).trim();
+  const cleanEmail = String(email).trim();
+  const peopleNumber = Number(people);
+
+  if (
+    !cleanName || !cleanLastName || !date || !time || !cleanPhone ||
+    !Number.isInteger(peopleNumber) || peopleNumber < 1
+  ) {
+    return res.status(400).json({ error: "Chybí povinné údaje rezervace." });
+  }
+
+  try {
+    const settingsRows = await supabaseJson(
+      `/rest/v1/reservation_settings?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&select=*`,
+      { method: "GET" }
+    );
+    const settings = Array.isArray(settingsRows) && settingsRows[0] ? settingsRows[0] : {};
+    const durationMinutes = getDurationByPeople(peopleNumber, settings);
+
+    const tables = await supabaseJson(
+      `/rest/v1/restaurant_tables?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&active=eq.true&capacity=gte.${peopleNumber}&select=id,name,capacity,active&order=capacity.asc,id.asc`,
+      { method: "GET" }
+    );
+
+    if (!Array.isArray(tables) || !tables.length) {
+      return res.status(409).json({ error: "Pro tento počet hostů není žádný vhodný aktivní stůl." });
+    }
+
+    const reservations = await supabaseJson(
+      `/rest/v1/reservations?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,people,table_id,status`,
+      { method: "GET" }
+    );
+
+    const draft = {
+      date,
+      time,
+      people: peopleNumber,
+      duration_minutes: durationMinutes
+    };
+
+    const selectedTable = tables.find(table => {
+      return !reservations.some(existing => {
+        if (Number(existing.table_id) !== Number(table.id)) return false;
+        return overlaps(draft, existing, settings);
+      });
+    });
+
+    if (!selectedTable) {
+      return res.status(409).json({
+        error: "V tomto čase není volný vhodný stůl. Vyber jiný čas."
+      });
+    }
+
+    // Poslední kontrola těsně před uložením.
+    const latestReservations = await supabaseJson(
+      `/rest/v1/reservations?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&table_id=eq.${Number(selectedTable.id)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,people,table_id,status`,
+      { method: "GET" }
+    );
+
+    if (latestReservations.some(existing => overlaps(draft, existing, settings))) {
+      return res.status(409).json({
+        error: `${selectedTable.name} byl mezitím obsazen. Vyber jiný čas.`
+      });
+    }
+
+    const inserted = await supabaseJson(
+      "/rest/v1/reservations",
+      {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({
+          restaurant_id: PUBLIC_RESTAURANT_ID,
+          name: cleanName,
+          last_name: cleanLastName,
+          people: peopleNumber,
+          date,
+          time,
+          duration_minutes: durationMinutes,
+          table_id: Number(selectedTable.id),
+          phone: cleanPhone,
+          email: cleanEmail,
+          note: String(note || "").trim(),
+          status: "Čeká"
+        })
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      reservation: Array.isArray(inserted) ? inserted[0] : inserted,
+      table: {
+        id: Number(selectedTable.id),
+        name: selectedTable.name,
+        capacity: Number(selectedTable.capacity)
+      }
+    });
+  } catch (error) {
+    console.error("Chyba při vytvoření rezervace:", error);
+    return res.status(500).json({
+      error: error.message || "Rezervaci se nepodařilo uložit."
+    });
+  }
+}
+
 async function sendResendEmail({ to, subject, html, replyTo }) {
   const response = await fetch(RESEND_API_URL, {
     method: "POST",
@@ -23,9 +212,7 @@ async function sendResendEmail({ to, subject, html, replyTo }) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      from:
-        process.env.RESEND_FROM_EMAIL ||
-        "Restaurace <onboarding@resend.dev>",
+      from: process.env.RESEND_FROM_EMAIL || "Restaurace <onboarding@resend.dev>",
       to: Array.isArray(to) ? to : [to],
       subject,
       html,
@@ -34,11 +221,7 @@ async function sendResendEmail({ to, subject, html, replyTo }) {
   });
 
   const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(data?.message || "Resend odmítl odeslání e-mailu.");
-  }
-
+  if (!response.ok) throw new Error(data?.message || "Resend odmítl odeslání e-mailu.");
   return data;
 }
 
@@ -48,10 +231,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Povolena je pouze metoda POST." });
   }
 
+  // DŮLEŽITÉ: rezervace se zpracuje DŘÍV než jakákoli kontrola Resendu.
+  if (req.body?.action === "create-reservation") {
+    return createReservationOnServer(req, res);
+  }
+
   if (!process.env.RESEND_API_KEY) {
-    return res.status(500).json({
-      error: "Ve Vercelu chybí proměnná RESEND_API_KEY."
-    });
+    return res.status(500).json({ error: "Ve Vercelu chybí proměnná RESEND_API_KEY." });
   }
 
   const {
@@ -67,16 +253,10 @@ export default async function handler(req, res) {
   const cleanEmail = String(email).trim();
 
   if (
-    !name ||
-    !people ||
-    !date ||
-    !time ||
-    !phone ||
+    !name || !people || !date || !time || !phone ||
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)
   ) {
-    return res.status(400).json({
-      error: "Chybí údaje rezervace nebo je neplatný e-mail."
-    });
+    return res.status(400).json({ error: "Chybí údaje rezervace nebo je neplatný e-mail." });
   }
 
   const safe = {
@@ -97,7 +277,6 @@ export default async function handler(req, res) {
       <div style="padding:28px;color:#1f2937">
         <p>Dobrý den, <strong>${safe.name}</strong>,</p>
         <p>děkujeme za rezervaci. Vaši rezervaci jsme přijali a nyní čeká na potvrzení restaurací.</p>
-
         <div style="background:#f9fafb;border-radius:12px;padding:18px;margin:22px 0">
           <p style="margin:7px 0"><strong>Datum:</strong> ${safe.date}</p>
           <p style="margin:7px 0"><strong>Čas:</strong> ${safe.time}</p>
@@ -105,7 +284,6 @@ export default async function handler(req, res) {
           <p style="margin:7px 0"><strong>Telefon:</strong> ${safe.phone}</p>
           <p style="margin:7px 0"><strong>Poznámka:</strong> ${safe.note}</p>
         </div>
-
         <p>V případě změny nás prosím kontaktujte.</p>
         <p style="margin-bottom:0">Těšíme se na vaši návštěvu.</p>
       </div>
@@ -152,8 +330,6 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error("Chyba při odesílání e-mailu:", error);
-    return res.status(500).json({
-      error: error.message || "E-mail se nepodařilo odeslat."
-    });
+    return res.status(500).json({ error: error.message || "E-mail se nepodařilo odeslat." });
   }
 }
