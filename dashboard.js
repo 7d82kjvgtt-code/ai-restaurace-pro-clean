@@ -247,6 +247,12 @@ async function loadDashboardData() {
   // Po načtení dat ještě jednou sjednotíme navigaci a oprávnění.
   applyRolePermissions();
   showDashboardSection(window.location.hash.replace("#", "") || "prehled", { notifyDenied: false });
+
+  if (!window.__reservationNotificationPoll) {
+    window.__reservationNotificationPoll = setInterval(() => {
+      if (currentRestaurantId) loadReservations();
+    }, 30000);
+  }
 }
 
 function setupMobileNavigation() {
@@ -799,6 +805,7 @@ async function loadReservations() {
 
    updateStatistics();
 renderReservations(reservations);
+refreshReservationNotifications();
 renderCalendar();
 renderCharts();
 renderFloorMap();
@@ -817,6 +824,132 @@ renderCustomers();
     `;
   }
 }
+
+
+/* =========================================================
+   UPOZORNĚNÍ NA NOVÉ REZERVACE
+========================================================= */
+
+function reservationNotificationStorageKey() {
+  return `reservationNotificationsReadThrough:${currentRestaurantId || "default"}`;
+}
+
+function getReservationReadThroughId() {
+  return Number(localStorage.getItem(reservationNotificationStorageKey()) || 0);
+}
+
+function setReservationReadThroughId(id) {
+  localStorage.setItem(reservationNotificationStorageKey(), String(Number(id) || 0));
+}
+
+function getReservationNotificationItems() {
+  const readThrough = getReservationReadThroughId();
+  const sorted = [...reservations]
+    .filter(item => Number(item?.id) > 0)
+    .sort((a, b) => Number(b.id) - Number(a.id));
+
+  // Při prvním spuštění upozornění zobrazíme jen několik nejnovějších,
+  // aby staré testovací rezervace nezaplnily celý zvonek.
+  if (!readThrough) return sorted.slice(0, 8);
+  return sorted.filter(item => Number(item.id) > readThrough).slice(0, 20);
+}
+
+function refreshReservationNotifications() {
+  const badge = document.getElementById("reservationNotificationBadge");
+  const list = document.getElementById("reservationNotificationList");
+  const overview = document.getElementById("reservationAlertOverview");
+  const title = document.getElementById("reservationAlertOverviewTitle");
+  const text = document.getElementById("reservationAlertOverviewText");
+  if (!badge || !list) return;
+
+  const unread = getReservationNotificationItems();
+  const count = unread.length;
+
+  badge.textContent = String(count);
+  badge.hidden = count === 0;
+
+  if (overview) overview.classList.toggle("has-unread", count > 0);
+
+  if (!count) {
+    list.innerHTML = `
+      <div class="reservation-notification-empty">
+        <span>✓</span>
+        <div>
+          <strong>Žádná nepřečtená upozornění</strong>
+          <small>Nové rezervace se objeví automaticky.</small>
+        </div>
+      </div>`;
+    if (title) title.textContent = "Žádná nepřečtená upozornění";
+    if (text) text.textContent = "Jakmile přijde nová rezervace, objeví se tady i ve zvonku nahoře.";
+    return;
+  }
+
+  list.innerHTML = unread.map(reservation => {
+    const fullName = [reservation.name, reservation.last_name].filter(Boolean).join(" ") || "Nový host";
+    const tableLabel = getReservationTableLabel(reservation);
+    const people = Number(reservation.people || 0);
+    return `
+      <button type="button" class="reservation-notification-item unread" onclick="openReservationFromNotification(${Number(reservation.id)})">
+        <span class="reservation-notification-dot"></span>
+        <span class="reservation-notification-copy">
+          <strong>${escapeHtml(fullName)}</strong>
+          <small>${escapeHtml(formatDate(reservation.date))} · ${escapeHtml(String(reservation.time || "").slice(0,5))} · ${people} ${people === 1 ? "osoba" : "osob"}</small>
+          <em>${escapeHtml(tableLabel || "Bez stolu")}</em>
+        </span>
+      </button>`;
+  }).join("");
+
+  if (title) title.textContent = count === 1 ? "1 nová rezervace" : `${count} nových rezervací`;
+  if (text) {
+    const newest = unread[0];
+    const guest = [newest.name, newest.last_name].filter(Boolean).join(" ") || "Nový host";
+    text.textContent = `${guest} · ${String(newest.time || "").slice(0,5)} · ${getReservationTableLabel(newest)}`;
+  }
+}
+
+function toggleReservationNotifications(event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  const panel = document.getElementById("reservationNotificationPanel");
+  const button = document.getElementById("reservationNotificationButton");
+  if (!panel) return;
+  const open = !panel.classList.contains("open");
+  panel.classList.toggle("open", open);
+  if (button) button.setAttribute("aria-expanded", String(open));
+}
+
+function markAllReservationNotificationsRead() {
+  const maxId = reservations.reduce((max, item) => Math.max(max, Number(item?.id) || 0), 0);
+  setReservationReadThroughId(maxId);
+  refreshReservationNotifications();
+}
+
+function openReservationFromNotification(id) {
+  const reservation = reservations.find(item => Number(item.id) === Number(id));
+  if (!reservation) return;
+
+  const current = getReservationReadThroughId();
+  if (Number(id) > current) setReservationReadThroughId(Number(id));
+  refreshReservationNotifications();
+
+  showDashboardSection("rezervace", { notifyDenied: false });
+  history.replaceState(null, "", "#rezervace");
+
+  setTimeout(() => {
+    const row = document.querySelector(`[data-reservation-id="${Number(id)}"]`);
+    row?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 100);
+}
+
+// Zavřít panel kliknutím mimo něj.
+document.addEventListener("click", event => {
+  const wrapper = document.getElementById("reservationNotificationWrapper");
+  const panel = document.getElementById("reservationNotificationPanel");
+  const button = document.getElementById("reservationNotificationButton");
+  if (!wrapper || !panel || wrapper.contains(event.target)) return;
+  panel.classList.remove("open");
+  if (button) button.setAttribute("aria-expanded", "false");
+});
 
 function parseReservationDateTime(reservation) {
   if (!reservation?.date || !reservation?.time) return null;
