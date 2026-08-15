@@ -108,7 +108,7 @@ async function createReservationOnServer(req, res) {
     !cleanName || !cleanLastName || !date || !time || !cleanPhone ||
     !Number.isInteger(peopleNumber) || peopleNumber < 1
   ) {
-    return res.status(400).json({ error: "Chybí povinné údaje rezervace." });
+    return res.status(400).json({ error: "Chybí povinné údaje rezervace.", apiVersion: "groups-v5" });
   }
 
   try {
@@ -119,17 +119,35 @@ async function createReservationOnServer(req, res) {
     const settings = Array.isArray(settingsRows) && settingsRows[0] ? settingsRows[0] : {};
     const durationMinutes = getDurationByPeople(peopleNumber, settings);
 
-    const tables = await supabaseJson(
-      `/rest/v1/restaurant_tables?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&active=eq.true&capacity=gte.${peopleNumber}&select=id,name,capacity,active&order=capacity.asc,id.asc`,
-      { method: "GET" }
-    );
+    const [tables, tableGroups] = await Promise.all([
+      supabaseJson(
+        `/rest/v1/restaurant_tables?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&active=eq.true&select=id,name,capacity,active,room&order=capacity.asc,id.asc`,
+        { method: "GET" }
+      ),
+      supabaseJson(
+        `/rest/v1/table_groups?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&select=id,name,table_ids,total_capacity,room&order=total_capacity.asc,id.asc`,
+        { method: "GET" }
+      )
+    ]);
 
-    if (!Array.isArray(tables) || !tables.length) {
-      return res.status(409).json({ error: "Pro tento počet hostů není žádný vhodný aktivní stůl." });
+    const singleCandidates = (Array.isArray(tables) ? tables : [])
+      .filter(table => Number(table.capacity) >= peopleNumber);
+    const groupCandidates = (Array.isArray(tableGroups) ? tableGroups : [])
+      .filter(group =>
+        Number(group.total_capacity) >= peopleNumber &&
+        Array.isArray(group.table_ids) &&
+        group.table_ids.length >= 2
+      );
+
+    if (!singleCandidates.length && !groupCandidates.length) {
+      return res.status(409).json({
+        error: "Pro tento počet hostů není žádný vhodný aktivní stůl ani povolená skupina stolů.",
+        apiVersion: "groups-v5"
+      });
     }
 
     const reservations = await supabaseJson(
-      `/rest/v1/reservations?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,people,table_id,status`,
+      `/rest/v1/reservations?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,people,table_id,table_group_id,status`,
       { method: "GET" }
     );
 
@@ -140,28 +158,50 @@ async function createReservationOnServer(req, res) {
       duration_minutes: durationMinutes
     };
 
-    const selectedTable = tables.find(table => {
-      return !reservations.some(existing => {
-        if (Number(existing.table_id) !== Number(table.id)) return false;
-        return overlaps(draft, existing, settings);
-      });
-    });
+    const groupById = new Map((Array.isArray(tableGroups) ? tableGroups : []).map(group => [Number(group.id), group]));
 
-    if (!selectedTable) {
+    function occupiedTableIds(rows) {
+      const occupied = new Set();
+      (Array.isArray(rows) ? rows : []).forEach(existing => {
+        if (!overlaps(draft, existing, settings)) return;
+        if (existing.table_group_id) {
+          const existingGroup = groupById.get(Number(existing.table_group_id));
+          (Array.isArray(existingGroup?.table_ids) ? existingGroup.table_ids : [])
+            .forEach(id => occupied.add(Number(id)));
+        } else if (existing.table_id) {
+          occupied.add(Number(existing.table_id));
+        }
+      });
+      return occupied;
+    }
+
+    const occupied = occupiedTableIds(reservations);
+    const selectedTable = singleCandidates.find(table => !occupied.has(Number(table.id))) || null;
+    const selectedGroup = !selectedTable
+      ? groupCandidates.find(group => group.table_ids.map(Number).every(id => !occupied.has(id))) || null
+      : null;
+
+    if (!selectedTable && !selectedGroup) {
       return res.status(409).json({
-        error: "V tomto čase není volný vhodný stůl. Vyber jiný čas."
+        error: "V tomto čase není volný vhodný stůl ani povolená skupina stolů. Vyber jiný čas.",
+        apiVersion: "groups-v5"
       });
     }
 
-    // Poslední kontrola těsně před uložením.
+    // Poslední kontrola těsně před uložením – znovu načteme všechny rezervace,
+    // protože skupina může kolidovat i s rezervací na jednom z jejích stolů.
     const latestReservations = await supabaseJson(
-      `/rest/v1/reservations?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&table_id=eq.${Number(selectedTable.id)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,people,table_id,status`,
+      `/rest/v1/reservations?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,people,table_id,table_group_id,status`,
       { method: "GET" }
     );
+    const latestOccupied = occupiedTableIds(latestReservations);
+    const chosenIds = selectedTable
+      ? [Number(selectedTable.id)]
+      : selectedGroup.table_ids.map(Number);
 
-    if (latestReservations.some(existing => overlaps(draft, existing, settings))) {
+    if (chosenIds.some(id => latestOccupied.has(id))) {
       return res.status(409).json({
-        error: `${selectedTable.name} byl mezitím obsazen. Vyber jiný čas.`
+        error: `${selectedTable ? selectedTable.name : selectedGroup.name} byl mezitím obsazen. Vyber jiný čas.`
       });
     }
 
@@ -178,7 +218,8 @@ async function createReservationOnServer(req, res) {
           date,
           time,
           duration_minutes: durationMinutes,
-          table_id: Number(selectedTable.id),
+          table_id: selectedTable ? Number(selectedTable.id) : null,
+          table_group_id: selectedGroup ? Number(selectedGroup.id) : null,
           phone: cleanPhone,
           email: cleanEmail,
           note: String(note || "").trim(),
@@ -189,11 +230,19 @@ async function createReservationOnServer(req, res) {
 
     return res.status(200).json({
       success: true,
+      apiVersion: "groups-v5",
       reservation: Array.isArray(inserted) ? inserted[0] : inserted,
-      table: {
+      table: selectedTable ? {
         id: Number(selectedTable.id),
         name: selectedTable.name,
-        capacity: Number(selectedTable.capacity)
+        capacity: Number(selectedTable.capacity),
+        type: "table"
+      } : {
+        id: Number(selectedGroup.id),
+        name: selectedGroup.name,
+        capacity: Number(selectedGroup.total_capacity),
+        table_ids: selectedGroup.table_ids.map(Number),
+        type: "group"
       }
     });
   } catch (error) {
