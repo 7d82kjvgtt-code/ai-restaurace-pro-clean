@@ -4,6 +4,7 @@ const SUPABASE_KEY = "sb_publishable_l6ko8NS_92RjQBM2rEzAvA_Sd2hYicb";
 let reservations = [];
 let foods = [];
 let restaurantTables = [];
+let tableGroups = [];
 let customerProfiles = [];
 
 let currentRestaurantId = null;
@@ -24,14 +25,7 @@ let mergeModeActive = false;
 let selectedTablesForMerge = [];
 
 let upcomingReservationTimer = null;
-let liveReservationRefreshTimer = null;
 const shownUpcomingReservationAlerts = new Set();
-
-let reservationNotificationTimer = null;
-let reservationNotifications = [];
-let reservationNotificationReads = new Set();
-let reservationNotificationsInitialized = false;
-const knownReservationNotificationIds = new Set();
 
 function showDashboardNotice(message, type = "auto") {
   const text = String(message || "").trim();
@@ -249,15 +243,6 @@ async function loadDashboardData() {
   ]);
 
   await loadReservations();
-  if (["owner", "manager"].includes(String(currentUserRole || "").toLowerCase())) {
-    await loadReservationNotifications();
-    startReservationNotificationPolling();
-  } else {
-    stopReservationNotificationPolling();
-    reservationNotifications = [];
-    reservationNotificationReads.clear();
-    renderReservationNotifications();
-  }
 
   // Po načtení dat ještě jednou sjednotíme navigaci a oprávnění.
   applyRolePermissions();
@@ -753,14 +738,6 @@ async function login(event) {
 }
 
 function logoutDashboard() {
-  if (reservationNotificationTimer) {
-    clearInterval(reservationNotificationTimer);
-    reservationNotificationTimer = null;
-  }
-  reservationNotifications = [];
-  reservationNotificationReads.clear();
-  reservationNotificationsInitialized = false;
-  knownReservationNotificationIds.clear();
   clearSession();
   location.reload();
 }
@@ -800,274 +777,6 @@ function escapeHtml(value) {
 }
 
 /* =========================================================
-   UPOZORNĚNÍ NA NOVÉ REZERVACE
-========================================================= */
-
-function formatNotificationCreatedAt(value) {
-  if (!value) return "Právě teď";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Právě teď";
-
-  const now = new Date();
-  const diffMinutes = Math.max(0, Math.floor((now - date) / 60000));
-  if (diffMinutes < 1) return "Právě teď";
-  if (diffMinutes < 60) return `Před ${diffMinutes} min`;
-  if (diffMinutes < 24 * 60) return `Před ${Math.floor(diffMinutes / 60)} h`;
-
-  return date.toLocaleString("cs-CZ", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-}
-
-function getUnreadReservationNotifications() {
-  return reservationNotifications.filter(item => !reservationNotificationReads.has(Number(item.id)));
-}
-
-function updateReservationNotificationBadge() {
-  const badge = document.getElementById("reservationNotificationBadge");
-  const button = document.getElementById("reservationNotificationButton");
-  const overview = document.getElementById("reservationAlertOverview");
-  const overviewTitle = document.getElementById("reservationAlertOverviewTitle");
-  const overviewText = document.getElementById("reservationAlertOverviewText");
-  const count = getUnreadReservationNotifications().length;
-
-  if (badge) {
-    badge.textContent = count > 99 ? "99+" : String(count);
-    badge.hidden = count === 0;
-    badge.setAttribute("aria-label", `${count} nepřečtených upozornění`);
-  }
-
-  if (button) {
-    button.classList.toggle("has-unread", count > 0);
-    button.setAttribute("aria-label", count > 0
-      ? `Upozornění na nové rezervace, ${count} nepřečtených`
-      : "Upozornění na nové rezervace");
-  }
-
-  if (overview) overview.classList.toggle("has-unread", count > 0);
-  if (overviewTitle) overviewTitle.textContent = count > 0
-    ? `${count} ${count === 1 ? "nová rezervace" : count >= 2 && count <= 4 ? "nové rezervace" : "nových rezervací"}`
-    : "Žádná nepřečtená upozornění";
-  if (overviewText) overviewText.textContent = count > 0
-    ? "Klikni na upozornění a otevři detail nové rezervace."
-    : "Jakmile přijde nová rezervace, objeví se tady i ve zvonku nahoře.";
-}
-
-function renderReservationNotifications() {
-  const list = document.getElementById("reservationNotificationList");
-  if (!list) return;
-
-  if (!reservationNotifications.length) {
-    list.innerHTML = `
-      <div class="reservation-notification-empty">
-        <span>✓</span>
-        <div>
-          <strong>Žádné nové rezervace</strong>
-          <small>Nové rezervace se tu objeví automaticky.</small>
-        </div>
-      </div>
-    `;
-    updateReservationNotificationBadge();
-    return;
-  }
-
-  list.innerHTML = reservationNotifications.slice(0, 30).map(item => {
-    const unread = !reservationNotificationReads.has(Number(item.id));
-    const people = Number(item.people || 0);
-    const dateLabel = item.reservation_date ? formatDate(String(item.reservation_date).slice(0, 10)) : "—";
-    const timeLabel = item.reservation_time ? String(item.reservation_time).slice(0, 5) : "—";
-    const sourceReservation = allReservations.find(reservation => Number(reservation.id) === Number(item.reservation_id));
-    const notificationName = sourceReservation
-      ? getReservationFullName(sourceReservation)
-      : (item.name || "Bez jména");
-
-    return `
-      <button
-        type="button"
-        class="reservation-notification-item${unread ? " unread" : ""}"
-        onclick="openReservationNotification(${Number(item.id)}, ${Number(item.reservation_id)})"
-      >
-        <span class="reservation-notification-dot" aria-hidden="true"></span>
-        <span class="reservation-notification-copy">
-          <strong>Nová rezervace · ${escapeHtml(notificationName)}</strong>
-          <small>${people} ${people === 1 ? "osoba" : people >= 2 && people <= 4 ? "osoby" : "osob"} · ${escapeHtml(dateLabel)} · ${escapeHtml(timeLabel)}</small>
-          <em>${escapeHtml(formatNotificationCreatedAt(item.created_at))}</em>
-        </span>
-      </button>
-    `;
-  }).join("");
-
-  updateReservationNotificationBadge();
-}
-
-async function loadReservationNotifications({ silent = false } = {}) {
-  if (!currentRestaurantId || !currentUserId) return;
-
-  try {
-    const [notificationsResponse, readsResponse] = await Promise.all([
-      authorizedFetch(
-        `${SUPABASE_URL}/rest/v1/reservation_notifications?restaurant_id=eq.${currentRestaurantId}&select=*&order=created_at.desc&limit=50`
-      ),
-      authorizedFetch(
-        `${SUPABASE_URL}/rest/v1/reservation_notification_reads?user_id=eq.${encodeURIComponent(currentUserId)}&select=notification_id`
-      )
-    ]);
-
-    if (!notificationsResponse.ok || !readsResponse.ok) {
-      const notificationError = !notificationsResponse.ok ? await notificationsResponse.text().catch(() => "") : "";
-      const readsError = !readsResponse.ok ? await readsResponse.text().catch(() => "") : "";
-      console.warn("Upozornění na rezervace se nenačetla.", { notificationError, readsError });
-      if (!silent) showDashboardNotice("Upozornění se nepodařilo načíst. Ostatní části dashboardu fungují dál.", "error");
-      return;
-    }
-
-    const [notificationsData, readsData] = await Promise.all([
-      notificationsResponse.json(),
-      readsResponse.json()
-    ]);
-
-    const nextNotifications = Array.isArray(notificationsData) ? notificationsData : [];
-    reservationNotificationReads = new Set(
-      (Array.isArray(readsData) ? readsData : []).map(row => Number(row.notification_id))
-    );
-
-    if (reservationNotificationsInitialized) {
-      nextNotifications
-        .filter(item => !knownReservationNotificationIds.has(Number(item.id)))
-        .reverse()
-        .forEach(item => {
-          if (reservationNotificationReads.has(Number(item.id))) return;
-          const sourceReservation = allReservations.find(reservation => Number(reservation.id) === Number(item.reservation_id));
-          const notificationName = sourceReservation
-            ? getReservationFullName(sourceReservation)
-            : (item.name || "Bez jména");
-          showDashboardNotice(
-            `Nová rezervace: ${notificationName} · ${item.people || 0} osob · ${String(item.reservation_time || "").slice(0, 5)}`,
-            "info"
-          );
-        });
-    }
-
-    reservationNotifications = nextNotifications;
-    nextNotifications.forEach(item => knownReservationNotificationIds.add(Number(item.id)));
-    reservationNotificationsInitialized = true;
-    renderReservationNotifications();
-  } catch (error) {
-    if (!silent) console.error("Načítání upozornění selhalo:", error);
-  }
-}
-
-function startReservationNotificationPolling() {
-  if (reservationNotificationTimer) return;
-
-  reservationNotificationTimer = window.setInterval(async () => {
-    if (document.hidden || !getAccessToken()) return;
-    await loadReservationNotifications({ silent: true });
-  }, 15000);
-}
-
-function toggleReservationNotifications(event) {
-  event?.stopPropagation();
-  const panel = document.getElementById("reservationNotificationPanel");
-  const button = document.getElementById("reservationNotificationButton");
-  if (!panel || !button) return;
-
-  const willOpen = !panel.classList.contains("open");
-  panel.classList.toggle("open", willOpen);
-  button.setAttribute("aria-expanded", willOpen ? "true" : "false");
-
-  if (willOpen) loadReservationNotifications({ silent: true });
-}
-
-function closeReservationNotifications() {
-  const panel = document.getElementById("reservationNotificationPanel");
-  const button = document.getElementById("reservationNotificationButton");
-  panel?.classList.remove("open");
-  button?.setAttribute("aria-expanded", "false");
-}
-
-async function markReservationNotificationRead(notificationId) {
-  const id = Number(notificationId);
-  if (!id || !currentUserId || reservationNotificationReads.has(id)) return;
-
-  const response = await authorizedFetch(
-    `${SUPABASE_URL}/rest/v1/reservation_notification_reads?on_conflict=notification_id,user_id`,
-    {
-      method: "POST",
-      headers: getHeaders({ Prefer: "resolution=merge-duplicates,return=minimal" }),
-      body: JSON.stringify({ notification_id: id, user_id: currentUserId })
-    }
-  );
-
-  if (response.ok) {
-    reservationNotificationReads.add(id);
-    renderReservationNotifications();
-  }
-}
-
-async function markAllReservationNotificationsRead() {
-  const unread = getUnreadReservationNotifications();
-  if (!unread.length || !currentUserId) return;
-
-  const rows = unread.map(item => ({
-    notification_id: Number(item.id),
-    user_id: currentUserId
-  }));
-
-  const response = await authorizedFetch(
-    `${SUPABASE_URL}/rest/v1/reservation_notification_reads?on_conflict=notification_id,user_id`,
-    {
-      method: "POST",
-      headers: getHeaders({ Prefer: "resolution=merge-duplicates,return=minimal" }),
-      body: JSON.stringify(rows)
-    }
-  );
-
-  if (!response.ok) {
-    showDashboardNotice("Upozornění se nepodařilo označit jako přečtená.", "error");
-    return;
-  }
-
-  rows.forEach(row => reservationNotificationReads.add(Number(row.notification_id)));
-  renderReservationNotifications();
-}
-
-async function openReservationNotification(notificationId, reservationId) {
-  // Nejprve dohledáme skutečnou rezervaci. Notifikaci označíme jako přečtenou
-  // až ve chvíli, kdy lze detail opravdu otevřít.
-  let reservation = reservations.find(item => Number(item.id) === Number(reservationId));
-  if (!reservation) {
-    await loadReservations();
-    reservation = reservations.find(item => Number(item.id) === Number(reservationId));
-  }
-
-  if (!reservation) {
-    closeReservationNotifications();
-    showDashboardNotice("Rezervace už není dostupná.", "error");
-    return;
-  }
-
-  // Přepneme dashboard na Rezervace, zavřeme dropdown a otevřeme přesně
-  // rezervaci svázanou přes reservation_id. Funguje pro všechny role, které
-  // mají přístup k sekci Rezervace.
-  showDashboardSection("rezervace", { notifyDenied: false });
-  closeReservationNotifications();
-  editReservation(Number(reservation.id));
-
-  // Badge se po úspěšném otevření okamžitě sníží. Zápis je per-user.
-  await markReservationNotificationRead(notificationId);
-}
-
-// Zavření panelu kliknutím mimo něj.
-document.addEventListener("click", event => {
-  const wrapper = document.getElementById("reservationNotificationWrapper");
-  if (wrapper && !wrapper.contains(event.target)) closeReservationNotifications();
-});
-
-/* =========================================================
    REZERVACE
 ========================================================= */
 
@@ -1095,7 +804,6 @@ renderCharts();
 renderFloorMap();
 renderUpcomingReservations();
 startUpcomingReservationTimer();
-startLiveReservationRefresh();
 renderCustomers();
   } catch (error) {
     console.error(error);
@@ -1126,11 +834,30 @@ function isCancelledReservation(reservation) {
 
 function getReservationTableLabel(reservation) {
   if (reservation?.table_group_id) {
-    const group = tableGroups.find(item => Number(item.id) === Number(reservation.table_group_id));
-    if (group?.name) return group.name;
+    const group = tableGroups.find(
+      item => Number(item.id) === Number(reservation.table_group_id)
+    );
+
+    if (group) {
+      if (group.name) return group.name;
+
+      const memberNames = (Array.isArray(group.table_ids) ? group.table_ids : [])
+        .map(id => restaurantTables.find(table => Number(table.id) === Number(id))?.name)
+        .filter(Boolean);
+
+      if (memberNames.length) return memberNames.join(" + ");
+      return `Spojené stoly #${reservation.table_group_id}`;
+    }
+
+    return `Spojené stoly #${reservation.table_group_id}`;
   }
+
   if (!reservation?.table_id) return "Bez stolu";
-  const table = restaurantTables.find(item => Number(item.id) === Number(reservation.table_id));
+
+  const table = restaurantTables.find(
+    item => Number(item.id) === Number(reservation.table_id)
+  );
+
   return table?.name || `Stůl ${reservation.table_id}`;
 }
 
@@ -1196,7 +923,7 @@ function renderUpcomingReservations() {
           <small>${escapeHtml(formatUpcomingTime(minutesUntil))}</small>
         </span>
         <span class="upcoming-main-info">
-          <strong>${escapeHtml(getReservationFullName(reservation))}</strong>
+          <strong>${escapeHtml(reservation.name || "Bez jména")}</strong>
           <small>${people} ${people === 1 ? "osoba" : people >= 2 && people <= 4 ? "osoby" : "osob"} · ${escapeHtml(getReservationTableLabel(reservation))}</small>
         </span>
         <span class="upcoming-status">${isImminent ? "Brzy přijde" : escapeHtml(getCalendarStatusLabel(reservation.status))}</span>
@@ -1213,7 +940,7 @@ function renderUpcomingReservations() {
     shownUpcomingReservationAlerts.add(alertKey);
     const tableLabel = getReservationTableLabel(reservation);
     showDashboardNotice(
-      `${formatUpcomingTime(minutesUntil)} přijde ${getReservationFullName(reservation) || "rezervace"} – ${reservation.people || 0} osob, ${tableLabel}.`,
+      `${formatUpcomingTime(minutesUntil)} přijde ${reservation.name || "rezervace"} – ${reservation.people || 0} osob, ${tableLabel}.`,
       "info"
     );
   });
@@ -1225,18 +952,6 @@ function startUpcomingReservationTimer() {
   upcomingReservationTimer = window.setInterval(() => {
     renderUpcomingReservations();
   }, 60000);
-}
-
-// Živé rezervace / mapa stolů: každých 30 sekund načteme aktuální rezervace,
-// takže stav Volný / Rezervace brzy / Obsazený reaguje i na rezervaci
-// vytvořenou na jiném zařízení bez ručního refreshu stránky.
-function startLiveReservationRefresh() {
-  if (liveReservationRefreshTimer) return;
-
-  liveReservationRefreshTimer = window.setInterval(async () => {
-    if (document.hidden || !currentRestaurantId || !getAccessToken()) return;
-    await loadReservations();
-  }, 30000);
 }
 
 function updateStatistics() {
@@ -1283,7 +998,7 @@ function renderReservations(data) {
 
           <td data-label="Jméno">
             ${escapeHtml(
-              getReservationFullName(reservation) || "-"
+              reservation.name || "-"
             )}
           </td>
 
@@ -1501,7 +1216,6 @@ function historyActionLabel(action) {
 function historyFieldLabel(field) {
   const labels = {
     name: "Jméno",
-    last_name: "Příjmení",
     people: "Počet osob",
     date: "Datum",
     time: "Čas",
@@ -1530,7 +1244,7 @@ function getHistoryChanges(entry) {
 
   const before = entry.before_data || {};
   const after = entry.after_data || {};
-  const tracked = ["name", "last_name", "people", "date", "time", "duration_minutes", "table_id", "status", "phone", "email", "note"];
+  const tracked = ["name", "people", "date", "time", "duration_minutes", "table_id", "status", "phone", "email", "note"];
 
   return tracked
     .filter(field => String(before[field] ?? "") !== String(after[field] ?? ""))
@@ -1551,8 +1265,7 @@ function renderReservationHistory() {
 
   list.innerHTML = data.map(entry => {
     const changes = getHistoryChanges(entry);
-    const sourceReservation = entry.after_data || entry.before_data || {};
-    const name = getReservationFullName(sourceReservation) || entry.reservation_name || "Rezervace";
+    const name = entry.reservation_name || entry.after_data?.name || entry.before_data?.name || "Rezervace";
     const actor = entry.actor_email || (entry.action === "created" ? "Veřejný formulář / systém" : "Systém");
     const when = entry.created_at ? new Date(entry.created_at).toLocaleString("cs-CZ", { dateStyle: "short", timeStyle: "short" }) : "—";
 
@@ -1608,60 +1321,17 @@ function normalizeCustomerPhone(value) {
   return String(value || "").replace(/\D/g, "");
 }
 
-function getReservationFullName(reservation) {
-  return [reservation?.name, reservation?.last_name]
-    .map(value => String(value || "").trim())
-    .filter(Boolean)
-    .join(" ") || "Host";
-}
-
-function normalizeCustomerEmail(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
 function getCustomerKey(reservation) {
-  // Telefon je primární identifikátor. Jméno ani příjmení se nikdy nepoužívá
-  // ke slučování zákazníků, protože více lidí může mít stejné jméno.
+  const email = String(reservation?.email || "").trim().toLowerCase();
   const phone = normalizeCustomerPhone(reservation?.phone);
-  const email = normalizeCustomerEmail(reservation?.email);
-  if (phone) return `phone:${phone}`;
+  const name = String(reservation?.name || "").trim().toLowerCase();
   if (email) return `email:${email}`;
-
-  // Pokud chybí telefon i e-mail, držíme rezervaci jako samostatného hosta.
-  // Tím zabráníme chybnému sloučení dvou lidí jen podle jména.
-  if (reservation?.id != null) return `reservation:${reservation.id}`;
-  return null;
+  if (phone) return `phone:${phone}`;
+  return `name:${name}`;
 }
 
-function getCustomerProfile(customerKey, customer = null) {
-  const exact = customerProfiles.find(item => item.customer_key === customerKey);
-  if (exact) return exact;
-
-  // Kompatibilita se staršími profily, které mohly být uložené pod e-mailem.
-  // Díky tomu se po změně na telefon jako primární klíč neztratí poznámky
-  // ani označení stálého hosta.
-  if (customer) {
-    const phone = normalizeCustomerPhone(customer.phone);
-    const email = normalizeCustomerEmail(customer.email);
-
-    // Pokud má host telefon, profil párujeme pouze podle stejného telefonu.
-    // E-mail už zde nesmí spojit dva různé lidi, protože stejný e-mail může
-    // být použitý u více hostů (např. rodina / testovací rezervace).
-    if (phone) {
-      return customerProfiles.find(item =>
-        normalizeCustomerPhone(item.phone) === phone
-      ) || null;
-    }
-
-    // E-mail použijeme jen pokud telefon opravdu chybí.
-    if (email) {
-      return customerProfiles.find(item =>
-        normalizeCustomerEmail(item.email) === email
-      ) || null;
-    }
-  }
-
-  return null;
+function getCustomerProfile(customerKey) {
+  return customerProfiles.find(item => item.customer_key === customerKey) || null;
 }
 
 function buildCustomers() {
@@ -1669,12 +1339,12 @@ function buildCustomers() {
 
   reservations.forEach(reservation => {
     const key = getCustomerKey(reservation);
-    if (!key) return;
+    if (!key || key === "name:") return;
 
     if (!groups.has(key)) {
       groups.set(key, {
         key,
-        name: getReservationFullName(reservation),
+        name: reservation.name || "Host",
         phone: reservation.phone || "",
         email: reservation.email || "",
         reservations: [],
@@ -1687,14 +1357,14 @@ function buildCustomers() {
     customer.totalPeople += Number(reservation.people || 0);
     if (!customer.phone && reservation.phone) customer.phone = reservation.phone;
     if (!customer.email && reservation.email) customer.email = reservation.email;
-    if (reservation.name || reservation.last_name) customer.name = getReservationFullName(reservation);
+    if (reservation.name) customer.name = reservation.name;
   });
 
   return [...groups.values()].map(customer => {
     const sorted = [...customer.reservations].sort((a, b) => {
       return String(`${b.date || ""} ${b.time || ""}`).localeCompare(String(`${a.date || ""} ${a.time || ""}`));
     });
-    const profile = getCustomerProfile(customer.key, customer);
+    const profile = getCustomerProfile(customer.key);
     const completedOrActive = sorted.filter(item => !isCancelledReservation(item));
 
     return {
@@ -1846,7 +1516,7 @@ async function saveCustomerProfile(customerKey, changes) {
   const customer = buildCustomers().find(item => item.key === customerKey);
   if (!customer) return;
 
-  const existing = getCustomerProfile(customerKey, customer);
+  const existing = getCustomerProfile(customerKey);
   const payload = {
     restaurant_id: Number(currentRestaurantId),
     customer_key: customerKey,
@@ -1931,10 +1601,10 @@ function getFilteredReservations() {
 
   return reservations.filter(reservation => {
     const tableName =
-      getTableName(reservation.table_id);
+      getReservationTableLabel(reservation);
 
     const text = [
-      getReservationFullName(reservation),
+      reservation.name,
       reservation.phone,
       reservation.email,
       reservation.note,
@@ -1986,9 +1656,6 @@ function editReservation(id) {
 
     document.getElementById("editReservationName").value =
         reservation.name || "";
-
-    document.getElementById("editReservationLastName").value =
-        reservation.last_name || "";
 
     document.getElementById("editReservationPeople").value =
         reservation.people || "";
@@ -2124,12 +1791,6 @@ async function saveReservationChanges() {
             .value
             .trim();
 
-    const lastName =
-        document
-            .getElementById("editReservationLastName")
-            .value
-            .trim();
-
     const people = Number(
         document.getElementById("editReservationPeople").value
     );
@@ -2173,21 +1834,19 @@ const durationMinutes = Number(
 
     if (
         !name ||
-        !lastName ||
         !date ||
         !time ||
         !Number.isInteger(people) ||
         people < 1 ||
         people > 30
     ) {
-        showDashboardNotice("Vyplň správně jméno, příjmení, počet osob, datum a čas.");
+        showDashboardNotice("Vyplň správně jméno, počet osob, datum a čas.");
         return;
     }
 
    const updatedReservation = {
   id,
   name,
-  last_name: lastName,
   people,
   date,
   time,
@@ -2322,7 +1981,7 @@ function exportReservations() {
   ];
 
   const rows = data.map(reservation => [
-    getReservationFullName(reservation),
+    reservation.name || "",
     reservation.people || "",
     reservation.date || "",
     reservation.time || "",
@@ -2549,6 +2208,7 @@ tableGroups =
 
     renderTables();
     renderFloorMap();
+    renderReservations(getFilteredReservations());
   } catch (error) {
     console.error(error);
 
@@ -2571,12 +2231,10 @@ function getTableStatus(tableId) {
     const now = new Date();
 
     const relevantReservations = reservations.filter(reservation => {
-        const directMatch = Number(reservation.table_id) === Number(tableId);
-        const group = reservation.table_group_id
-          ? tableGroups.find(item => Number(item.id) === Number(reservation.table_group_id))
-          : null;
-        const groupMatch = Array.isArray(group?.table_ids) && group.table_ids.map(Number).includes(Number(tableId));
-        return (directMatch || groupMatch) && (reservation.status || "Čeká") !== "Zrušeno";
+        return (
+            Number(reservation.table_id) === Number(tableId) &&
+            (reservation.status || "Čeká") !== "Zrušeno"
+        );
     });
 
     for (const reservation of relevantReservations) {
@@ -2778,14 +2436,8 @@ function handleTableClick(event, tableId) {
     document.getElementById("confirmMergeButton");
 
   if (mergeSelectionInfo) {
-    const selected = restaurantTables.filter(table =>
-      selectedTablesForMerge.includes(Number(table.id))
-    );
-    const names = selected.map(table => table.name || `Stůl ${table.id}`).join(" + ");
-    const capacity = selected.reduce((sum, table) => sum + Number(table.capacity || 0), 0);
-    mergeSelectionInfo.textContent = selected.length
-      ? `Vybráno: ${names} · ${capacity} míst`
-      : "Vybráno: 0 stolů";
+    mergeSelectionInfo.textContent =
+      `Vybráno: ${selectedTablesForMerge.length} stolů`;
   }
 
   if (confirmMergeButton) {
@@ -2930,7 +2582,7 @@ function openTable(tableId) {
 
     if (reservation) {
         document.getElementById("tableModalCapacity").innerHTML =
-            `👤 ${getReservationFullName(reservation)}<br>
+            `👤 ${reservation.name || "-"}<br>
              👥 ${reservation.people || "-"} osoby<br>
              🕒 ${reservation.time || "-"}<br>
              📞 ${reservation.phone || "-"}`;
@@ -3066,7 +2718,6 @@ function createReservationFromTable() {
 }
 async function saveNewReservation() {
     const name = document.getElementById("newName").value.trim();
-    const lastName = document.getElementById("newLastName").value.trim();
     const people = Number(document.getElementById("newPeople").value);
     const date = document.getElementById("newDate").value;
     const time = document.getElementById("newTime").value;
@@ -3078,8 +2729,8 @@ async function saveNewReservation() {
     const email = document.getElementById("newEmail").value.trim();
     const note = document.getElementById("newNote").value.trim();
 
-    if (!name || !lastName || !date || !time || !Number.isInteger(people) || people < 1) {
-        showDashboardNotice("Vyplň jméno, příjmení, počet osob, datum a čas.");
+    if (!name || !date || !time || !Number.isInteger(people) || people < 1) {
+        showDashboardNotice("Vyplň jméno, počet osob, datum a čas.");
         return;
     }
 
@@ -3138,7 +2789,6 @@ async function saveNewReservation() {
 
     const newReservation = {
         name,
-        last_name: lastName,
         people,
         date,
         time,
@@ -3179,7 +2829,6 @@ async function saveNewReservation() {
 
         [
             "newName",
-            "newLastName",
             "newPeople",
             "newDate",
             "newTime",
@@ -3531,6 +3180,18 @@ function getTableName(tableId) {
 }
 
 function renderTableSelect(reservation) {
+  if (reservation?.table_group_id) {
+    const label = getReservationTableLabel(reservation);
+    return `
+      <div
+        class="tableSelect tableGroupAssigned"
+        title="Tato rezervace používá spojenou skupinu stolů"
+      >
+        🔗 ${escapeHtml(label)}
+      </div>
+    `;
+  }
+
   const assignedId =
     reservation.table_id === null ||
     reservation.table_id === undefined
@@ -4646,12 +4307,12 @@ function renderCalendar() {
           data-reservation-id="${escapeHtml(r.id)}"
           data-duration="${event.duration}"
           onclick="handleCalendarReservationClick(event, '${r.id}')"
-          aria-label="Upravit rezervaci ${escapeHtml(getReservationFullName(r))}" 
+          aria-label="Upravit rezervaci ${escapeHtml(r.name || "")}" 
         >
           <span class="calendar-time">${escapeHtml(r.time || "")}</span>
 
           <span class="calendar-info">
-            <strong>${escapeHtml(getReservationFullName(r))}</strong>
+            <strong>${escapeHtml(r.name || "Bez jména")}</strong>
             <small>👥 ${escapeHtml(r.people || 0)} osob${tableName}</small>
           </span>
 
@@ -4765,21 +4426,6 @@ function canAccessSection(sectionId) {
   return allowed.has(sectionId);
 }
 
-function updateReservationNotificationVisibility(sectionId = null) {
-  const wrapper = document.getElementById("reservationNotificationWrapper");
-  const overview = document.getElementById("reservationAlertOverview");
-  const section = sectionId || (window.location.hash.replace("#", "") || "prehled");
-  const roleCanSeeNotifications = ["owner", "manager"].includes(String(currentUserRole || "").toLowerCase());
-  const shouldShow = roleCanSeeNotifications && section === "prehled";
-
-  if (wrapper) wrapper.style.display = shouldShow ? "" : "none";
-  if (overview) overview.style.display = shouldShow ? "" : "none";
-
-  if (!shouldShow) {
-    document.getElementById("reservationNotificationPanel")?.classList.remove("open");
-  }
-}
-
 function applyRolePermissions() {
   document.querySelectorAll('.sidebar nav a[data-section]').forEach(link => {
     const section = link.dataset.section;
@@ -4788,8 +4434,6 @@ function applyRolePermissions() {
 
   const badge = document.getElementById('currentUserRoleBadge');
   if (badge) badge.textContent = roleLabel(currentUserRole);
-
-  updateReservationNotificationVisibility();
 
   // Tým smí spravovat pouze majitel. Zobrazení samotné sekce ale vždy
   // řídí showDashboardSection(), aby po změně role nezůstával starý stav.
@@ -5033,8 +4677,6 @@ function showDashboardSection(sectionId, options = {}) {
     document.querySelectorAll(".sidebar nav a").forEach(link => {
         link.classList.toggle("active", link.dataset.section === resolvedSection);
     });
-
-    updateReservationNotificationVisibility(resolvedSection);
 
     const targetHash = `#${resolvedSection}`;
     if (window.location.hash !== targetHash) {
@@ -5434,10 +5076,10 @@ function renderOpeningHours() {
     const row = byDay.get(day) || { is_open: true, open_time: "10:00", close_time: "22:00" };
     return `<div class="opening-day" data-day="${day}">
       <strong>${name}</strong>
-      <label class="opening-toggle"><input class="day-open" type="checkbox" ${row.is_open ? "checked" : ""}> <span>Otevřeno</span></label>
-      <div class="opening-time-field"><span>Od</span><input class="day-from" type="time" value="${String(row.open_time).slice(0,5)}"></div>
-      <span class="opening-time-separator">–</span>
-      <div class="opening-time-field"><span>Do</span><input class="day-to" type="time" value="${String(row.close_time).slice(0,5)}"></div>
+      <label><input class="day-open" type="checkbox" ${row.is_open ? "checked" : ""}> Otevřeno</label>
+      <input class="day-from" type="time" value="${String(row.open_time).slice(0,5)}">
+      <span>–</span>
+      <input class="day-to" type="time" value="${String(row.close_time).slice(0,5)}">
     </div>`;
   }).join("");
 }
