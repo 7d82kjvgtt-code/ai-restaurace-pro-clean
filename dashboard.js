@@ -2778,8 +2778,14 @@ function handleTableClick(event, tableId) {
     document.getElementById("confirmMergeButton");
 
   if (mergeSelectionInfo) {
-    mergeSelectionInfo.textContent =
-      `Vybráno: ${selectedTablesForMerge.length} stolů`;
+    const selected = restaurantTables.filter(table =>
+      selectedTablesForMerge.includes(Number(table.id))
+    );
+    const names = selected.map(table => table.name || `Stůl ${table.id}`).join(" + ");
+    const capacity = selected.reduce((sum, table) => sum + Number(table.capacity || 0), 0);
+    mergeSelectionInfo.textContent = selected.length
+      ? `Vybráno: ${names} · ${capacity} míst`
+      : "Vybráno: 0 stolů";
   }
 
   if (confirmMergeButton) {
