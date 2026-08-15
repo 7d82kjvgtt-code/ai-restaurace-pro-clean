@@ -782,6 +782,13 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function getReservationGuestName(reservation) {
+  return [reservation?.name, reservation?.last_name]
+    .map(value => String(value || "").trim())
+    .filter(Boolean)
+    .join(" ") || "-";
+}
+
 /* =========================================================
    REZERVACE
 ========================================================= */
@@ -885,7 +892,7 @@ function refreshReservationNotifications() {
   }
 
   list.innerHTML = unread.map(reservation => {
-    const fullName = [reservation.name, reservation.last_name].filter(Boolean).join(" ") || "Nový host";
+    const fullName = getReservationGuestName(reservation) === "-" ? "Nový host" : getReservationGuestName(reservation);
     const tableLabel = getReservationTableLabel(reservation);
     const people = Number(reservation.people || 0);
     return `
@@ -902,7 +909,7 @@ function refreshReservationNotifications() {
   if (title) title.textContent = count === 1 ? "1 nová rezervace" : `${count} nových rezervací`;
   if (text) {
     const newest = unread[0];
-    const guest = [newest.name, newest.last_name].filter(Boolean).join(" ") || "Nový host";
+    const guest = getReservationGuestName(newest) === "-" ? "Nový host" : getReservationGuestName(newest);
     text.textContent = `${guest} · ${String(newest.time || "").slice(0,5)} · ${getReservationTableLabel(newest)}`;
   }
 }
@@ -1056,7 +1063,7 @@ function renderUpcomingReservations() {
           <small>${escapeHtml(formatUpcomingTime(minutesUntil))}</small>
         </span>
         <span class="upcoming-main-info">
-          <strong>${escapeHtml(reservation.name || "Bez jména")}</strong>
+          <strong>${escapeHtml(getReservationGuestName(reservation) === "-" ? "Bez jména" : getReservationGuestName(reservation))}</strong>
           <small>${people} ${people === 1 ? "osoba" : people >= 2 && people <= 4 ? "osoby" : "osob"} · ${escapeHtml(getReservationTableLabel(reservation))}</small>
         </span>
         <span class="upcoming-status">${isImminent ? "Brzy přijde" : escapeHtml(getCalendarStatusLabel(reservation.status))}</span>
@@ -1073,7 +1080,7 @@ function renderUpcomingReservations() {
     shownUpcomingReservationAlerts.add(alertKey);
     const tableLabel = getReservationTableLabel(reservation);
     showDashboardNotice(
-      `${formatUpcomingTime(minutesUntil)} přijde ${reservation.name || "rezervace"} – ${reservation.people || 0} osob, ${tableLabel}.`,
+      `${formatUpcomingTime(minutesUntil)} přijde ${getReservationGuestName(reservation) === "-" ? "rezervace" : getReservationGuestName(reservation)} – ${reservation.people || 0} osob, ${tableLabel}.`,
       "info"
     );
   });
@@ -1131,7 +1138,7 @@ function renderReservations(data) {
 
           <td data-label="Jméno">
             ${escapeHtml(
-              reservation.name || "-"
+              getReservationGuestName(reservation)
             )}
           </td>
 
@@ -1738,6 +1745,7 @@ function getFilteredReservations() {
 
     const text = [
       reservation.name,
+      reservation.last_name,
       reservation.phone,
       reservation.email,
       reservation.note,
@@ -2114,7 +2122,7 @@ function exportReservations() {
   ];
 
   const rows = data.map(reservation => [
-    reservation.name || "",
+    getReservationGuestName(reservation) === "-" ? "" : getReservationGuestName(reservation),
     reservation.people || "",
     reservation.date || "",
     reservation.time || "",
@@ -2715,7 +2723,7 @@ function openTable(tableId) {
 
     if (reservation) {
         document.getElementById("tableModalCapacity").innerHTML =
-            `👤 ${reservation.name || "-"}<br>
+            `👤 ${getReservationGuestName(reservation)}<br>
              👥 ${reservation.people || "-"} osoby<br>
              🕒 ${reservation.time || "-"}<br>
              📞 ${reservation.phone || "-"}`;
