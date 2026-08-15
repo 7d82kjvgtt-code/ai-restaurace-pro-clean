@@ -1125,12 +1125,12 @@ function isCancelledReservation(reservation) {
 }
 
 function getReservationTableLabel(reservation) {
+  if (reservation?.table_group_id) {
+    const group = tableGroups.find(item => Number(item.id) === Number(reservation.table_group_id));
+    if (group?.name) return group.name;
+  }
   if (!reservation?.table_id) return "Bez stolu";
-
-  const table = restaurantTables.find(
-    item => Number(item.id) === Number(reservation.table_id)
-  );
-
+  const table = restaurantTables.find(item => Number(item.id) === Number(reservation.table_id));
   return table?.name || `Stůl ${reservation.table_id}`;
 }
 
@@ -2571,10 +2571,12 @@ function getTableStatus(tableId) {
     const now = new Date();
 
     const relevantReservations = reservations.filter(reservation => {
-        return (
-            Number(reservation.table_id) === Number(tableId) &&
-            (reservation.status || "Čeká") !== "Zrušeno"
-        );
+        const directMatch = Number(reservation.table_id) === Number(tableId);
+        const group = reservation.table_group_id
+          ? tableGroups.find(item => Number(item.id) === Number(reservation.table_group_id))
+          : null;
+        const groupMatch = Array.isArray(group?.table_ids) && group.table_ids.map(Number).includes(Number(tableId));
+        return (directMatch || groupMatch) && (reservation.status || "Čeká") !== "Zrušeno";
     });
 
     for (const reservation of relevantReservations) {

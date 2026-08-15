@@ -413,8 +413,9 @@ async function loadAvailableReservationTimes() {
     const urls = [
       `${SUPABASE_URL}/rest/v1/opening_hours?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&day_of_week=eq.${dayOfWeek}&select=is_open,open_time,close_time`,
       `${SUPABASE_URL}/rest/v1/blocked_times?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&select=start_time,end_time,reason`,
-      `${SUPABASE_URL}/rest/v1/restaurant_tables?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&active=eq.true&capacity=gte.${people}&select=id,name,capacity,active&order=capacity.asc`,
-      `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,people,table_id,status`
+      `${SUPABASE_URL}/rest/v1/restaurant_tables?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&active=eq.true&select=id,name,capacity,active,room&order=capacity.asc`,
+      `${SUPABASE_URL}/rest/v1/table_groups?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&select=id,name,table_ids,total_capacity,room&order=total_capacity.asc`,
+      `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,people,table_id,table_group_id,status`
     ];
 
     const responses = await Promise.all(urls.map(url => fetch(url, { headers, cache: "no-store" })));
@@ -422,7 +423,7 @@ async function loadAvailableReservationTimes() {
       throw new Error("Nepodařilo se načíst dostupné časy.");
     }
 
-    const [hoursRows, blocks, tables, reservations] = await Promise.all(responses.map(response => response.json()));
+    const [hoursRows, blocks, tables, tableGroupsPublic, reservations] = await Promise.all(responses.map(response => response.json()));
     const hours = hoursRows[0] || { is_open: true, open_time: "10:00:00", close_time: "22:00:00" };
 
     if (!hours.is_open) {
@@ -431,9 +432,11 @@ async function loadAvailableReservationTimes() {
       return;
     }
 
-    if (!tables.length) {
+    const hasSingleCandidate = tables.some(table => Number(table.capacity) >= people);
+    const hasGroupCandidate = tableGroupsPublic.some(group => Number(group.total_capacity) >= people && Array.isArray(group.table_ids) && group.table_ids.length >= 2);
+    if (!hasSingleCandidate && !hasGroupCandidate) {
       timeSelect.innerHTML = '<option value="">Není vhodný stůl</option>';
-      setAvailableTimesStatus(`Pro ${people} osob není k dispozici vhodný aktivní stůl.`, "error");
+      setAvailableTimesStatus(`Pro ${people} osob není k dispozici vhodný stůl ani povolená skupina stolů.`, "error");
       return;
     }
 
@@ -456,14 +459,27 @@ async function loadAvailableReservationTimes() {
       });
       if (blocked) continue;
 
-      const availableTable = tables.find(table => !reservations.some(reservation => {
-        if (Number(reservation.table_id) !== Number(table.id)) return false;
+      const groupById = new Map(tableGroupsPublic.map(group => [Number(group.id), group]));
+      const occupiedIds = new Set();
+      reservations.forEach(reservation => {
         const reservationStart = timeToMinutes(reservation.time);
         const reservationEnd = reservationStart + getEffectiveReservationDuration(reservation);
-        return start < reservationEnd && reservationStart < end;
-      }));
+        if (!(start < reservationEnd && reservationStart < end)) return;
+        if (reservation.table_group_id) {
+          const group = groupById.get(Number(reservation.table_group_id));
+          (Array.isArray(group?.table_ids) ? group.table_ids : []).forEach(id => occupiedIds.add(Number(id)));
+        } else if (reservation.table_id) occupiedIds.add(Number(reservation.table_id));
+      });
 
-      if (availableTable) {
+      const availableTable = tables
+        .filter(table => Number(table.capacity) >= people)
+        .find(table => !occupiedIds.has(Number(table.id)));
+
+      const availableGroup = !availableTable && tableGroupsPublic
+        .filter(group => Number(group.total_capacity) >= people && Array.isArray(group.table_ids) && group.table_ids.length >= 2)
+        .find(group => group.table_ids.map(Number).every(id => !occupiedIds.has(id)));
+
+      if (availableTable || availableGroup) {
         slots.push(`${String(Math.floor(start / 60)).padStart(2, "0")}:${String(start % 60).padStart(2, "0")}`);
       }
     }
