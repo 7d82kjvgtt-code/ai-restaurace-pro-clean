@@ -142,6 +142,22 @@ async function getAvailableTimesOnServer(req, res) {
 
     const duration = getDurationByPeople(peopleNumber, settings);
     const minAdvanceMinutes = Math.max(0, Number(settings.min_advance_minutes ?? 60));
+    const maxAdvanceDays = Math.max(1, Number(settings.max_advance_days || 30));
+    const restaurantNowForDateLimit = getRestaurantNow();
+    const maxAllowedDate = new Date(`${restaurantNowForDateLimit.date}T12:00:00`);
+    maxAllowedDate.setDate(maxAllowedDate.getDate() + maxAdvanceDays);
+    const maxAllowedDateString = [
+      maxAllowedDate.getFullYear(),
+      String(maxAllowedDate.getMonth() + 1).padStart(2, "0"),
+      String(maxAllowedDate.getDate()).padStart(2, "0")
+    ].join("-");
+
+    if (date > maxAllowedDateString) {
+      return res.status(400).json({
+        error: `Rezervaci lze vytvořit maximálně ${maxAdvanceDays} dní dopředu.`
+      });
+    }
+
     const singleCandidates = (Array.isArray(tables) ? tables : [])
       .filter(table => Number(table.capacity) >= peopleNumber);
     const groupCandidates = (Array.isArray(tableGroups) ? tableGroups : [])
@@ -248,10 +264,26 @@ async function createReservationOnServer(req, res) {
     const settings = Array.isArray(settingsRows) && settingsRows[0] ? settingsRows[0] : {};
     const durationMinutes = getDurationByPeople(peopleNumber, settings);
     const minAdvanceMinutes = Math.max(0, Number(settings.min_advance_minutes ?? 60));
+    const maxAdvanceDays = Math.max(1, Number(settings.max_advance_days || 30));
     const minPeople = Math.max(1, Number(settings.min_people || 1));
     const maxPeople = Math.max(minPeople, Number(settings.max_people || 20));
     const restaurantNow = getRestaurantNow();
     const requestedStartMinutes = timeToMinutes(time);
+
+    const maxAllowedDate = new Date(`${restaurantNow.date}T12:00:00`);
+    maxAllowedDate.setDate(maxAllowedDate.getDate() + maxAdvanceDays);
+    const maxAllowedDateString = [
+      maxAllowedDate.getFullYear(),
+      String(maxAllowedDate.getMonth() + 1).padStart(2, "0"),
+      String(maxAllowedDate.getDate()).padStart(2, "0")
+    ].join("-");
+
+    if (date > maxAllowedDateString) {
+      return res.status(400).json({
+        error: `Rezervaci lze vytvořit maximálně ${maxAdvanceDays} dní dopředu.`,
+        apiVersion: "groups-v7-date-limit"
+      });
+    }
 
     if (!Number.isInteger(peopleNumber) || peopleNumber < minPeople || peopleNumber > maxPeople) {
       return res.status(400).json({
