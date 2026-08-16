@@ -2,6 +2,7 @@ const RESEND_API_URL = "https://api.resend.com/emails";
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://decpnnbaejxjbpmyjocs.supabase.co";
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const PUBLIC_RESTAURANT_ID = 1;
+const RESTAURANT_TIME_ZONE = process.env.RESTAURANT_TIME_ZONE || "Europe/Prague";
 
 function escapeHtml(value = "") {
   return String(value)
@@ -61,6 +62,29 @@ async function supabaseJson(path, options = {}) {
 function timeToMinutes(value) {
   const [h, m] = String(value || "00:00").split(":").map(Number);
   return (Number(h) * 60) + Number(m);
+}
+
+function getRestaurantNow(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: RESTAURANT_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(date);
+
+  const values = Object.fromEntries(
+    parts
+      .filter(part => part.type !== "literal")
+      .map(part => [part.type, part.value])
+  );
+
+  return {
+    date: `${values.year}-${values.month}-${values.day}`,
+    minutes: (Number(values.hour) * 60) + Number(values.minute)
+  };
 }
 
 function getDurationByPeople(people, settings = {}) {
@@ -138,13 +162,16 @@ async function getAvailableTimesOnServer(req, res) {
     const groupById = new Map((Array.isArray(tableGroups) ? tableGroups : []).map(group => [Number(group.id), group]));
     const openMinutes = timeToMinutes(hours.open_time);
     const closeMinutes = timeToMinutes(hours.close_time);
+    const restaurantNow = getRestaurantNow();
     const slots = [];
 
     for (let start = openMinutes; start + duration <= closeMinutes; start += 30) {
       const slotTime = `${String(Math.floor(start / 60)).padStart(2, "0")}:${String(start % 60).padStart(2, "0")}`;
-      const slotDateTime = new Date(`${date}T${slotTime}:00`);
-      const earliestAllowed = Date.now() + (minAdvanceMinutes * 60000);
-      if (slotDateTime.getTime() < earliestAllowed) continue;
+
+      // Vercel běží typicky v UTC. Rezervační časy jsou ale lokální časy restaurace.
+      // Proto porovnáváme "dnes + čas" přímo v časové zóně restaurace.
+      if (date < restaurantNow.date) continue;
+      if (date === restaurantNow.date && start < (restaurantNow.minutes + minAdvanceMinutes)) continue;
 
       const end = start + duration;
       const blocked = (Array.isArray(blocks) ? blocks : []).some(block => {
@@ -220,6 +247,28 @@ async function createReservationOnServer(req, res) {
     );
     const settings = Array.isArray(settingsRows) && settingsRows[0] ? settingsRows[0] : {};
     const durationMinutes = getDurationByPeople(peopleNumber, settings);
+    const minAdvanceMinutes = Math.max(0, Number(settings.min_advance_minutes ?? 60));
+    const minPeople = Math.max(1, Number(settings.min_people || 1));
+    const maxPeople = Math.max(minPeople, Number(settings.max_people || 20));
+    const restaurantNow = getRestaurantNow();
+    const requestedStartMinutes = timeToMinutes(time);
+
+    if (!Number.isInteger(peopleNumber) || peopleNumber < minPeople || peopleNumber > maxPeople) {
+      return res.status(400).json({
+        error: `Počet osob musí být od ${minPeople} do ${maxPeople}.`,
+        apiVersion: "groups-v6-timezone"
+      });
+    }
+
+    if (
+      date < restaurantNow.date ||
+      (date === restaurantNow.date && requestedStartMinutes < (restaurantNow.minutes + minAdvanceMinutes))
+    ) {
+      return res.status(409).json({
+        error: `Rezervaci je potřeba vytvořit alespoň ${minAdvanceMinutes} minut předem.`,
+        apiVersion: "groups-v6-timezone"
+      });
+    }
 
     const [tables, tableGroups] = await Promise.all([
       supabaseJson(
