@@ -86,6 +86,108 @@ function overlaps(a, b, settings) {
   return aStart < bEnd && bStart < aEnd;
 }
 
+
+async function getAvailableTimesOnServer(req, res) {
+  const { people, date = "" } = req.body || {};
+  const peopleNumber = Number(people);
+
+  if (!date || !Number.isInteger(peopleNumber) || peopleNumber < 1) {
+    return res.status(400).json({ error: "Chybí datum nebo platný počet osob." });
+  }
+
+  try {
+    const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
+
+    const [settingsRows, hoursRows, blocks, tables, tableGroups, reservations] = await Promise.all([
+      supabaseJson(`/rest/v1/reservation_settings?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&select=*`, { method: "GET" }),
+      supabaseJson(`/rest/v1/opening_hours?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&day_of_week=eq.${dayOfWeek}&select=is_open,open_time,close_time`, { method: "GET" }),
+      supabaseJson(`/rest/v1/blocked_times?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&select=start_time,end_time,reason`, { method: "GET" }),
+      supabaseJson(`/rest/v1/restaurant_tables?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&active=eq.true&select=id,name,capacity,active,room&order=capacity.asc,id.asc`, { method: "GET" }),
+      supabaseJson(`/rest/v1/table_groups?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&select=id,name,table_ids,total_capacity,room&order=total_capacity.asc,id.asc`, { method: "GET" }),
+      supabaseJson(`/rest/v1/reservations?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,people,table_id,table_group_id,status`, { method: "GET" })
+    ]);
+
+    const settings = Array.isArray(settingsRows) && settingsRows[0] ? settingsRows[0] : {};
+    const hours = Array.isArray(hoursRows) && hoursRows[0]
+      ? hoursRows[0]
+      : { is_open: true, open_time: "10:00:00", close_time: "22:00:00" };
+
+    if (!hours.is_open) {
+      return res.status(200).json({ success: true, slots: [], message: "V tento den má restaurace zavřeno." });
+    }
+
+    const duration = getDurationByPeople(peopleNumber, settings);
+    const minAdvanceMinutes = Math.max(0, Number(settings.min_advance_minutes ?? 60));
+    const singleCandidates = (Array.isArray(tables) ? tables : [])
+      .filter(table => Number(table.capacity) >= peopleNumber);
+    const groupCandidates = (Array.isArray(tableGroups) ? tableGroups : [])
+      .filter(group =>
+        Number(group.total_capacity) >= peopleNumber &&
+        Array.isArray(group.table_ids) &&
+        group.table_ids.length >= 2
+      );
+
+    if (!singleCandidates.length && !groupCandidates.length) {
+      return res.status(200).json({
+        success: true,
+        slots: [],
+        message: `Pro ${peopleNumber} osob není k dispozici vhodný stůl ani povolená skupina stolů.`
+      });
+    }
+
+    const groupById = new Map((Array.isArray(tableGroups) ? tableGroups : []).map(group => [Number(group.id), group]));
+    const openMinutes = timeToMinutes(hours.open_time);
+    const closeMinutes = timeToMinutes(hours.close_time);
+    const slots = [];
+
+    for (let start = openMinutes; start + duration <= closeMinutes; start += 30) {
+      const slotTime = `${String(Math.floor(start / 60)).padStart(2, "0")}:${String(start % 60).padStart(2, "0")}`;
+      const slotDateTime = new Date(`${date}T${slotTime}:00`);
+      const earliestAllowed = Date.now() + (minAdvanceMinutes * 60000);
+      if (slotDateTime.getTime() < earliestAllowed) continue;
+
+      const end = start + duration;
+      const blocked = (Array.isArray(blocks) ? blocks : []).some(block => {
+        const blockStart = timeToMinutes(block.start_time);
+        const blockEnd = timeToMinutes(block.end_time);
+        return start < blockEnd && blockStart < end;
+      });
+      if (blocked) continue;
+
+      const draft = { date, time: slotTime, people: peopleNumber, duration_minutes: duration };
+      const occupiedIds = new Set();
+
+      (Array.isArray(reservations) ? reservations : []).forEach(existing => {
+        if (!overlaps(draft, existing, settings)) return;
+        if (existing.table_group_id) {
+          const existingGroup = groupById.get(Number(existing.table_group_id));
+          (Array.isArray(existingGroup?.table_ids) ? existingGroup.table_ids : [])
+            .forEach(id => occupiedIds.add(Number(id)));
+        } else if (existing.table_id) {
+          occupiedIds.add(Number(existing.table_id));
+        }
+      });
+
+      const availableTable = singleCandidates.find(table => !occupiedIds.has(Number(table.id))) || null;
+      const availableGroup = !availableTable
+        ? groupCandidates.find(group => group.table_ids.map(Number).every(id => !occupiedIds.has(id))) || null
+        : null;
+
+      if (availableTable || availableGroup) slots.push(slotTime);
+    }
+
+    return res.status(200).json({
+      success: true,
+      slots,
+      duration_minutes: duration,
+      message: slots.length ? `${slots.length} volných termínů` : "Pro zvolený den a počet osob už není volný termín."
+    });
+  } catch (error) {
+    console.error("Chyba při načítání volných časů:", error);
+    return res.status(500).json({ error: error.message || "Volné časy se nepodařilo načíst." });
+  }
+}
+
 async function createReservationOnServer(req, res) {
   const {
     name = "",
@@ -280,7 +382,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Povolena je pouze metoda POST." });
   }
 
-  // DŮLEŽITÉ: rezervace se zpracuje DŘÍV než jakákoli kontrola Resendu.
+  // Dostupné časy i rezervace se zpracují DŘÍV než jakákoli kontrola Resendu.
+  if (req.body?.action === "available-times") {
+    return getAvailableTimesOnServer(req, res);
+  }
+
   if (req.body?.action === "create-reservation") {
     return createReservationOnServer(req, res);
   }
