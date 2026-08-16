@@ -406,98 +406,43 @@ async function loadAvailableReservationTimes() {
 
   timeSelect.disabled = true;
   timeSelect.innerHTML = '<option value="">Načítám volné časy…</option>';
-  setAvailableTimesStatus("Kontroluji otevírací dobu a volné stoly…");
+  setAvailableTimesStatus("Kontroluji otevírací dobu a skutečně volné stoly…");
 
   try {
-    const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
-    const urls = [
-      `${SUPABASE_URL}/rest/v1/opening_hours?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&day_of_week=eq.${dayOfWeek}&select=is_open,open_time,close_time`,
-      `${SUPABASE_URL}/rest/v1/blocked_times?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&select=start_time,end_time,reason`,
-      `${SUPABASE_URL}/rest/v1/restaurant_tables?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&active=eq.true&select=id,name,capacity,active,room&order=capacity.asc`,
-      `${SUPABASE_URL}/rest/v1/table_groups?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&select=id,name,table_ids,total_capacity,room&order=total_capacity.asc`,
-      `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,people,table_id,table_group_id,status`
-    ];
+    // DŮLEŽITÉ: dostupnost počítá server se SERVICE ROLE klíčem.
+    // Veřejný Supabase klient nemusí kvůli RLS vidět všechny rezervace,
+    // a proto už o volných časech nerozhoduje přímo prohlížeč.
+    const response = await fetch("/api/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "available-times",
+        date,
+        people
+      })
+    });
 
-    const responses = await Promise.all(urls.map(url => fetch(url, { headers, cache: "no-store" })));
-    if (responses.some(response => !response.ok)) {
-      throw new Error("Nepodařilo se načíst dostupné časy.");
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || "Volné časy se nepodařilo načíst.");
     }
 
-    const [hoursRows, blocks, tables, tableGroupsPublic, reservations] = await Promise.all(responses.map(response => response.json()));
-    const hours = hoursRows[0] || { is_open: true, open_time: "10:00:00", close_time: "22:00:00" };
-
-    if (!hours.is_open) {
-      timeSelect.innerHTML = '<option value="">Tento den je zavřeno</option>';
-      setAvailableTimesStatus("V tento den má restaurace zavřeno.", "error");
-      return;
-    }
-
-    const hasSingleCandidate = tables.some(table => Number(table.capacity) >= people);
-    const hasGroupCandidate = tableGroupsPublic.some(group => Number(group.total_capacity) >= people && Array.isArray(group.table_ids) && group.table_ids.length >= 2);
-    if (!hasSingleCandidate && !hasGroupCandidate) {
-      timeSelect.innerHTML = '<option value="">Není vhodný stůl</option>';
-      setAvailableTimesStatus(`Pro ${people} osob není k dispozici vhodný stůl ani povolená skupina stolů.`, "error");
-      return;
-    }
-
-    const openMinutes = timeToMinutes(hours.open_time);
-    const closeMinutes = timeToMinutes(hours.close_time);
-    const duration = getPublicReservationDuration(people);
-    const now = new Date();
-    const slots = [];
-
-    for (let start = openMinutes; start + duration <= closeMinutes; start += 30) {
-      const slotTime = `${String(Math.floor(start / 60)).padStart(2, "0")}:${String(start % 60).padStart(2, "0")}`;
-      const slotDateTime = new Date(`${date}T${slotTime}:00`);
-      const earliestAllowed = Date.now() + (Number(publicReservationSettings.min_advance_minutes || 0) * 60000);
-      if (slotDateTime.getTime() < earliestAllowed) continue;
-      const end = start + duration;
-      const blocked = blocks.some(block => {
-        const blockStart = timeToMinutes(block.start_time);
-        const blockEnd = timeToMinutes(block.end_time);
-        return start < blockEnd && blockStart < end;
-      });
-      if (blocked) continue;
-
-      const groupById = new Map(tableGroupsPublic.map(group => [Number(group.id), group]));
-      const occupiedIds = new Set();
-      reservations.forEach(reservation => {
-        const reservationStart = timeToMinutes(reservation.time);
-        const reservationEnd = reservationStart + getEffectiveReservationDuration(reservation);
-        if (!(start < reservationEnd && reservationStart < end)) return;
-        if (reservation.table_group_id) {
-          const group = groupById.get(Number(reservation.table_group_id));
-          (Array.isArray(group?.table_ids) ? group.table_ids : []).forEach(id => occupiedIds.add(Number(id)));
-        } else if (reservation.table_id) occupiedIds.add(Number(reservation.table_id));
-      });
-
-      const availableTable = tables
-        .filter(table => Number(table.capacity) >= people)
-        .find(table => !occupiedIds.has(Number(table.id)));
-
-      const availableGroup = !availableTable && tableGroupsPublic
-        .filter(group => Number(group.total_capacity) >= people && Array.isArray(group.table_ids) && group.table_ids.length >= 2)
-        .find(group => group.table_ids.map(Number).every(id => !occupiedIds.has(id)));
-
-      if (availableTable || availableGroup) {
-        slots.push(`${String(Math.floor(start / 60)).padStart(2, "0")}:${String(start % 60).padStart(2, "0")}`);
-      }
-    }
-
+    const slots = Array.isArray(data.slots) ? data.slots : [];
     if (!slots.length) {
       timeSelect.innerHTML = '<option value="">Žádný volný čas</option>';
-      setAvailableTimesStatus("Pro zvolený den a počet osob už není volný termín.", "error");
+      setAvailableTimesStatus(data.message || "Pro zvolený den a počet osob už není volný termín.", "error");
       return;
     }
 
-    timeSelect.innerHTML = '<option value="">Vyber čas</option>' + slots.map(slot => `<option value="${slot}">${slot}</option>`).join("");
+    timeSelect.innerHTML = '<option value="">Vyber čas</option>' +
+      slots.map(slot => `<option value="${slot}">${slot}</option>`).join("");
     timeSelect.disabled = false;
     if (slots.includes(previousValue)) timeSelect.value = previousValue;
-    setAvailableTimesStatus(`${slots.length} volných termínů`, "success");
+    setAvailableTimesStatus(data.message || `${slots.length} volných termínů`, "success");
   } catch (error) {
     console.error(error);
     timeSelect.innerHTML = '<option value="">Časy se nepodařilo načíst</option>';
-    setAvailableTimesStatus("Volné časy se nepodařilo načíst. Zkus to znovu.", "error");
+    setAvailableTimesStatus(error.message || "Volné časy se nepodařilo načíst. Zkus to znovu.", "error");
   }
 }
 
