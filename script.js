@@ -404,6 +404,20 @@ async function loadAvailableReservationTimes() {
     return;
   }
 
+  const maxAllowedDate = localDateString(
+    addLocalDays(new Date(), publicReservationSettings.max_advance_days)
+  );
+
+  if (date > maxAllowedDate) {
+    timeSelect.innerHTML = '<option value="">Datum je mimo povolený rozsah</option>';
+    timeSelect.disabled = true;
+    setAvailableTimesStatus(
+      `Rezervaci lze vytvořit maximálně ${publicReservationSettings.max_advance_days} dní dopředu.`,
+      "error"
+    );
+    return;
+  }
+
   timeSelect.disabled = true;
   timeSelect.innerHTML = '<option value="">Načítám volné časy…</option>';
   setAvailableTimesStatus("Kontroluji otevírací dobu a skutečně volné stoly…");
