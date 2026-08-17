@@ -386,8 +386,16 @@ function setAvailableTimesStatus(message, type = "info") {
   status.dataset.type = type;
 }
 
+let availabilityRequestSequence = 0;
+let availabilityAbortController = null;
+
 async function loadAvailableReservationTimes() {
+  const requestId = ++availabilityRequestSequence;
+  if (availabilityAbortController) availabilityAbortController.abort();
+  availabilityAbortController = new AbortController();
+
   await loadPublicReservationSettings();
+  if (requestId !== availabilityRequestSequence) return;
   const dateInput = document.getElementById("datum");
   const peopleInput = document.getElementById("osoby");
   const timeSelect = document.getElementById("cas");
@@ -428,13 +436,21 @@ async function loadAvailableReservationTimes() {
     // a proto už o volných časech nerozhoduje přímo prohlížeč.
     const response = await fetch("/api/send-email", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache"
+      },
+      cache: "no-store",
+      signal: availabilityAbortController.signal,
       body: JSON.stringify({
         action: "available-times",
         date,
-        people
+        people,
+        _ts: Date.now()
       })
     });
+
+    if (requestId !== availabilityRequestSequence) return;
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -454,6 +470,7 @@ async function loadAvailableReservationTimes() {
     if (slots.includes(previousValue)) timeSelect.value = previousValue;
     setAvailableTimesStatus(data.message || `${slots.length} volných termínů`, "success");
   } catch (error) {
+    if (error?.name === "AbortError" || requestId !== availabilityRequestSequence) return;
     console.error(error);
     timeSelect.innerHTML = '<option value="">Časy se nepodařilo načíst</option>';
     setAvailableTimesStatus(error.message || "Volné časy se nepodařilo načíst. Zkus to znovu.", "error");
