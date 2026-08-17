@@ -3153,8 +3153,21 @@ async function saveTable() {
       editingTableId !== null;
 
     const url = editing
-      ? `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${editingTableId}`
+      ? `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${editingTableId}&restaurant_id=eq.${currentRestaurantId}`
       : `${SUPABASE_URL}/rest/v1/restaurant_tables`;
+
+    const tablePayload = {
+      name,
+      capacity,
+      note,
+      active
+    };
+
+    // Při vytvoření musí být stůl vždy navázaný na aktuální restauraci.
+    // Bez restaurant_id Supabase insert selže (a RLS by ho stejně neměl pustit).
+    if (!editing) {
+      tablePayload.restaurant_id = currentRestaurantId;
+    }
 
     const response = await authorizedFetch(
       url,
@@ -3165,12 +3178,7 @@ async function saveTable() {
         headers: getHeaders({
           Prefer: "return=minimal"
         }),
-        body: JSON.stringify({
-          name,
-          capacity,
-          note,
-          active
-        })
+        body: JSON.stringify(tablePayload)
       }
     );
 
