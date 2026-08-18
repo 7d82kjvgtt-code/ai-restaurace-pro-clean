@@ -1458,20 +1458,70 @@ document.getElementById("historyActionFilter")?.addEventListener("change", rende
    ZÁKAZNÍCI / STÁLÍ HOSTÉ
 ========================================================= */
 function normalizeCustomerPhone(value) {
-  return String(value || "").replace(/\D/g, "");
+  let digits = String(value || "").replace(/\D/g, "");
+
+  // České číslo bereme stejně ve tvarech 608123456, +420 608 123 456
+  // i 00420 608 123 456. U ostatních zemí prefix ponecháváme.
+  if (digits.startsWith("00420") && digits.length === 14) {
+    digits = digits.slice(5);
+  } else if (digits.startsWith("420") && digits.length === 12) {
+    digits = digits.slice(3);
+  }
+
+  return digits;
+}
+
+function normalizeCustomerEmail(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
 function getCustomerKey(reservation) {
-  const email = String(reservation?.email || "").trim().toLowerCase();
   const phone = normalizeCustomerPhone(reservation?.phone);
-  const name = String(reservation?.name || "").trim().toLowerCase();
-  if (email) return `email:${email}`;
+  const email = normalizeCustomerEmail(reservation?.email);
+
+  // CRM identita: telefon má vždy přednost. E-mail používáme jen tehdy,
+  // když telefon chybí. Podle jména zákazníky nikdy neslučujeme.
   if (phone) return `phone:${phone}`;
-  return `name:${name}`;
+  if (email) return `email:${email}`;
+
+  // Rezervace bez telefonu i e-mailu zůstanou samostatné.
+  return `reservation:${reservation?.id ?? Math.random().toString(36).slice(2)}`;
 }
 
 function getCustomerProfile(customerKey) {
   return customerProfiles.find(item => item.customer_key === customerKey) || null;
+}
+
+function getCustomerProfileForCustomer(customer) {
+  const exact = getCustomerProfile(customer?.key);
+  if (exact) return exact;
+
+  const phone = normalizeCustomerPhone(customer?.phone);
+  if (phone) {
+    const byPhone = customerProfiles.find(item =>
+      normalizeCustomerPhone(item?.phone) === phone
+    );
+    if (byPhone) return byPhone;
+
+    // Kompatibilita se starší verzí CRM, která profil klíčovala e-mailem
+    // i v případech, kdy byl telefon vyplněný.
+    const email = normalizeCustomerEmail(customer?.email);
+    if (email) {
+      const legacyByEmailKey = customerProfiles.find(item =>
+        item?.customer_key === `email:${email}`
+      );
+      if (legacyByEmailKey) return legacyByEmailKey;
+    }
+
+    return null;
+  }
+
+  const email = normalizeCustomerEmail(customer?.email);
+  if (!email) return null;
+  return customerProfiles.find(item =>
+    normalizeCustomerEmail(item?.email) === email ||
+    item?.customer_key === `email:${email}`
+  ) || null;
 }
 
 function buildCustomers() {
@@ -1504,7 +1554,7 @@ function buildCustomers() {
     const sorted = [...customer.reservations].sort((a, b) => {
       return String(`${b.date || ""} ${b.time || ""}`).localeCompare(String(`${a.date || ""} ${a.time || ""}`));
     });
-    const profile = getCustomerProfile(customer.key);
+    const profile = getCustomerProfileForCustomer(customer);
     const completedOrActive = sorted.filter(item => !isCancelledReservation(item));
 
     return {
@@ -1656,7 +1706,7 @@ async function saveCustomerProfile(customerKey, changes) {
   const customer = buildCustomers().find(item => item.key === customerKey);
   if (!customer) return;
 
-  const existing = getCustomerProfile(customerKey);
+  const existing = getCustomerProfileForCustomer(customer);
   const payload = {
     restaurant_id: Number(currentRestaurantId),
     customer_key: customerKey,
