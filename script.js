@@ -9,9 +9,50 @@ const headers = {
 
 let menu = [];
 
+function resolvePublicRestaurantSlug() {
+  const fromQuery = new URLSearchParams(window.location.search)
+    .get("restaurant")
+    ?.trim();
 
-const PUBLIC_RESTAURANT_ID = 1;
-console.info("[AI Restaurace PRO] TABLE-COLLISION-FIX vFinal loaded");
+  if (fromQuery) return fromQuery;
+
+  const routeMatch = window.location.pathname.match(/^\/r\/([^/?#]+)/);
+  if (routeMatch?.[1]) {
+    try {
+      return decodeURIComponent(routeMatch[1]).trim();
+    } catch (_) {
+      return routeMatch[1].trim();
+    }
+  }
+
+  return "";
+}
+
+const PUBLIC_RESTAURANT_SLUG = resolvePublicRestaurantSlug();
+
+async function publicRpc(functionName, body = {}) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `RPC ${functionName} selhalo.`);
+  }
+
+  return response.json();
+}
+
+function requirePublicRestaurantSlug() {
+  if (!PUBLIC_RESTAURANT_SLUG) {
+    throw new Error("V odkazu chybí restaurace. Otevři veřejnou stránku přes /r/slug nebo ?restaurant=slug.");
+  }
+  return PUBLIC_RESTAURANT_SLUG;
+}
+
+console.info("[AI Restaurace PRO] public slug flow loaded", PUBLIC_RESTAURANT_SLUG || "missing-slug");
 const DEFAULT_PUBLIC_RESERVATION_SETTINGS = {
   duration_1_2: 90,
   duration_3_4: 120,
@@ -62,14 +103,16 @@ function applyPublicReservationSettingsToForm() {
 
 async function loadPublicReservationSettings(force = false) {
   if (publicReservationSettingsLoaded && !force) return publicReservationSettings;
+
   try {
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/reservation_settings?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&select=*`,
-      { headers }
-    );
-    if (!response.ok) throw new Error(await response.text());
-    const rows = await response.json();
-    const row = rows[0] || {};
+    const slug = requirePublicRestaurantSlug();
+    const rows = await publicRpc("get_public_reservation_settings", { p_slug: slug });
+    const row = Array.isArray(rows) ? (rows[0] || {}) : (rows || {});
+
+    if (!row || Object.keys(row).length === 0) {
+      throw new Error("Restaurace nemá veřejné nastavení rezervací.");
+    }
+
     publicReservationSettings = {
       duration_1_2: Math.max(30, Number(row.duration_1_2 || 90)),
       duration_3_4: Math.max(30, Number(row.duration_3_4 || 120)),
@@ -81,9 +124,11 @@ async function loadPublicReservationSettings(force = false) {
       max_people: Math.max(1, Number(row.max_people || 20))
     };
   } catch (error) {
-    console.warn("Používám výchozí nastavení rezervací:", error);
+    console.error("Veřejné nastavení rezervací se nepodařilo načíst:", error);
     publicReservationSettings = { ...DEFAULT_PUBLIC_RESERVATION_SETTINGS };
+    showPublicReservationNotice?.(error.message || "Restauraci se nepodařilo načíst.");
   }
+
   publicReservationSettingsLoaded = true;
   applyPublicReservationSettingsToForm();
   return publicReservationSettings;
@@ -124,83 +169,35 @@ function publicReservationsOverlap(first, second) {
   return firstStart < secondEnd && secondStart < firstEnd;
 }
 
-async function findBestPublicTable({ people, date, time, durationMinutes }) {
-  const tablesUrl =
-    `${SUPABASE_URL}/rest/v1/restaurant_tables` +
-    `?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}` +
-    `&active=eq.true` +
-    `&capacity=gte.${Number(people)}` +
-    `&select=id,name,capacity,active` +
-    `&order=capacity.asc`;
+async function findBestPublicTable({ people }) {
+  const slug = requirePublicRestaurantSlug();
+  const rows = await publicRpc("get_public_restaurant_tables", { p_slug: slug });
+  const tables = Array.isArray(rows) ? rows : [];
 
-  const reservationsUrl =
-    `${SUPABASE_URL}/rest/v1/reservations` +
-    `?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}` +
-    `&date=eq.${encodeURIComponent(date)}` +
-    `&status=neq.${encodeURIComponent("Zrušeno")}` +
-    `&select=id,date,time,duration_minutes,people,table_id,status`;
-
-  const [tablesResponse, reservationsResponse] = await Promise.all([
-    fetch(tablesUrl, { headers }),
-    fetch(reservationsUrl, { headers, cache: "no-store" })
-  ]);
-
-  if (!tablesResponse.ok || !reservationsResponse.ok) {
-    const tablesError = tablesResponse.ok
-      ? ""
-      : await tablesResponse.text();
-    const reservationsError = reservationsResponse.ok
-      ? ""
-      : await reservationsResponse.text();
-
-    console.error("Chyba automatického výběru stolu:", {
-      tablesError,
-      reservationsError
-    });
-
-    throw new Error("Nepodařilo se ověřit dostupnost stolů.");
-  }
-
-  const tables = await tablesResponse.json();
-  const reservationsForDate = await reservationsResponse.json();
-  const draft = {
-    date,
-    time,
-    duration_minutes: Number(durationMinutes || getPublicReservationDuration(people))
-  };
-
-  return tables.find(table => {
-    return !reservationsForDate.some(reservation => {
-      if (Number(reservation.table_id) !== Number(table.id)) {
-        return false;
-      }
-
-      return publicReservationsOverlap(draft, reservation);
-    });
-  }) || null;
+  return tables
+    .filter(table => table.active !== false && Number(table.capacity) >= Number(people))
+    .sort((a, b) => Number(a.capacity) - Number(b.capacity) || Number(a.id) - Number(b.id))[0] || null;
 }
 
 async function checkPublicOpeningAvailability({ date, time, durationMinutes }) {
+  const slug = requirePublicRestaurantSlug();
   const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
   const endMinutes = timeToMinutes(time) + Number(durationMinutes || 120);
 
-  const hoursUrl = `${SUPABASE_URL}/rest/v1/opening_hours?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&day_of_week=eq.${dayOfWeek}&select=is_open,open_time,close_time`;
-  const blocksUrl = `${SUPABASE_URL}/rest/v1/blocked_times?restaurant_id=eq.${PUBLIC_RESTAURANT_ID}&date=eq.${encodeURIComponent(date)}&select=start_time,end_time,reason`;
-
-  const [hoursResponse, blocksResponse] = await Promise.all([
-    fetch(hoursUrl, { headers }),
-    fetch(blocksUrl, { headers })
+  const [hoursRowsRaw, blocksRaw] = await Promise.all([
+    publicRpc("get_public_opening_hours", { p_slug: slug }),
+    publicRpc("get_public_blocked_times", { p_slug: slug })
   ]);
 
-  if (!hoursResponse.ok || !blocksResponse.ok) {
-    throw new Error("Nepodařilo se ověřit otevírací dobu.");
-  }
+  const hoursRows = (Array.isArray(hoursRowsRaw) ? hoursRowsRaw : []).filter(
+    row => Number(row.day_of_week) === Number(dayOfWeek)
+  );
+  const blocks = (Array.isArray(blocksRaw) ? blocksRaw : []).filter(
+    row => String(row.date || "") === String(date)
+  );
+  const hours = hoursRows[0];
 
-  const hoursRows = await hoursResponse.json();
-  const blocks = await blocksResponse.json();
-  const hours = hoursRows[0] || { is_open: true, open_time: "10:00:00", close_time: "22:00:00" };
-
-  if (!hours.is_open) {
+  if (!hours || !hours.is_open) {
     return { ok: false, message: "V tento den má restaurace zavřeno." };
   }
 
@@ -238,11 +235,14 @@ async function checkPublicOpeningAvailability({ date, time, durationMinutes }) {
 }
 
 async function loadMenu() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/menu?select=*&order=id.asc`, {
-    headers
-  });
-
-  menu = await res.json();
+  try {
+    const slug = requirePublicRestaurantSlug();
+    const rows = await publicRpc("get_public_menu", { p_slug: slug });
+    menu = Array.isArray(rows) ? rows : [];
+  } catch (error) {
+    console.error("Veřejné menu se nepodařilo načíst:", error);
+    menu = [];
+  }
   renderPublicMenu();
 }
 
@@ -444,6 +444,7 @@ async function loadAvailableReservationTimes() {
       signal: availabilityAbortController.signal,
       body: JSON.stringify({
         action: "available-times",
+        slug: requirePublicRestaurantSlug(),
         date,
         people,
         _ts: Date.now()
@@ -475,38 +476,6 @@ async function loadAvailableReservationTimes() {
     timeSelect.innerHTML = '<option value="">Časy se nepodařilo načíst</option>';
     setAvailableTimesStatus(error.message || "Volné časy se nepodařilo načíst. Zkus to znovu.", "error");
   }
-}
-
-async function publicReservationAlreadyExists({ name, date, time, phone, email }) {
-  const params = new URLSearchParams({
-    restaurant_id: `eq.${PUBLIC_RESTAURANT_ID}`,
-    date: `eq.${date}`,
-    time: `eq.${time}`,
-    status: "neq.Zrušeno",
-    select: "id,name,phone,email"
-  });
-
-  const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/reservations?${params.toString()}`,
-    { method: "GET", headers }
-  );
-
-  if (!response.ok) {
-    throw new Error("Nepodařilo se ověřit, zda rezervace už neexistuje.");
-  }
-
-  const normalizedName = name.trim().toLowerCase();
-  const normalizedPhone = phone.replace(/\s+/g, "");
-  const normalizedEmail = email.trim().toLowerCase();
-  const rows = await response.json();
-
-  return rows.some(row => {
-    const sameName = String(row.name || "").trim().toLowerCase() === normalizedName;
-    const samePhone = String(row.phone || "").replace(/\s+/g, "") === normalizedPhone;
-    const sameEmail = String(row.email || "").trim().toLowerCase() === normalizedEmail;
-
-    return sameName && (samePhone || sameEmail);
-  });
 }
 
 async function ulozitRezervaci() {
@@ -614,6 +583,7 @@ async function ulozitRezervaci() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "create-reservation",
+        slug: requirePublicRestaurantSlug(),
         name,
         last_name: lastName,
         people: peopleNumber,
