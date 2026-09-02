@@ -730,7 +730,7 @@ async function createReservationOnServer(req, res) {
     }
 
     const rpcResult = await supabasePublicRpc(
-      "create_public_reservation",
+      "create_public_reservation_safe",
       {
         p_slug: cleanRestaurantSlug,
         p_name: cleanName,
