@@ -185,7 +185,7 @@ async function checkPublicOpeningAvailability({ date, time, durationMinutes }) {
   const endMinutes = timeToMinutes(time) + Number(durationMinutes || 120);
 
   const [hoursRowsRaw, blocksRaw] = await Promise.all([
-    publicRpc("get_public_opening_hours", { p_slug: slug }),
+    publicRpc("get_public_opening_hours_safe", { p_slug: slug }),
     publicRpc("get_public_blocked_times_safe", { p_slug: slug })
   ]);
 
