@@ -237,7 +237,7 @@ async function checkPublicOpeningAvailability({ date, time, durationMinutes }) {
 async function loadMenu() {
   try {
     const slug = requirePublicRestaurantSlug();
-    const rows = await publicRpc("get_public_menu", { p_slug: slug });
+    const rows = await publicRpc("get_public_menu_safe", { p_slug: slug });
     menu = Array.isArray(rows) ? rows : [];
   } catch (error) {
     console.error("Veřejné menu se nepodařilo načíst:", error);
