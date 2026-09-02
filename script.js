@@ -186,7 +186,7 @@ async function checkPublicOpeningAvailability({ date, time, durationMinutes }) {
 
   const [hoursRowsRaw, blocksRaw] = await Promise.all([
     publicRpc("get_public_opening_hours", { p_slug: slug }),
-    publicRpc("get_public_blocked_times", { p_slug: slug })
+    publicRpc("get_public_blocked_times_safe", { p_slug: slug })
   ]);
 
   const hoursRows = (Array.isArray(hoursRowsRaw) ? hoursRowsRaw : []).filter(
