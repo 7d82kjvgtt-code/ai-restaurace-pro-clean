@@ -106,7 +106,7 @@ async function loadPublicReservationSettings(force = false) {
 
   try {
     const slug = requirePublicRestaurantSlug();
-    const rows = await publicRpc("get_public_reservation_settings", { p_slug: slug });
+    const rows = await publicRpc("get_public_reservation_settings_safe", { p_slug: slug });
     const row = Array.isArray(rows) ? (rows[0] || {}) : (rows || {});
 
     if (!row || Object.keys(row).length === 0) {
