@@ -849,7 +849,9 @@ export default async function handler(req, res) {
   if (req.body?.action === "create-reservation") {
     return createReservationOnServer(req, res);
   }
-
+return res.status(400).json({
+  error: "Neplatná akce."
+});
   if (!process.env.RESEND_API_KEY) {
     return res.status(500).json({
       error:
