@@ -60,16 +60,7 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    if (!restaurantId) {
-      const profileResponse = await supabase(`/rest/v1/profiles?id=eq.${encodeURIComponent(caller.id)}&select=restaurant_id,role&limit=1`);
-      if (profileResponse.ok) {
-        const rows = await profileResponse.json();
-        if (rows[0]) {
-          restaurantId = rows[0].restaurant_id;
-          callerRole = String(rows[0].role || "").toLowerCase();
-        }
-      }
-    }
+    
 
     if (!restaurantId || callerRole !== "owner") {
       return send(res, 403, { error: "Pozvat zaměstnance může pouze majitel." });
