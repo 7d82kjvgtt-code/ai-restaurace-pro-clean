@@ -3832,27 +3832,28 @@ async function saveFood() {
           .toString(36)
           .slice(2)}.` +
         extension;
+      const objectPath = `${currentRestaurantId}/${fileName}`;
 
-      const upload = await authorizedFetch(
-        `${SUPABASE_URL}/storage/v1/object/food-images/${fileName}`,
-        {
-          method: "POST",
-          headers: getHeaders({
-            "Content-Type": imageFile.type,
-            "x-upsert": "true"
-          }),
-          body: imageFile
-        }
-      );
+const upload = await authorizedFetch(
+  `${SUPABASE_URL}/storage/v1/object/food-images/${objectPath}`,
+  {
+    method: "POST",
+    headers: getHeaders({
+      "Content-Type": imageFile.type,
+      "x-upsert": "true"
+    }),
+    body: imageFile
+  }
+);
 
-      if (!upload.ok) {
-        throw new Error(
-          await upload.text()
-        );
-      }
+if (!upload.ok) {
+  throw new Error(
+    await upload.text()
+  );
+}
 
-      imageUrl =
-        `${SUPABASE_URL}/storage/v1/object/public/food-images/${fileName}`;
+imageUrl =
+  `${SUPABASE_URL}/storage/v1/object/public/food-images/${objectPath}`;
     }
 
     const foodData = {
