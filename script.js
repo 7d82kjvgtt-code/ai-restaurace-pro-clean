@@ -171,7 +171,7 @@ function publicReservationsOverlap(first, second) {
 
 async function findBestPublicTable({ people }) {
   const slug = requirePublicRestaurantSlug();
-  const rows = await publicRpc("get_public_restaurant_tables", { p_slug: slug });
+  const rows = await publicRpc("get_public_restaurant_tables_safe", { p_slug: slug });
   const tables = Array.isArray(rows) ? rows : [];
 
   return tables
