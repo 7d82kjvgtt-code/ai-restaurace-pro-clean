@@ -3,15 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <script>
-  // Záchranná brána pro Supabase pozvánky. Když Supabase kvůli nastavení
-  // Redirect URLs pošle pozvánku na hlavní stránku, zachováme tokeny a
-  // okamžitě ji přesuneme na stránku pro vytvoření hesla.
+  // Záchranná brána pro Supabase pozvánky.
+  // Pokud Supabase pošle pozvánku na hlavní stránku,
+  // zachováme tokeny a přesuneme uživatele na invite.html.
   (function redirectSupabaseInvite() {
     const hash = window.location.hash || "";
     const params = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
-    const type = (hashParams.get("type") || params.get("type") || "").toLowerCase();
+    const hashParams = new URLSearchParams(
+      hash.startsWith("#") ? hash.slice(1) : hash
+    );
+
+    const type = (
+      hashParams.get("type") ||
+      params.get("type") ||
+      ""
+    ).toLowerCase();
+
     const hasAuthPayload = Boolean(
       hashParams.get("access_token") ||
       hashParams.get("refresh_token") ||
@@ -19,18 +28,28 @@
       params.get("token_hash")
     );
 
-    if (type === "invite" || (hasAuthPayload && (type === "signup" || type === "recovery"))) {
-      window.location.replace("/invite.html" + window.location.search + window.location.hash);
+    if (
+      type === "invite" ||
+      (hasAuthPayload && (type === "signup" || type === "recovery"))
+    ) {
+      window.location.replace(
+        "/invite.html" +
+        window.location.search +
+        window.location.hash
+      );
     }
   })();
 </script>
+
 <title>AI Restaurace PRO</title>
-<link rel="stylesheet" href="style.css">
+
+<link rel="stylesheet" href="/style.css">
 </head>
 
 <body>
 
 <nav class="navbar">
+
   <a class="brand" href="/">
     🍽️ AI Restaurace <span>PRO</span>
   </a>
@@ -51,282 +70,564 @@
     <a href="#rezervace">Rezervace</a>
     <a href="#cenik">Ceník</a>
     <a href="#kontakt">Kontakt</a>
-    <a class="admin-link" href="dashboard.html">Dashboard</a>
+    <a class="admin-link" href="/dashboard.html">Dashboard</a>
   </div>
+
 </nav>
+
+
 <section class="hero">
 
-<div class="hero-text">
+  <div class="hero-text">
 
-<p class="badge">Prémiový systém pro moderní restaurace</p>
+    <p class="badge">
+      Prémiový systém pro moderní restaurace
+    </p>
 
-<h1>
-Web, rezervace,
-menu a AI asistent
-v jednom systému.
-</h1>
+    <h1>
+      Web, rezervace,
+      menu a AI asistent
+      v jednom systému.
+    </h1>
 
-<p class="subtitle">
-Profesionální řešení pro restaurace,
-které chtějí více rezervací,
-moderní prezentaci a jednoduchou správu podniku.
-</p>
+    <p class="subtitle">
+      Profesionální řešení pro restaurace,
+      které chtějí více rezervací,
+      moderní prezentaci a jednoduchou správu podniku.
+    </p>
 
-<div class="actions">
-<a class="btn" href="#rezervace">Rezervovat stůl</a>
-<a class="btn secondary" href="#funkce">Co systém umí</a>
-</div>
+    <div class="actions">
 
-</div>
+      <a class="btn" href="#rezervace">
+        Rezervovat stůl
+      </a>
 
-<div class="assistant-card">
+      <a class="btn secondary" href="#funkce">
+        Co systém umí
+      </a>
 
-<h3>🤖 AI Asistent</h3>
+    </div>
 
-<input id="dotaz" placeholder="Napiš: menu, otevřeno, rezervace">
+  </div>
 
-<button onclick="odpoved()">Odeslat</button>
 
-<div id="vysledek">
-Zeptejte se asistenta.
-</div>
+  <div class="assistant-card">
 
-</div>
+    <h3>🤖 AI Asistent</h3>
+
+    <input
+      id="dotaz"
+      placeholder="Napiš: menu, otevřeno, rezervace"
+    >
+
+    <button onclick="odpoved()">
+      Odeslat
+    </button>
+
+    <div id="vysledek">
+      Zeptejte se asistenta.
+    </div>
+
+  </div>
 
 </section>
+
 
 <section id="funkce" class="section">
 
-<div class="section-head">
-<p class="badge">Co systém umí</p>
-<h2>Moderní digitální restaurace</h2>
-</div>
+  <div class="section-head">
 
-<div class="grid">
+    <p class="badge">
+      Co systém umí
+    </p>
 
-<div class="food-card">
-<h3>🤖 AI Asistent</h3>
-<p>Odpovídá hostům na dotazy o menu, rezervacích a otevírací době.</p>
-</div>
+    <h2>
+      Moderní digitální restaurace
+    </h2>
 
-<div class="food-card">
-<h3>📅 Online rezervace</h3>
-<p>Rezervace přímo z webu bez telefonování.</p>
-</div>
+  </div>
 
-<div class="food-card">
-<h3>🍽️ Správa menu</h3>
-<p>Jednoduché přidávání a mazání jídel z administrace.</p>
-</div>
 
-<div class="food-card">
-<h3>📊 Dashboard</h3>
-<p>Kompletní přehled rezervací, statistik a menu.</p>
-</div>
+  <div class="grid">
 
-</div>
+    <div class="food-card">
+
+      <h3>
+        🤖 AI Asistent
+      </h3>
+
+      <p>
+        Odpovídá hostům na dotazy o menu,
+        rezervacích a otevírací době.
+      </p>
+
+    </div>
+
+
+    <div class="food-card">
+
+      <h3>
+        📅 Online rezervace
+      </h3>
+
+      <p>
+        Rezervace přímo z webu bez telefonování.
+      </p>
+
+    </div>
+
+
+    <div class="food-card">
+
+      <h3>
+        🍽️ Správa menu
+      </h3>
+
+      <p>
+        Jednoduché přidávání a mazání jídel
+        z administrace.
+      </p>
+
+    </div>
+
+
+    <div class="food-card">
+
+      <h3>
+        📊 Dashboard
+      </h3>
+
+      <p>
+        Kompletní přehled rezervací,
+        statistik a menu.
+      </p>
+
+    </div>
+
+  </div>
 
 </section>
+
 
 <section id="menu" class="section">
 
-<div class="section-head">
-<p class="badge">Jídelní lístek</p>
-<h2>🍕 Naše menu</h2>
-</div>
+  <div class="section-head">
 
-<div id="publicMenu" class="grid"></div>
+    <p class="badge">
+      Jídelní lístek
+    </p>
+
+    <h2>
+      🍕 Naše menu
+    </h2>
+
+  </div>
+
+  <div
+    id="publicMenu"
+    class="grid"
+  ></div>
 
 </section>
+
 
 <section id="rezervace" class="section">
 
   <div class="section-head">
-    <p class="badge">Rezervace PRO</p>
-    <h2>📅 Rezervovat stůl</h2>
+
+    <p class="badge">
+      Rezervace PRO
+    </p>
+
+    <h2>
+      📅 Rezervovat stůl
+    </h2>
+
   </div>
+
 
   <div class="reservation-box">
 
-    <input id="jmeno" placeholder="Jméno" autocomplete="given-name">
+    <input
+      id="jmeno"
+      placeholder="Jméno"
+      autocomplete="given-name"
+    >
 
-    <input id="prijmeni" placeholder="Příjmení" autocomplete="family-name">
 
-    <input id="osoby" type="number" min="1" max="20" placeholder="Počet osob" required>
-    
-    <label for="datum">Datum</label>
-    <input id="datum" type="date" required>
-    
-    <label for="cas">Dostupný čas</label>
-    <select id="cas" required disabled>
-      <option value="">Nejdřív vyber datum a počet osob</option>
+    <input
+      id="prijmeni"
+      placeholder="Příjmení"
+      autocomplete="family-name"
+    >
+
+
+    <input
+      id="osoby"
+      type="number"
+      min="1"
+      max="20"
+      placeholder="Počet osob"
+      required
+    >
+
+
+    <label for="datum">
+      Datum
+    </label>
+
+    <input
+      id="datum"
+      type="date"
+      required
+    >
+
+
+    <label for="cas">
+      Dostupný čas
+    </label>
+
+    <select
+      id="cas"
+      required
+      disabled
+    >
+      <option value="">
+        Nejdřív vyber datum a počet osob
+      </option>
     </select>
-    <p id="availableTimesStatus" class="available-times-status" aria-live="polite"></p>
 
-    <input id="telefon" placeholder="Telefon">
 
-    <input id="email" type="email" placeholder="E-mail">
+    <p
+      id="availableTimesStatus"
+      class="available-times-status"
+      aria-live="polite"
+    ></p>
 
-    <textarea id="poznamka" placeholder="Poznámka" rows="4"></textarea>
 
-    <div id="reservationNotice" class="reservation-notice" role="status" aria-live="polite" hidden></div>
+    <input
+      id="telefon"
+      placeholder="Telefon"
+      autocomplete="tel"
+    >
 
-    <button id="reservationSubmitButton" onclick="ulozitRezervaci()">
+
+    <input
+      id="email"
+      type="email"
+      placeholder="E-mail"
+      autocomplete="email"
+    >
+
+
+    <textarea
+      id="poznamka"
+      placeholder="Poznámka"
+      rows="4"
+    ></textarea>
+
+
+    <div
+      id="reservationNotice"
+      class="reservation-notice"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+
+
+    <button
+      id="reservationSubmitButton"
+      type="button"
+      onclick="ulozitRezervaci()"
+    >
       Potvrdit rezervaci
     </button>
 
   </div>
 
 </section>
+
+
 <section class="section">
 
-<div class="section-head">
-<p class="badge">Proč AI Restaurace PRO?</p>
-<h2>Moderní řešení pro restaurace</h2>
-</div>
+  <div class="section-head">
 
-<div class="grid">
+    <p class="badge">
+      Proč AI Restaurace PRO?
+    </p>
 
-<div class="food-card">
-<h3>⭐ 4.9/5</h3>
-<p>Moderní systém připravený pro každou restauraci.</p>
-</div>
+    <h2>
+      Moderní řešení pro restaurace
+    </h2>
 
-<div class="food-card">
-<h3>📈 Více rezervací</h3>
-<p>Hosté rezervují kdykoliv online.</p>
-</div>
+  </div>
 
-<div class="food-card">
-<h3>⚡ Rychlá administrace</h3>
-<p>Úprava menu a rezervací během několika sekund.</p>
-</div>
 
-<div class="food-card">
-<h3>🔒 Bezpečnost</h3>
-<p>Dashboard chráněný přihlášením.</p>
-</div>
+  <div class="grid">
 
-</div>
+    <div class="food-card">
+
+      <h3>
+        ⭐ 4.9/5
+      </h3>
+
+      <p>
+        Moderní systém připravený
+        pro každou restauraci.
+      </p>
+
+    </div>
+
+
+    <div class="food-card">
+
+      <h3>
+        📈 Více rezervací
+      </h3>
+
+      <p>
+        Hosté rezervují kdykoliv online.
+      </p>
+
+    </div>
+
+
+    <div class="food-card">
+
+      <h3>
+        ⚡ Rychlá administrace
+      </h3>
+
+      <p>
+        Úprava menu a rezervací
+        během několika sekund.
+      </p>
+
+    </div>
+
+
+    <div class="food-card">
+
+      <h3>
+        🔒 Bezpečnost
+      </h3>
+
+      <p>
+        Dashboard chráněný přihlášením.
+      </p>
+
+    </div>
+
+  </div>
 
 </section>
+
 
 <section id="cenik" class="section">
 
-<div class="section-head">
-<p class="badge">Ceník</p>
-<h2>Vyberte si plán</h2>
-</div>
+  <div class="section-head">
 
-<div class="grid">
+    <p class="badge">
+      Ceník
+    </p>
 
-<div class="food-card">
+    <h2>
+      Vyberte si plán
+    </h2>
 
-<h3>START</h3>
+  </div>
 
-<h2>Zdarma</h2>
 
-<p>
-✔ Web<br>
-✔ Menu<br>
-✔ Rezervace
-</p>
+  <div class="grid">
 
-</div>
+    <div class="food-card">
 
-<div class="food-card">
+      <h3>
+        START
+      </h3>
 
-<h3>PRO</h3>
+      <h2>
+        Zdarma
+      </h2>
 
-<h2>499 Kč / měsíc</h2>
+      <p>
+        ✔ Web<br>
+        ✔ Menu<br>
+        ✔ Rezervace
+      </p>
 
-<p>
-✔ Dashboard<br>
-✔ AI Asistent<br>
-✔ Statistiky
-</p>
+    </div>
 
-</div>
 
-<div class="food-card">
+    <div class="food-card">
 
-<h3>BUSINESS</h3>
+      <h3>
+        PRO
+      </h3>
 
-<h2>999 Kč / měsíc</h2>
+      <h2>
+        499 Kč / měsíc
+      </h2>
 
-<p>
-✔ Vše z PRO<br>
-✔ Databáze<br>
-✔ Prioritní podpora
-</p>
+      <p>
+        ✔ Dashboard<br>
+        ✔ AI Asistent<br>
+        ✔ Statistiky
+      </p>
 
-</div>
+    </div>
 
-</div>
+
+    <div class="food-card">
+
+      <h3>
+        BUSINESS
+      </h3>
+
+      <h2>
+        999 Kč / měsíc
+      </h2>
+
+      <p>
+        ✔ Vše z PRO<br>
+        ✔ Databáze<br>
+        ✔ Prioritní podpora
+      </p>
+
+    </div>
+
+  </div>
 
 </section>
+
 
 <section class="section">
 
-<div class="assistant-card" style="text-align:center">
+  <div
+    class="assistant-card"
+    style="text-align:center"
+  >
 
-<h2>🚀 Připraveni posunout restauraci na vyšší úroveň?</h2>
+    <h2>
+      🚀 Připraveni posunout restauraci
+      na vyšší úroveň?
+    </h2>
 
-<p style="margin:20px 0;">
-Vyzkoušejte AI Restaurace PRO a spravujte rezervace i menu z jednoho místa.
-</p>
+    <p style="margin:20px 0;">
+      Vyzkoušejte AI Restaurace PRO
+      a spravujte rezervace i menu
+      z jednoho místa.
+    </p>
 
-<a class="btn" href="dashboard.html">
-Otevřít Dashboard
-</a>
+    <a
+      class="btn"
+      href="/dashboard.html"
+    >
+      Otevřít Dashboard
+    </a>
 
-</div>
+  </div>
 
 </section>
 
-<section id="kontakt" class="section contact">
 
-<h2>📍 Kontakt</h2>
+<section
+  id="kontakt"
+  class="section contact"
+>
 
-<p>
-Praha • +420 777 123 456 • info@restaurace.cz
-</p>
+  <h2>
+    📍 Kontakt
+  </h2>
+
+  <p>
+    Praha • +420 777 123 456 • info@restaurace.cz
+  </p>
 
 </section>
+
+
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-  const dateInput = document.getElementById("datum");
+  document.addEventListener(
+    "DOMContentLoaded",
+    function () {
 
-  if (dateInput) {
-    const today = new Date();
-    const localToday = new Date(
-      today.getTime() - today.getTimezoneOffset() * 60000
-    )
-      .toISOString()
-      .split("T")[0];
+      const dateInput =
+        document.getElementById("datum");
 
-    dateInput.min = localToday;
-  }
-});
+      if (dateInput) {
+
+        const today = new Date();
+
+        const localToday =
+          new Date(
+            today.getTime() -
+            today.getTimezoneOffset() * 60000
+          )
+          .toISOString()
+          .split("T")[0];
+
+        dateInput.min = localToday;
+      }
+
+    }
+  );
 </script>
-<script src="script.js?v=table-collision-final-20260812"></script>
-  
-<div id="foodModal" class="food-modal">
+
+
+<script src="/script.js?v=table-collision-final-20260812"></script>
+
+
+<div
+  id="foodModal"
+  class="food-modal"
+>
+
   <div class="food-modal-content">
-    <button class="food-modal-close" onclick="closeFoodDetail()">×</button>
+
+    <button
+      class="food-modal-close"
+      type="button"
+      onclick="closeFoodDetail()"
+      aria-label="Zavřít detail jídla"
+    >
+      ×
+    </button>
 
     <h2 id="modalFoodName"></h2>
 
-    <p><strong>Cena:</strong> <span id="modalFoodPrice"></span></p>
-    <p><strong>Popis:</strong> <span id="modalFoodDescription"></span></p>
-    <p><strong>Ingredience:</strong> <span id="modalFoodIngredients"></span></p>
-    <p><strong>Alergeny:</strong> <span id="modalFoodAllergens"></span></p>
-<p>
-  <strong id="modalWeightLabel">Gramáž:</strong>
-  <span id="modalFoodWeight"></span>
-</p>
+    <p>
+      <strong>Cena:</strong>
+      <span id="modalFoodPrice"></span>
+    </p>
+
+    <p>
+      <strong>Popis:</strong>
+      <span id="modalFoodDescription"></span>
+    </p>
+
+    <p>
+      <strong>Ingredience:</strong>
+      <span id="modalFoodIngredients"></span>
+    </p>
+
+    <p>
+      <strong>Alergeny:</strong>
+      <span id="modalFoodAllergens"></span>
+    </p>
+
+    <p>
+      <strong id="modalWeightLabel">
+        Gramáž:
+      </strong>
+
+      <span id="modalFoodWeight"></span>
+    </p>
+
   </div>
+
 </div>
-  
+
 </body>
 </html>
