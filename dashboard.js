@@ -179,6 +179,46 @@ function toggleMergeMode() {
 let reservationChart = null;
 let statusChart = null;
 
+// Brání dvojkliku / paralelní změně stavu stejné rezervace.
+// Jeden probíhající požadavek na rezervaci = maximálně jeden e-mail z tohoto UI.
+const reservationStatusUpdatesInFlight = new Set();
+
+function setReservationStatusButtonsBusy(id, busy) {
+  const reservationId = Number(id);
+
+  document
+    .querySelectorAll(
+      `[data-reservation-status-id="${reservationId}"]`
+    )
+    .forEach(button => {
+      if (busy) {
+        button.dataset.previousDisabled =
+          button.disabled ? "1" : "0";
+        button.disabled = true;
+        button.setAttribute("aria-busy", "true");
+        button.style.opacity = "0.55";
+        button.style.cursor = "wait";
+        return;
+      }
+
+      // Obnovíme jen tlačítka, která jsme skutečně zamkli.
+      if (
+        Object.prototype.hasOwnProperty.call(
+          button.dataset,
+          "previousDisabled"
+        )
+      ) {
+        button.disabled =
+          button.dataset.previousDisabled === "1";
+        delete button.dataset.previousDisabled;
+      }
+
+      button.removeAttribute("aria-busy");
+      button.style.opacity = "";
+      button.style.cursor = "";
+    });
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   setupNavigation();
   setupMobileNavigation();
@@ -1133,6 +1173,19 @@ function renderReservations(data) {
 
   table.innerHTML = data
     .map(reservation => {
+      const currentStatus =
+        String(
+          reservation.status || "Čeká"
+        );
+
+      const currentReservationId =
+        Number(reservation.id);
+
+      const statusBusy =
+        reservationStatusUpdatesInFlight.has(
+          currentReservationId
+        );
+
       return `
         <tr>
 
@@ -1211,11 +1264,11 @@ function renderReservations(data) {
           <td data-label="Stav">
             <span
               class="status ${escapeHtml(
-                reservation.status || "Čeká"
+                currentStatus
               )}"
             >
               ${escapeHtml(
-                reservation.status || "Čeká"
+                currentStatus
               )}
             </span>
           </td>
@@ -1245,9 +1298,23 @@ function renderReservations(data) {
   </button>
               <button
                 type="button"
-                title="Potvrdit rezervaci"
+                title="${
+                  currentStatus === "Potvrzeno"
+                    ? "Rezervace už je potvrzená"
+                    : "Potvrdit rezervaci"
+                }"
+                data-reservation-status-id="${
+                  currentReservationId
+                }"
+                data-reservation-status-value="Potvrzeno"
+                ${
+                  statusBusy ||
+                  currentStatus === "Potvrzeno"
+                    ? "disabled"
+                    : ""
+                }
                 onclick="updateStatus(
-                  ${Number(reservation.id)},
+                  ${currentReservationId},
                   'Potvrzeno'
                 )"
               >
@@ -1256,9 +1323,23 @@ function renderReservations(data) {
 
               <button
                 type="button"
-                title="Zrušit rezervaci"
+                title="${
+                  currentStatus === "Zrušeno"
+                    ? "Rezervace už je zrušená"
+                    : "Zrušit rezervaci"
+                }"
+                data-reservation-status-id="${
+                  currentReservationId
+                }"
+                data-reservation-status-value="Zrušeno"
+                ${
+                  statusBusy ||
+                  currentStatus === "Zrušeno"
+                    ? "disabled"
+                    : ""
+                }
                 onclick="updateStatus(
-                  ${Number(reservation.id)},
+                  ${currentReservationId},
                   'Zrušeno'
                 )"
               >
@@ -1316,39 +1397,110 @@ async function sendReservationStatusEmailRequest(id, status) {
 }
 
 async function updateStatus(id, status) {
-  try {
-    const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`,
-      {
-        method: "PATCH",
-        headers: getHeaders(),
-        body: JSON.stringify({
-          status
-        })
-      }
+  const reservationId =
+    Number(id);
+
+  const nextStatus =
+    String(status || "").trim();
+
+  if (
+    !Number.isInteger(
+      reservationId
+    ) ||
+    reservationId < 1 ||
+    ![
+      "Potvrzeno",
+      "Zrušeno"
+    ].includes(nextStatus)
+  ) {
+    showDashboardNotice(
+      "Neplatná změna stavu rezervace.",
+      "error"
+    );
+    return false;
+  }
+
+  const currentReservation =
+    reservations.find(
+      reservation =>
+        Number(reservation.id) ===
+        reservationId
     );
 
+  const currentStatus =
+    String(
+      currentReservation?.status ||
+      "Čeká"
+    );
+
+  // Když už rezervace tento stav má, znovu neposíláme PATCH ani e-mail.
+  if (
+    currentStatus ===
+    nextStatus
+  ) {
+    showDashboardNotice(
+      nextStatus === "Potvrzeno"
+        ? "Rezervace už je potvrzená."
+        : "Rezervace už je zrušená.",
+      "info"
+    );
+    return false;
+  }
+
+  // Ochrana proti rychlému dvojkliku / více paralelním klikům.
+  if (
+    reservationStatusUpdatesInFlight.has(
+      reservationId
+    )
+  ) {
+    return false;
+  }
+
+  reservationStatusUpdatesInFlight.add(
+    reservationId
+  );
+
+  setReservationStatusButtonsBusy(
+    reservationId,
+    true
+  );
+
+  try {
+    const response =
+      await authorizedFetch(
+        `${SUPABASE_URL}/rest/v1/reservations?id=eq.${reservationId}`,
+        {
+          method: "PATCH",
+          headers: getHeaders(),
+          body: JSON.stringify({
+            status: nextStatus
+          })
+        }
+      );
+
     if (!response.ok) {
-      throw new Error(await response.text());
+      throw new Error(
+        await response.text()
+      );
     }
 
     let emailSent = false;
     let emailError = null;
 
-    if (["Potvrzeno", "Zrušeno"].includes(status)) {
-      try {
-        await sendReservationStatusEmailRequest(
-          id,
-          status
-        );
-        emailSent = true;
-      } catch (error) {
-        emailError = error;
-        console.error(
-          "Stav rezervace byl změněn, ale e-mail se nepodařilo odeslat:",
-          error
-        );
-      }
+    try {
+      await sendReservationStatusEmailRequest(
+        reservationId,
+        nextStatus
+      );
+
+      emailSent = true;
+    } catch (error) {
+      emailError = error;
+
+      console.error(
+        "Stav rezervace byl změněn, ale e-mail se nepodařilo odeslat:",
+        error
+      );
     }
 
     await loadReservations();
@@ -1360,6 +1512,7 @@ async function updateStatus(id, status) {
         "Stav rezervace byl změněn, ale e-mail se nepodařilo odeslat.",
         "error"
       );
+
       return true;
     }
 
@@ -1378,7 +1531,17 @@ async function updateStatus(id, status) {
       "Nepodařilo se změnit stav rezervace.",
       "error"
     );
+
     return false;
+  } finally {
+    reservationStatusUpdatesInFlight.delete(
+      reservationId
+    );
+
+    setReservationStatusButtonsBusy(
+      reservationId,
+      false
+    );
   }
 }
 
