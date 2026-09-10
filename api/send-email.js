@@ -835,7 +835,7 @@ async function sendResendEmail({
           from:
             process.env
               .RESEND_FROM_EMAIL ||
-            "AI Restaurace PRO <onboarding@resend.dev>",
+            "AI Restaurace PRO <rezervace@rajanbentekfa.com>",
 
           to:
             Array.isArray(to)
