@@ -1285,6 +1285,36 @@ function renderReservations(data) {
     .join("");
 }
 
+async function sendReservationStatusEmailRequest(id, status) {
+  const response = await authorizedFetch(
+    "/api/send-email",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        action: "reservation-status-email",
+        reservation_id: Number(id),
+        status
+      })
+    }
+  );
+
+  const data = await response
+    .json()
+    .catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error ||
+      "Stav rezervace se změnil, ale e-mail se nepodařilo odeslat."
+    );
+  }
+
+  return data;
+}
+
 async function updateStatus(id, status) {
   try {
     const response = await authorizedFetch(
@@ -1302,15 +1332,53 @@ async function updateStatus(id, status) {
       throw new Error(await response.text());
     }
 
+    let emailSent = false;
+    let emailError = null;
+
+    if (["Potvrzeno", "Zrušeno"].includes(status)) {
+      try {
+        await sendReservationStatusEmailRequest(
+          id,
+          status
+        );
+        emailSent = true;
+      } catch (error) {
+        emailError = error;
+        console.error(
+          "Stav rezervace byl změněn, ale e-mail se nepodařilo odeslat:",
+          error
+        );
+      }
+    }
+
     await loadReservations();
     await loadReservationHistory();
+
+    if (emailError) {
+      showDashboardNotice(
+        emailError.message ||
+        "Stav rezervace byl změněn, ale e-mail se nepodařilo odeslat.",
+        "error"
+      );
+      return true;
+    }
+
+    showDashboardNotice(
+      emailSent
+        ? "Stav rezervace byl změněn a zákazníkovi byl odeslán e-mail."
+        : "Stav rezervace byl změněn.",
+      "success"
+    );
+
     return true;
   } catch (error) {
     console.error(error);
 
     showDashboardNotice(
-      "Nepodařilo se změnit stav rezervace."
+      "Nepodařilo se změnit stav rezervace.",
+      "error"
     );
+    return false;
   }
 }
 
