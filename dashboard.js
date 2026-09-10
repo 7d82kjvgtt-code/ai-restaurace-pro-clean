@@ -197,7 +197,7 @@ function setReservationStatusButtonsBusy(id, busy) {
         button.disabled = true;
         button.setAttribute("aria-busy", "true");
         button.style.opacity = "0.55";
-        button.style.cursor = "wait";
+        button.style.pointerEvents = "none";
         return;
       }
 
@@ -215,7 +215,7 @@ function setReservationStatusButtonsBusy(id, busy) {
 
       button.removeAttribute("aria-busy");
       button.style.opacity = "";
-      button.style.cursor = "";
+      button.style.pointerEvents = "";
     });
 }
 
@@ -1367,33 +1367,68 @@ function renderReservations(data) {
 }
 
 async function sendReservationStatusEmailRequest(id, status) {
-  const response = await authorizedFetch(
-    "/api/send-email",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        action: "reservation-status-email",
-        reservation_id: Number(id),
-        status
-      })
+  const controller =
+    new AbortController();
+
+  const timeoutId =
+    setTimeout(
+      () => controller.abort(),
+      15000
+    );
+
+  try {
+    const response =
+      await authorizedFetch(
+        "/api/send-email",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          signal:
+            controller.signal,
+          body: JSON.stringify({
+            action:
+              "reservation-status-email",
+            reservation_id:
+              Number(id),
+            status
+          })
+        }
+      );
+
+    const data =
+      await response
+        .json()
+        .catch(
+          () => ({})
+        );
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error ||
+        "Stav rezervace se změnil, ale e-mail se nepodařilo odeslat."
+      );
     }
-  );
 
-  const data = await response
-    .json()
-    .catch(() => ({}));
+    return data;
+  } catch (error) {
+    if (
+      error?.name ===
+      "AbortError"
+    ) {
+      throw new Error(
+        "Odeslání e-mailu trvalo příliš dlouho. Stav rezervace byl uložen."
+      );
+    }
 
-  if (!response.ok) {
-    throw new Error(
-      data?.error ||
-      "Stav rezervace se změnil, ale e-mail se nepodařilo odeslat."
+    throw error;
+  } finally {
+    clearTimeout(
+      timeoutId
     );
   }
-
-  return data;
 }
 
 async function updateStatus(id, status) {
@@ -1433,7 +1468,6 @@ async function updateStatus(id, status) {
       "Čeká"
     );
 
-  // Když už rezervace tento stav má, znovu neposíláme PATCH ani e-mail.
   if (
     currentStatus ===
     nextStatus
@@ -1447,7 +1481,7 @@ async function updateStatus(id, status) {
     return false;
   }
 
-  // Ochrana proti rychlému dvojkliku / více paralelním klikům.
+  // Ochrana proti rychlému dvojkliku v jednom prohlížeči.
   if (
     reservationStatusUpdatesInFlight.has(
       reservationId
@@ -1466,12 +1500,20 @@ async function updateStatus(id, status) {
   );
 
   try {
+    // DŮLEŽITÉ:
+    // měníme jen řádek, který ještě požadovaný stav NEMÁ.
+    // Když přijdou 2 stejné požadavky, databáze pustí jen první.
     const response =
       await authorizedFetch(
-        `${SUPABASE_URL}/rest/v1/reservations?id=eq.${reservationId}`,
+        `${SUPABASE_URL}/rest/v1/reservations?id=eq.${reservationId}&status=neq.${encodeURIComponent(
+          nextStatus
+        )}`,
         {
           method: "PATCH",
-          headers: getHeaders(),
+          headers: getHeaders({
+            Prefer:
+              "return=representation"
+          }),
           body: JSON.stringify({
             status: nextStatus
           })
@@ -1484,8 +1526,38 @@ async function updateStatus(id, status) {
       );
     }
 
-    let emailSent = false;
-    let emailError = null;
+    const changedRows =
+      await response
+        .json()
+        .catch(
+          () => []
+        );
+
+    // Pokud se nic nezměnilo, jiný klik/požadavek už změnu provedl.
+    // V tom případě NESMÍME poslat další e-mail.
+    if (
+      !Array.isArray(
+        changedRows
+      ) ||
+      changedRows.length === 0
+    ) {
+      await loadReservations();
+
+      showDashboardNotice(
+        nextStatus === "Potvrzeno"
+          ? "Rezervace už byla potvrzena."
+          : "Rezervace už byla zrušena.",
+        "info"
+      );
+
+      return false;
+    }
+
+    let emailSent =
+      false;
+
+    let emailError =
+      null;
 
     try {
       await sendReservationStatusEmailRequest(
@@ -1493,9 +1565,11 @@ async function updateStatus(id, status) {
         nextStatus
       );
 
-      emailSent = true;
+      emailSent =
+        true;
     } catch (error) {
-      emailError = error;
+      emailError =
+        error;
 
       console.error(
         "Stav rezervace byl změněn, ale e-mail se nepodařilo odeslat:",
@@ -1525,7 +1599,9 @@ async function updateStatus(id, status) {
 
     return true;
   } catch (error) {
-    console.error(error);
+    console.error(
+      error
+    );
 
     showDashboardNotice(
       "Nepodařilo se změnit stav rezervace.",
