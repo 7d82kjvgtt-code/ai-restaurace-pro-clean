@@ -1,3749 +1,5989 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-:root {
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --surface-dark: #111827;
-  --border: #334155;
-  --text: #ffffff;
-  --muted: #94a3b8;
-  --primary: #ff5a1f;
-  --primary-hover: #ff773d;
-  --success: #16a34a;
-  --danger: #dc2626;
-  --blue: #2563eb;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  min-height: 100vh;
-  display: flex;
-  color: var(--text);
-  background:
-    radial-gradient(
-      circle at top right,
-      rgba(255, 90, 31, 0.08),
-      transparent 35%
-    ),
-    var(--bg);
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-button,
-.secondaryButton {
-  min-height: 44px;
-  padding: 12px 16px;
-  border: 0;
-  border-radius: 10px;
-  color: #ffffff;
-  font-weight: 700;
-  cursor: pointer;
-  background: var(--primary);
-  transition:
-    transform 0.18s,
-    background 0.18s,
-    opacity 0.18s;
-}
-
-button:hover,
-.secondaryButton:hover {
-  transform: translateY(-1px);
-  background: var(--primary-hover);
-}
-
-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.sidebar {
-  position: sticky;
-  top: 0;
-  width: 240px;
-  height: 100vh;
-  flex-shrink: 0;
-  padding: 30px 20px;
-  background: var(--surface-dark);
-  border-right: 1px solid #1f2937;
-}
-
-.sidebar h2 {
-  margin-bottom: 40px;
-  font-size: 28px;
-}
-
-.sidebar span {
-  color: var(--primary);
-}
-
-.sidebar nav {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.sidebar a {
-  padding: 14px;
-  color: #cbd5e1;
-  text-decoration: none;
-  border-radius: 12px;
-}
-
-.sidebar a:hover,
-.sidebar a.active {
-  color: #ffffff;
-  background: var(--primary);
-}
-
-.main {
-  width: calc(100% - 240px);
-  max-width: 1500px;
-  flex: 1;
-  margin: 0 auto;
-  padding: 36px;
-  overflow: hidden;
-}
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 28px;
-}
-
-.topbar h1 {
-  margin-bottom: 6px;
-}
-
-.topbar p,
-.card p,
-th,
-.eyebrow {
-  color: var(--muted);
-}
-
-.topbar-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.reservation-notification-wrapper {
-  position: relative;
-}
-
-.reservation-notification-button {
-  position: relative;
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  min-height: 44px;
-  padding: 0;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 19px;
-  background: #1e293b;
-  border: 1px solid rgba(148, 163, 184, .22);
-  box-shadow: none;
-}
-
-.reservation-notification-button:hover {
-  background: #334155;
-}
-
-.reservation-notification-badge {
-  position: absolute;
-  top: -7px;
-  right: -7px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: #ef4444;
-  color: #fff;
-  border: 2px solid #0f172a;
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 16px;
-  text-align: center;
-}
-
-.reservation-notification-panel {
-  position: absolute;
-  z-index: 3000;
-  top: calc(100% + 10px);
-  right: 0;
-  width: min(390px, calc(100vw - 28px));
-  max-height: min(560px, 72vh);
-  overflow: hidden;
-  border-radius: 18px;
-  background: #111827;
-  border: 1px solid rgba(148, 163, 184, .2);
-  box-shadow: 0 24px 70px rgba(0,0,0,.45);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-8px) scale(.98);
-  transform-origin: top right;
-  transition: opacity .16s ease, transform .16s ease, visibility .16s ease;
-}
-
-.reservation-notification-panel.open {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0) scale(1);
-}
-
-.reservation-notification-panel-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  align-items: center;
-  padding: 16px 16px 13px;
-  border-bottom: 1px solid rgba(148, 163, 184, .14);
-}
-
-.reservation-notification-panel-head strong {
-  display: block;
-  font-size: 17px;
-  margin-top: 2px;
-}
-
-.reservation-notification-read-all {
-  width: auto;
-  min-width: 0;
-  height: auto;
-  padding: 7px 9px;
-  border-radius: 9px;
-  background: rgba(255, 90, 31, .14);
-  color: #ff8a5b;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.reservation-notification-list {
-  max-height: 470px;
-  overflow-y: auto;
-  padding: 8px;
-}
-
-.reservation-notification-item {
-  width: 100%;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: 9px minmax(0, 1fr);
-  gap: 10px;
-  text-align: left;
-  padding: 12px;
-  border-radius: 12px;
-  background: transparent;
-  border: 1px solid transparent;
-  box-shadow: none;
-}
-
-.reservation-notification-item:hover {
-  background: rgba(148, 163, 184, .08);
-}
-
-.reservation-notification-item.unread {
-  background: rgba(255, 90, 31, .08);
-  border-color: rgba(255, 90, 31, .14);
-}
-
-.reservation-notification-dot {
-  width: 8px;
-  height: 8px;
-  margin-top: 7px;
-  border-radius: 50%;
-  background: transparent;
-}
-
-.reservation-notification-item.unread .reservation-notification-dot {
-  background: #ff5a1f;
-  box-shadow: 0 0 0 4px rgba(255, 90, 31, .12);
-}
-
-.reservation-notification-copy {
-  min-width: 0;
-}
-
-.reservation-notification-copy strong,
-.reservation-notification-copy small,
-.reservation-notification-copy em {
-  display: block;
-}
-
-.reservation-notification-copy strong {
-  color: #f8fafc;
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-.reservation-notification-copy small {
-  color: #cbd5e1;
-  font-size: 12px;
-  line-height: 1.45;
-  margin-top: 3px;
-}
-
-.reservation-notification-copy em {
-  color: #64748b;
-  font-size: 11px;
-  font-style: normal;
-  margin-top: 5px;
-}
-
-.reservation-notification-empty {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 22px 14px;
-  color: #94a3b8;
-}
-
-.reservation-notification-empty > span {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(34, 197, 94, .12);
-  color: #4ade80;
-  font-weight: 800;
-}
-
-.reservation-notification-empty strong,
-.reservation-notification-empty small {
-  display: block;
-}
-
-.reservation-notification-empty strong { color: #e2e8f0; }
-.reservation-notification-empty small { margin-top: 3px; font-size: 11px; }
-
-.secondaryButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  background: #334155;
-}
-
-.secondaryButton:hover {
-  background: #475569;
-}
-
-.dangerButton {
-  background: var(--danger);
-}
-
-.dangerButton:hover {
-  background: #ef4444;
-}
-
-.successButton {
-  background: var(--success);
-}
-
-.successButton:hover {
-  background: #22c55e;
-}
-
-.neutralButton {
-  background: #475569;
-}
-
-.neutralButton:hover {
-  background: #64748b;
-}
-
-.editBtn {
-  background: var(--blue);
-}
-
-.editBtn:hover {
-  background: #3b82f6;
-}
-
-.deleteBtn {
-  background: var(--danger);
-}
-
-.deleteBtn:hover {
-  background: #ef4444;
-}
-
-.cards {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 18px;
-  margin-bottom: 24px;
-}
-
-.card,
-.panel {
-  background: linear-gradient(145deg, #1e293b, #172033);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 18px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
-}
-
-.card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 22px;
-}
-
-.cardIcon {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  flex: 0 0 52px;
-  font-size: 24px;
-  background: rgba(255, 90, 31, 0.13);
-  border-radius: 15px;
-}
-
-.card h2 {
-  margin-top: 5px;
-  font-size: 34px;
-}
-
-.panel {
-  min-width: 0;
-  padding: 24px;
-}
-
-.charts-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(300px, 0.9fr);
-  gap: 20px;
-  margin-bottom: 24px;
-}
-
-.chart-wrap {
-  position: relative;
-  height: 310px;
-}
-
-.section-heading {
-  margin-bottom: 18px;
-}
-
-.section-heading h2 {
-  margin-top: 5px;
-}
-
-.eyebrow {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.reservations-panel {
-  margin-bottom: 24px;
-}
-
-.panel-top {
-  #kalendar {
-    width: 100%;
-}
-
-#kalendar .panel {
-    width: 100%;
-    max-width: none;
-}
-
-#kalendar .section-heading {
-    width: 100%;
-}
-
-#kalendar .calendar-container {
-    width: 100%;
-}
-
-#kalendar .calendar-list {
-    width: 100%;
-}
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  align-items: flex-start;
-}
-
-.filter-actions {
-  display: grid;
-  grid-template-columns: minmax(190px, 1fr) 170px auto auto;
-  gap: 10px;
-  width: min(760px, 100%);
-}
-
-input,
-select,
-textarea {
-  width: 100%;
-  min-height: 44px;
-  padding: 12px 13px;
-  color: #ffffff;
-  background: #0f172a;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  outline: none;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(255, 90, 31, 0.14);
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: #718096;
-}
-
-textarea {
-  resize: vertical;
-}
-
-.file-label {
-  display: block;
-  margin: 4px 0 8px;
-  color: #cbd5e1;
-  font-weight: 700;
-}
-
-.table-wrapper {
-  overflow-x: auto;
-  border-radius: 12px;
-}
-
-table {
-  width: 100%;
-  min-width: 1140px;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-
-th,
-td {
-  padding: 14px;
-  text-align: left;
-  white-space: nowrap;
-  vertical-align: middle;
-}
-
-thead {
-  background: var(--surface-dark);
-}
-
-tbody tr {
-  border-bottom: 1px solid var(--border);
-}
-
-tbody tr:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.status {
-  display: inline-block;
-  padding: 6px 11px;
-  color: #ffffff;
-  font-weight: 800;
-  border-radius: 999px;
-}
-
-.status.ĂÂĂÂÄÂĂÂekÄÂĂÂÄÂĂÂ {
-  background: #d97706;
-}
-
-.status.Potvrzeno {
-  background: var(--success);
-}
-
-.status.ZruÄÂÄšÄÄÂĂÂeno {
-  background: var(--danger);
-}
-
-.tableActions {
-  display: flex;
-  gap: 6px;
-}
-
-.tableActions button {
-  display: inline-grid;
-  place-items: center;
-  width: 38px;
-  min-width: 38px;
-  height: 38px;
-  min-height: 38px;
-  padding: 0;
-}
-
-.contactLink {
-  color: #ffffff;
-  text-decoration: none;
-}
-
-.contactLink:hover {
-  color: var(--primary);
-  text-decoration: underline;
-}
-
-.tables-grid,
-.menu-grid {
-  display: grid;
-  grid-template-columns: minmax(320px, 0.85fr) minmax(0, 1.4fr);
-  gap: 20px;
-  margin-bottom: 24px;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.food-form-panel > input,
-.food-form-panel > textarea,
-.table-form-panel > textarea {
-  margin-bottom: 12px;
-}
-
-.form-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-#cancelEditBtn,
-#cancelTableEditBtn {
-  display: none;
-}
-
-.foodItem {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 14px;
-  margin: 10px 0;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
-  border-radius: 15px;
-}
-
-.foodPhoto {
-  width: 76px;
-  height: 76px;
-  flex-shrink: 0;
-  object-fit: cover;
-  border-radius: 12px;
-}
-
-.foodInfo {
-  min-width: 0;
-  flex: 1;
-}
-
-.foodInfo b {
-  display: block;
-  margin-bottom: 5px;
-  font-size: 18px;
-  overflow-wrap: anywhere;
-}
-
-.foodInfo small {
-  color: #cbd5e1;
-}
-
-.foodPrice {
-  margin-top: 4px;
-  color: #22c55e;
-  font-weight: 800;
-}
-
-.foodActions {
-  display: flex;
-  gap: 8px;
-}
-
-.foodActions button {
-  width: 42px;
-  min-width: 42px;
-  height: 42px;
-  min-height: 42px;
-  padding: 0;
-}
-
-/* SprÄÂĂÂÄÂĂÂva stolÄÂÄšÄĂĹĄÄšÄ˝ */
-
-.switch-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 8px 0 14px;
-  color: #cbd5e1;
-  font-weight: 700;
-}
-
-.switch-row input {
-  width: 20px;
-  min-height: 20px;
-  accent-color: var(--primary);
-}
-
-.tableItem {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 15px;
-  margin: 10px 0;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
-  border-radius: 15px;
-}
-
-.tableIcon {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  flex: 0 0 52px;
-  font-size: 25px;
-  background: rgba(255, 90, 31, 0.13);
-  border-radius: 14px;
-}
-
-.tableInfo {
-  min-width: 0;
-  flex: 1;
-}
-
-.tableInfo b {
-  display: block;
-  margin-bottom: 5px;
-  font-size: 18px;
-  overflow-wrap: anywhere;
-}
-
-.tableInfo small {
-  color: #cbd5e1;
-  white-space: normal;
-}
-
-.tableCapacity {
-  margin-top: 4px;
-  color: #22c55e;
-  font-weight: 800;
-}
-
-.tableInactive {
-  opacity: 0.58;
-}
-
-.tableActions {
-  display: flex;
-  gap: 8px;
-}
-
-.tableActions button {
-  width: 42px;
-  min-width: 42px;
-  height: 42px;
-  min-height: 42px;
-  padding: 0;
-}
-
-.tableSelect {
-  min-width: 150px;
-  padding: 9px 10px;
-  font-size: 13px;
-}
-
-.emptyState {
-  padding: 18px;
-  color: var(--muted);
-  text-align: center;
-  border: 1px dashed var(--border);
-  border-radius: 12px;
-}
-
-#prehled,
-#grafy,
-#rezervace,
-#stoly,
-#menu {
-  scroll-margin-top: 25px;
-}
-
-/* PÄÂÄšÄÄÂĂÂihlÄÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂenÄÂĂÂÄÂĂÂ­ */
-
-#loginScreen {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background:
-    radial-gradient(
-      circle at top,
-      rgba(255, 90, 31, 0.16),
-      transparent 42%
-    ),
-    #111827;
-}
-
-.login-box {
-  width: min(390px, 100%);
-  padding: 34px;
-  color: #ffffff;
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.38);
-}
-
-.login-box h2 {
-  margin-bottom: 8px;
-  text-align: center;
-}
-
-.login-box > p:not(#error) {
-  margin-bottom: 24px;
-  color: var(--muted);
-  text-align: center;
-}
-
-.login-icon {
-  margin-bottom: 10px;
-  font-size: 34px;
-  text-align: center;
-}
-
-.login-box label {
-  display: block;
-  margin: 12px 0 7px;
-  color: #cbd5e1;
-  font-weight: 700;
-}
-
-.login-box button {
-  width: 100%;
-  margin-top: 10px;
-}
-
-.login-box #error {
-  min-height: 22px;
-  margin-top: 12px;
-  color: #f87171;
-  text-align: center;
-}
-
-@media (max-width: 1250px) {
-  .cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 1100px) {
-  body {
-    display: block;
+const SUPABASE_URL = "https://decpnnbaejxjbpmyjocs.supabase.co";
+const SUPABASE_KEY = "sb_publishable_l6ko8NS_92RjQBM2rEzAvA_Sd2hYicb";
+
+let reservations = [];
+let foods = [];
+let restaurantTables = [];
+let tableGroups = [];
+let customerProfiles = [];
+
+let currentRestaurantId = null;
+let currentUserRole = null;
+let currentUserId = null;
+let teamMembers = [];
+
+let editingFoodId = null;
+let editingImageUrl = "";
+let editingTableId = null;
+
+let pendingTableX = null;
+let pendingTableY = null;
+
+let selectedRoom = "Hlavní sál";
+
+let mergeModeActive = false;
+let selectedTablesForMerge = [];
+
+let upcomingReservationTimer = null;
+const shownUpcomingReservationAlerts = new Set();
+
+function showDashboardNotice(message, type = "auto") {
+  const text = String(message || "").trim();
+  if (!text) return;
+
+  let resolvedType = type;
+  if (resolvedType === "auto") {
+    const lower = text.toLowerCase();
+    resolvedType = /úspěš|uložen|spojen|rozpojen/.test(lower)
+      ? "success"
+      : /obsazen|nepodař|nenalezen|vyplň|vyber|pouze|nemá přístup/.test(lower)
+        ? "error"
+        : "info";
   }
 
-  .sidebar {
-    display: none;
+  let container = document.getElementById("dashboardNoticeContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "dashboardNoticeContainer";
+    container.className = "dashboard-notice-container";
+    container.setAttribute("aria-live", "polite");
+    document.body.appendChild(container);
   }
 
-  .main {
-    width: 100%;
-    padding: 26px;
+  const notice = document.createElement("div");
+  notice.className = `dashboard-notice dashboard-notice--${resolvedType}`;
+  notice.setAttribute("role", resolvedType === "error" ? "alert" : "status");
+
+  const icon = resolvedType === "success" ? "✓" : resolvedType === "error" ? "!" : "i";
+  notice.innerHTML = `
+    <span class="dashboard-notice__icon">${icon}</span>
+    <span class="dashboard-notice__text"></span>
+    <button class="dashboard-notice__close" type="button" aria-label="Zavřít">×</button>
+  `;
+  notice.querySelector(".dashboard-notice__text").textContent = text;
+
+  const close = () => {
+    if (notice.classList.contains("is-leaving")) return;
+    notice.classList.add("is-leaving");
+    window.setTimeout(() => notice.remove(), 220);
+  };
+
+  notice.querySelector(".dashboard-notice__close").addEventListener("click", close);
+  container.appendChild(notice);
+  requestAnimationFrame(() => notice.classList.add("is-visible"));
+  window.setTimeout(close, resolvedType === "error" ? 6500 : 4200);
+}
+
+function toggleMergeMode() {
+  mergeModeActive = !mergeModeActive;
+
+  const btn = document.getElementById("mergeModeButton");
+
+  if (btn) {
+    btn.textContent = mergeModeActive
+      ? "✕ Zrušit spojování"
+      : "🔗 Spojit stoly";
   }
 
-  .cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  renderFloorMap();
+}
+
+  async function confirmTableMerge() {
+  if (selectedTablesForMerge.length < 2) {
+    showDashboardNotice("Vyber alespoň 2 stoly.");
+    return;
   }
 
-  .charts-grid,
-  .tables-grid,
-  .menu-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .panel-top {
-    flex-direction: column;
-  }
-
-  .filter-actions {
-    width: 100%;
-  }
-}
-
-@media (max-width: 760px) {
-  .main {
-    padding: 14px;
-  }
-
-  .topbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .topbar-actions {
-    width: 100%;
-  }
-
-  .topbar-actions > * {
-    flex: 1;
-  }
-
-  .cards {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .panel,
-  .card {
-    padding: 17px;
-    border-radius: 15px;
-  }
-
-  .filter-actions {
-    grid-template-columns: 1fr;
-  }
-
-  .filter-actions button {
-    width: 100%;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .chart-wrap {
-    height: 270px;
-  }
-
-  .foodItem,
-  .tableItem {
-    display: grid;
-    grid-template-columns: 68px minmax(0, 1fr);
-  }
-
-  .foodActions,
-  .tableActions {
-    grid-column: 1 / -1;
-    justify-content: flex-end;
-  }
-
-  .tableSelect {
-    min-width: 130px;
-  }
-}
-
-@media (max-width: 420px) {
-  .main {
-    padding: 10px;
-  }
-
-  .panel,
-  .card {
-    padding: 14px;
-  }
-
-  .login-box {
-    padding: 26px 20px;
-  }
-
-  .topbar-actions {
-    flex-direction: column;
-  }
-}
-.floor-map{
-  position: relative;
-  
-    width:100%;
-    min-height:650px;
-
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-
-    gap:40px;
-
-    padding:40px;
-
-    align-content:start;
-    justify-items:center;
-
-    background:#0f172a;
-    border-radius:18px;
-    border:1px solid rgba(255,255,255,.06);
-}
-
-.table{
-  position:absolute;
-  
-    width:120px;
-    height:120px;
-    border-radius:50%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:#fff;
-    font-weight:bold;
-    font-size:20px;
-    cursor:pointer;
-    transition:.2s;
-}
-
-.table:hover{
-    transform:scale(1.08);
-}
-
-.table.free{
-    background:#22c55e;
-    border:2px solid #16a34a;
-    color:white;
-}
-
-.table.busy{
-    background:#f59e0b;
-    border:2px solid #d97706;
-    color:white;
-}
-
-.table.occupied{
-    background:#ef4444;
-    border:2px solid #dc2626;
-    color:white;
-}
-.table-modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.7);
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    padding: 20px;
-}
-
-.table-modal.show {
-    display: flex;
-}
-
-.table-modal-content {
-    width: 100%;
-    max-width: 430px;
-    position: relative;
-    background: #182033;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 22px;
-    padding: 30px;
-    color: white;
-    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.45);
-}
-
-.table-modal-content h2 {
-    margin: 0 0 22px;
-    font-size: 27px;
-}
-
-.table-modal-close {
-    position: absolute;
-    top: 14px;
-    right: 16px;
-    border: none;
-    background: transparent;
-    color: white;
-    font-size: 30px;
-    cursor: pointer;
-}
-
-.table-modal-info {
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 15px;
-    padding: 15px 18px;
-    margin-bottom: 22px;
-}
-
-.table-modal-info p {
-    margin: 10px 0;
-}
-
-.table-modal-actions {
-    display: flex;
-    gap: 12px;
-}
-
-.table-modal-actions button {
-    flex: 1;
-    padding: 12px 15px;
-    border: none;
-    border-radius: 12px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.table-modal-actions .primary-btn {
-    background: #ff5a1f;
-    color: white;
-}
-
-.table-modal-actions .secondary-btn {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-}
-/* =========================
-   KALENDÄÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ REZERVACÄÂĂÂÄÂĂÂ
-========================= */
-
-#kalendar {
-    scroll-margin-top: 24px;
-}
-
-#calendarDate {
-    min-width: 180px;
-    padding: 12px 14px;
-    border: 1px solid #dfe3ea;
-    border-radius: 12px;
-    background: #ffffff;
-    font-size: 15px;
-    font-family: inherit;
-    outline: none;
-    transition: 0.2s ease;
-}
-
-#calendarDate:focus {
-    border-color: #111827;
-    box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
-}
-
-.calendar-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 20px;
-}
-
-.calendar-reservation:hover {
-    transform: translateY(-2px);
-    border-color: #cbd5e1;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-}
-
-.calendar-time {
-    font-size: 16px;
-    font-weight: 800;
-    color: #111827;
-}
-
-.calendar-info h3 {
-    margin: 0 0 5px;
-    font-size: 17px;
-    color: #111827;
-}
-
-.calendar-info p {
-    margin: 0;
-    font-size: 14px;
-    color: #6b7280;
-}
-
-.calendar-status {
-    padding: 8px 11px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 700;
-    white-space: nowrap;
-}
-
-.calendar-status.pending {
-    background: #fff7ed;
-    color: #c2410c;
-}
-
-.calendar-status.confirmed {
-    background: #ecfdf5;
-    color: #047857;
-}
-
-.calendar-status.cancelled {
-    background: #fef2f2;
-    color: #b91c1c;
-}
-
-.emptyCalendar {
-    margin: 0;
-    padding: 28px;
-    border: 1px dashed #d1d5db;
-    border-radius: 16px;
-    text-align: center;
-    color: #6b7280;
-    background: #f9fafb;
-}
-
-@media (max-width: 700px) {
-    .calendar-reservation {
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-
-    .calendar-status {
-        width: fit-content;
-    }
-
-    #calendarDate {
-        width: 100%;
-    }
-}
-.calendar-controls{
-    display:flex;
-    align-items:center;
-    justify-content:flex-end;
-    gap:12px;
-    flex-wrap:nowrap;
-    width:100%;
-}
-
-.calendar-controls #calendarDate{
-    width:190px;
-    flex:0 0 auto;
-}
-
-.calendar-controls .neutralButton{
-    white-space:nowrap;
-    min-height:44px;
-}
-
-@media (max-width:900px){
-
-    .calendar-controls{
-        flex-direction:column;
-        align-items:stretch;
-    }
-
-    .calendar-controls button,
-    .calendar-controls input{
-        width:100%;
-    }
-
-}
-/* KalendÄÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ pÄÂÄšÄÄÂĂÂes celou ÄÂÄšÄÄÂĂÂÄÂĂÂÄÂĂÂ­ÄÂÄšÄÄÂĂÂku dashboardu */
-#kalendar {
-    width: 100%;
-    max-width: none;
-    grid-column: 1 / -1;
-    box-sizing: border-box;
-}
-.table{
-    flex-direction:column;
-    gap:5px;
-    padding:12px;
-    text-align:center;
-    box-sizing:border-box;
-}
-
-.table-map-name{
-    font-size:16px;
-    font-weight:800;
-}
-
-.table-map-capacity{
-    font-size:12px;
-    font-weight:600;
-    opacity:.9;
-}
-
-.table-map-status{
-    font-size:11px;
-    font-weight:700;
-    opacity:.85;
-}
-
-.table.free{
-    background:#22c55e;
-}
-
-.table.busy{
-    background:#f59e0b;
-}
-
-.table.occupied{
-    background:#ef4444;
-}
-.table.dragging {
-    cursor: grabbing;
-    transform: scale(1.05);
-    z-index: 20;
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
-}
-
-.floor-map .table {
-    cursor: grab;
-    user-select: none;
-    touch-action: none;
-}
-/* OvlÄÂĂÂÄÂĂÂdÄÂĂÂÄÂĂÂnÄÂĂÂÄÂĂÂ­ mapy stolÄÂÄšÄĂĹĄÄšÄ˝ */
-
-.map-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    width: 100%;
-}
-
-.map-toolbar h2 {
-    margin: 0;
-}
-
-.room-switcher {
-    display: flex;
-    gap: 10px;
-    margin: 14px 0;
-}
-
-.room-switch {
-    background: #2b2f3a;
-    color: #fff;
-    border: none;
-    padding: 10px 18px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.room-switch:hover {
-    background: #3a4150;
-}
-
-.room-switch.active {
-    background: #ff5a1f;
-}
-.zoom-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.zoom-controls button {
-    min-width: 42px;
-    height: 38px;
-    padding: 0 12px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.06);
-    color: white;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.2s ease;
-}
-.table-merge-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-}
-
-.merge-mode-button,
-.merge-confirm-button {
-    padding: 10px 18px;
-    border: none;
-    border-radius: 10px;
-    background: #ff5a1f;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    transition: .2s;
-}
-
-.merge-mode-button:hover,
-.merge-confirm-button:hover {
-    background: #ff7848;
-}
-
-#mergeSelectionInfo {
-    color: #b7b7b7;
-    font-size: 14px;
-}
-.zoom-controls button:hover {
-    background: rgba(255, 255, 255, 0.12);
-    transform: translateY(-1px);
-}
-
-#zoomValue {
-    min-width: 58px;
-    text-align: center;
-    font-weight: 700;
-    color: white;
-}
-
-#floorMapWrapper {
-    width: 100%;
-    overflow: auto;
-    margin-top: 20px;
-    border-radius: 18px;
-}
-
-#floorMap {
-    transform-origin: top left;
-    transition: transform 0.2s ease;
-}
-
-@media (max-width: 700px) {
-    .map-toolbar {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .zoom-controls {
-        width: 100%;
-    }
-}
-#quickTableModal {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-
-  display: none;
-  align-items: center;
-  justify-content: center;
-
-  padding: 20px;
-  background: rgba(2, 6, 23, 0.72);
-  backdrop-filter: blur(6px);
-}
-
-#quickTableModal .quick-table-modal {
-  position: relative;
-
-  width: min(420px, 100%);
-  padding: 26px;
-
-  color: #ffffff;
-  background: linear-gradient(
-    145deg,
-    #1e293b,
-    #111827
+  const selectedTables = restaurantTables.filter((table) =>
+    selectedTablesForMerge.includes(Number(table.id))
   );
 
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 18px;
-
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
-}
-
-#quickTableModal .quick-table-modal h2 {
-  margin: 6px 0 20px;
-}
-
-#quickTableModal .modal-close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-
-  width: 36px;
-  min-width: 36px;
-  height: 36px;
-  min-height: 36px;
-
-  padding: 0;
-  border-radius: 10px;
-
-  font-size: 20px;
-  line-height: 1;
-
-  background: rgba(255, 255, 255, 0.08);
-}
-
-#quickTableModal .modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-#quickTableModal .secondary-button {
-  background: #475569;
-}
-
-#quickTableModal .primary-button {
-  background: var(--primary);
-}
-
-@media (max-width: 520px) {
-  #quickTableModal .form-grid {
-    grid-template-columns: 1fr;
+  if (selectedTables.length < 2) {
+    showDashboardNotice("Vybrané stoly se nepodařilo najít.");
+    return;
   }
 
-  #quickTableModal .modal-actions {
-    flex-direction: column;
+  const rooms = [...new Set(
+    selectedTables.map((table) => table.room || "Hlavní sál")
+  )];
+
+  if (rooms.length > 1) {
+    showDashboardNotice("Spojit lze pouze stoly ze stejné místnosti.");
+    return;
   }
 
-  #quickTableModal .modal-actions button {
-    width: 100%;
+  const totalCapacity = selectedTables.reduce(
+    (sum, table) => sum + Number(table.capacity || 0),
+    0
+  );
+
+  const groupName = selectedTables
+    .map((table) => table.name || `Stůl ${table.id}`)
+    .join(" + ");
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/table_groups`,
+      {
+        method: "POST",
+        headers: getHeaders({
+          Prefer: "return=minimal"
+        }),
+        body: JSON.stringify({
+          restaurant_id: currentRestaurantId,
+          room: rooms[0],
+          name: groupName,
+          table_ids: selectedTablesForMerge,
+          total_capacity: totalCapacity
+        })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    showDashboardNotice("Stoly byly úspěšně spojeny.");
+
+    selectedTablesForMerge = [];
+    mergeModeActive = false;
+
+    const mergeButton =
+      document.getElementById("mergeModeButton");
+
+    const confirmButton =
+      document.getElementById("confirmMergeButton");
+
+    const info =
+      document.getElementById("mergeSelectionInfo");
+
+    if (mergeButton) {
+      mergeButton.textContent = "🔗 Spojit stoly";
+    }
+
+    if (confirmButton) {
+      confirmButton.style.display = "none";
+    }
+
+    if (info) {
+      info.textContent = "Vybráno: 0 stolů";
+    }
+
+   await loadTables();
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice("Spojení stolů se nepodařilo uložit.");
   }
 }
-.danger-btn {
-  background: #dc2626;
-  color: #ffffff;
+  
+let reservationChart = null;
+let statusChart = null;
+
+// Brání dvojkliku / paralelní změně stavu stejné rezervace.
+// Jeden probíhající požadavek na rezervaci = maximálně jeden e-mail z tohoto UI.
+const reservationStatusUpdatesInFlight = new Set();
+
+function setReservationStatusButtonsBusy(id, busy) {
+  const reservationId = Number(id);
+
+  document
+    .querySelectorAll(
+      `[data-reservation-status-id="${reservationId}"]`
+    )
+    .forEach(button => {
+      if (busy) {
+        button.dataset.previousDisabled =
+          button.disabled ? "1" : "0";
+        button.disabled = true;
+        button.setAttribute("aria-busy", "true");
+        button.style.opacity = "0.55";
+        button.style.pointerEvents = "none";
+        return;
+      }
+
+      // Obnovíme jen tlačítka, která jsme skutečně zamkli.
+      if (
+        Object.prototype.hasOwnProperty.call(
+          button.dataset,
+          "previousDisabled"
+        )
+      ) {
+        button.disabled =
+          button.dataset.previousDisabled === "1";
+        delete button.dataset.previousDisabled;
+      }
+
+      button.removeAttribute("aria-busy");
+      button.style.opacity = "";
+      button.style.pointerEvents = "";
+    });
 }
 
-.danger-btn:hover {
-  background: #ef4444;
-}
-.table.merge-selected {
-  outline: 4px solid #ff5a1f;
-  outline-offset: 4px;
-  box-shadow: 0 0 24px rgba(255, 90, 31, 0.8);
-}
-.calendarTimeline {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  width: 100%;
-  min-height: 780px;
-  padding: 10px 0;
-}
+document.addEventListener("DOMContentLoaded", async () => {
+  setupNavigation();
+  setupMobileNavigation();
+document.querySelectorAll(".room-switch").forEach((button) => {
+    button.addEventListener("click", () => {
+        selectedRoom = button.dataset.room;
 
-.calendarHour {
-  display: grid;
-  grid-template-columns: 70px 1fr;
-  min-height: 60px;
-  align-items: start;
-}
+        document
+            .querySelectorAll(".room-switch")
+            .forEach((b) => b.classList.remove("active"));
 
-.calendarHour span {
-  padding-top: 6px;
-  padding-right: 14px;
-  text-align: right;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.65);
-}
+        button.classList.add("active");
 
-.calendarLine {
-  height: 100%;
-  min-height: 60px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  position: relative;
-}
+        renderFloorMap();
+    });
+});
+  
+  document
+    .getElementById("search")
+    ?.addEventListener("input", applyFilters);
 
-.calendarHour:last-child .calendarLine {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-#calendarReservations {
-  position: relative;
-}
+  document
+    .getElementById("statusFilter")
+    ?.addEventListener("change", applyFilters);
 
-.calendarTimeline {
-  position: relative;
-  z-index: 1;
-}
+  if (await ensureValidSession()) {
+    // Po návratu z pozvánky může členství dorazit o zlomek sekundy později.
+    // Krátký retry odstraní nutnost ručního refreshu.
+    const restaurantLoaded = await loadRestaurantContextWithRetry();
 
-.calendar-reservation {
-  position: absolute;
-  left: 95px;
-  right: 12px;
-  display: grid;
-  grid-template-columns: 95px 1fr auto;
-  align-items: start;
-  gap: 18px;
-  min-height: 30px;
-  overflow: hidden;
-  z-index: 5;
-  background: linear-gradient(135deg, #ff5a1f, #ff7a18);
-  border-radius: 12px;
-  padding: 6px 12px;
-  box-sizing: border-box;
-  cursor: pointer;
-  box-shadow: 0 8px 20px rgba(255, 90, 31, 0.25);
-}
-
-/* ===== OPRAVENÄÂĂÂÄÂĂÂ KALENDÄÂĂÂÄÂĂÂÄÂÄšÄÄÂĂÂ ĂÂĂÂÄÂĂÂÄÂĂÂ finÄÂĂÂÄÂĂÂlnÄÂĂÂÄÂĂÂ­ pÄÂÄšÄÄÂĂÂepis ===== */
-#calendarReservations {
-  position: relative;
-  margin-top: 20px;
-}
-
-.calendarTimeline {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 790px;
-  min-height: 790px;
-  padding: 10px 0 0;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-.calendarHour {
-  display: grid;
-  grid-template-columns: 70px minmax(0, 1fr);
-  height: 60px;
-  min-height: 60px;
-  align-items: start;
-}
-
-.calendarHour span {
-  padding-top: 6px;
-  padding-right: 14px;
-  text-align: right;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.65);
-}
-
-.calendarLine {
-  height: 60px;
-  min-height: 60px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  box-sizing: border-box;
-}
-
-.calendarEventsLayer {
-  position: absolute;
-  top: 10px;
-  left: 70px;
-  right: 12px;
-  height: 780px;
-  z-index: 5;
-  pointer-events: none;
-}
-
-.calendar-reservation {
-  position: absolute;
-  right: auto;
-  display: grid;
-  grid-template-columns: 62px minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 8px;
-  min-height: 30px;
-  margin: 0;
-  padding: 6px 9px;
-  overflow: hidden;
-  box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  border-radius: 10px;
-  background: linear-gradient(135deg, #ff5a1f, #ff7a18);
-  color: #111827;
-  text-align: left;
-  font: inherit;
-  cursor: pointer;
-  pointer-events: auto;
-  box-shadow: 0 5px 14px rgba(255, 90, 31, 0.25);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.calendar-reservation:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(255, 90, 31, 0.38);
-  z-index: 20;
-}
-
-.calendar-time {
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1.2;
-  color: inherit;
-}
-
-.calendar-info {
-  display: block;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.calendar-info strong,
-.calendar-info small {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.calendar-info strong {
-  margin: 0 0 3px;
-  font-size: 14px;
-  line-height: 1.2;
-}
-
-.calendar-info small {
-  font-size: 11px;
-  line-height: 1.2;
-  opacity: 0.72;
-}
-
-.calendar-status {
-  align-self: start;
-  padding: 3px 7px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1.2;
-  white-space: nowrap;
-  background: rgba(255, 255, 255, 0.84);
-  color: #111827;
-}
-
-.calendar-reservation.confirmed {
-  background: linear-gradient(135deg, #22c55e, #16a34a);
-  color: #052e16;
-}
-
-.calendar-reservation.cancelled {
-  background: linear-gradient(135deg, #94a3b8, #64748b);
-  color: #0f172a;
-  opacity: 0.72;
-}
-
-@media (max-width: 700px) {
-  .calendarEventsLayer {
-    left: 58px;
-    right: 6px;
+    if (restaurantLoaded) {
+      hideLogin();
+      history.replaceState(null, "", "#prehled");
+      await loadDashboardData();
+    } else {
+      clearSession();
+      showLogin();
+      showDashboardNotice("Účet není přiřazený k žádné aktivní restauraci.");
+    }
+  } else {
+    showLogin();
   }
+});
 
-  .calendarHour {
-    grid-template-columns: 58px minmax(0, 1fr);
-  }
+async function loadDashboardData() {
+  // Role a navigace se aplikují HNED po načtení kontextu uživatele.
+  // Zaměstnanec tak po aktivaci pozvánky neuvidí výchozí stav Majitele
+  // a nemusí stránku ručně obnovovat.
+  applyRolePermissions();
+  const requestedSection = window.location.hash.replace("#", "") || "prehled";
+  showDashboardSection(requestedSection, { notifyDenied: true });
 
-  .calendar-reservation {
-    grid-template-columns: 50px minmax(0, 1fr);
-    gap: 6px;
-    padding: 5px 7px;
-  }
+  await Promise.all([
+    loadTables(),
+    loadFoods(),
+    loadOpeningHours(),
+    loadBlockedTimes(),
+    loadReservationSettings(),
+    loadReservationHistory(),
+    loadCustomerProfiles(),
+    loadTeamMembers()
+  ]);
 
-  .calendar-status {
-    display: none;
+  await loadReservations();
+
+  // Po načtení dat ještě jednou sjednotíme navigaci a oprávnění.
+  applyRolePermissions();
+  showDashboardSection(window.location.hash.replace("#", "") || "prehled", { notifyDenied: false });
+
+  if (!window.__reservationNotificationPoll) {
+    window.__reservationNotificationPoll = setInterval(() => {
+      if (currentRestaurantId) loadReservations();
+    }, 30000);
   }
 }
 
-/* ===== BarevnĂÂÄš  stavy rezervacĂÂĂÂ­ v kalendĂÂĂÂĂĹĄĂÂi ===== */
-.calendar-reservation.pending {
-  background: linear-gradient(135deg, #ff8a1f, #ff5a1f);
-  border-color: rgba(255, 138, 31, 0.65);
-  color: #1f1308;
+function setupMobileNavigation() {
+  const button = document.getElementById("mobileMenuButton");
+  const sidebar = document.getElementById("dashboardSidebar");
+  const overlay = document.getElementById("mobileMenuOverlay");
+
+  if (!button || !sidebar || !overlay) return;
+
+  const closeMenu = () => {
+    sidebar.classList.remove("mobile-open");
+    overlay.classList.remove("visible");
+    document.body.classList.remove("mobile-menu-open");
+    button.setAttribute("aria-expanded", "false");
+  };
+
+  const openMenu = () => {
+    sidebar.classList.add("mobile-open");
+    overlay.classList.add("visible");
+    document.body.classList.add("mobile-menu-open");
+    button.setAttribute("aria-expanded", "true");
+  };
+
+  button.addEventListener("click", () => {
+    sidebar.classList.contains("mobile-open") ? closeMenu() : openMenu();
+  });
+
+  overlay.addEventListener("click", closeMenu);
+
+  sidebar.querySelectorAll("nav a").forEach(link => {
+    link.addEventListener("click", closeMenu);
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 1100) closeMenu();
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") closeMenu();
+  });
 }
 
-.calendar-reservation.confirmed {
-  background: linear-gradient(135deg, #34d399, #16a34a);
-  border-color: rgba(52, 211, 153, 0.7);
-  color: #052e16;
-}
+function setupNavigation() {
+  document.querySelectorAll(".sidebar nav a").forEach(link => {
+    link.addEventListener("click", function () {
+      document
+        .querySelectorAll(".sidebar nav a")
+        .forEach(item => item.classList.remove("active"));
 
-.calendar-reservation.cancelled {
-  background: linear-gradient(135deg, #ef4444, #b91c1c);
-  border-color: rgba(248, 113, 113, 0.75);
-  color: #fff;
-  opacity: 0.82;
-}
-
-.calendar-reservation.pending .calendar-status {
-  background: rgba(255, 247, 237, 0.9);
-  color: #9a3412;
-}
-
-.calendar-reservation.confirmed .calendar-status {
-  background: rgba(236, 253, 245, 0.92);
-  color: #047857;
-}
-
-.calendar-reservation.cancelled .calendar-status {
-  background: rgba(254, 242, 242, 0.94);
-  color: #b91c1c;
-}
-
-
-/* ===== AKTUĂÂĂÂLNĂÂĂÂ ÄÂĂÂAS V KALENDĂÂĂÂĂĹĄĂÂI ===== */
-.calendar-current-time {
-  position: absolute;
-  left: 55px;
-  right: 12px;
-  height: 0;
-  z-index: 30;
-  pointer-events: none;
-}
-
-.calendar-current-time[hidden] {
-  display: none;
-}
-
-.calendar-current-time-label {
-  position: absolute;
-  left: -55px;
-  top: -10px;
-  width: 48px;
-  padding: 2px 4px;
-  border-radius: 6px;
-  background: #ef4444;
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 16px;
-  text-align: center;
-  box-sizing: border-box;
-}
-
-.calendar-current-time-dot {
-  position: absolute;
-  left: 11px;
-  top: -5px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #ef4444;
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.75);
-}
-
-.calendar-current-time-line {
-  position: absolute;
-  left: 16px;
-  right: 0;
-  top: -1px;
-  height: 2px;
-  background: #ef4444;
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.55);
-}
-
-@media (max-width: 700px) {
-  .calendar-current-time {
-    left: 43px;
-    right: 6px;
-  }
-
-  .calendar-current-time-label {
-    left: -43px;
-    width: 40px;
-    font-size: 10px;
-  }
-}
-
-
-/* KliknutĂÂĂÂ­ do volnĂÂÄš ho ÄÂĂÂasu v kalendĂÂĂÂĂĹĄĂÂi */
-#calendarReservations .calendarTimeline {
-  cursor: crosshair;
-}
-
-#calendarReservations .calendar-reservation {
-  cursor: pointer;
-}
-
-#calendarReservations .calendarEventsLayer {
-  pointer-events: none;
-}
-
-#calendarReservations .calendar-reservation {
-  pointer-events: auto;
-}
-
-/* Drag & drop rezervacĂÂĂÂ­ v kalendĂÂĂÂĂĹĄĂÂi */
-#calendarReservations .calendar-reservation {
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-#calendarReservations .calendar-reservation.is-dragging {
-  cursor: grabbing;
-  opacity: 0.9;
-  transform: scale(1.015);
-  z-index: 100;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
-  transition: none;
-}
-
-#calendarReservations .calendar-reservation.is-saving {
-  cursor: wait;
-  opacity: 0.65;
-}
-
-
-/* ModernĂÂĂÂ­ upozornÄÂĂÂnĂÂĂÂ­ dashboardu */
-.dashboard-notice-container {
-  position: fixed;
-  top: 22px;
-  right: 22px;
-  z-index: 100000;
-  display: flex;
-  width: min(420px, calc(100vw - 32px));
-  flex-direction: column;
-  gap: 12px;
-  pointer-events: none;
-}
-
-.dashboard-notice {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) 28px;
-  align-items: center;
-  gap: 12px;
-  padding: 15px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 16px;
-  color: #fff;
-  background: rgba(18, 24, 38, 0.96);
-  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.42);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  opacity: 0;
-  transform: translateY(-12px) scale(0.98);
-  transition: opacity 180ms ease, transform 180ms ease;
-  pointer-events: auto;
-}
-
-.dashboard-notice.is-visible { opacity: 1; transform: translateY(0) scale(1); }
-.dashboard-notice.is-leaving { opacity: 0; transform: translateX(18px) scale(0.98); }
-.dashboard-notice--success { border-color: rgba(52, 211, 153, 0.45); }
-.dashboard-notice--error { border-color: rgba(248, 113, 113, 0.55); }
-.dashboard-notice--info { border-color: rgba(251, 146, 60, 0.48); }
-
-.dashboard-notice__icon {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border-radius: 50%;
-  font-weight: 900;
-  background: rgba(251, 146, 60, 0.18);
-  color: #fb923c;
-}
-.dashboard-notice--success .dashboard-notice__icon { background: rgba(52, 211, 153, 0.18); color: #34d399; }
-.dashboard-notice--error .dashboard-notice__icon { background: rgba(248, 113, 113, 0.18); color: #f87171; }
-.dashboard-notice__text { white-space: pre-line; font-size: 14px; font-weight: 700; line-height: 1.45; }
-.dashboard-notice__close {
-  width: 28px; height: 28px; border: 0; border-radius: 9px; cursor: pointer;
-  color: rgba(255,255,255,.72); background: rgba(255,255,255,.07); font-size: 20px; line-height: 1;
-}
-.dashboard-notice__close:hover { background: rgba(255,255,255,.14); color: #fff; }
-
-@media (max-width: 640px) {
-  .dashboard-notice-container { top: 12px; right: 12px; left: 12px; width: auto; }
-}
-
-
-/* =========================================================
-   MOBILNĂÂĂÂ NAVIGACE
-========================================================= */
-.mobile-menu-button {
-  display: none;
-}
-
-.mobile-menu-overlay {
-  display: none;
-}
-
-@media (max-width: 1100px) {
-  .mobile-menu-button {
-    position: fixed;
-    top: max(14px, env(safe-area-inset-top));
-    left: 14px;
-    z-index: 3002;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 112px;
-    min-height: 48px;
-    padding: 11px 16px;
-    color: #fff;
-    font-weight: 800;
-    font-size: 16px;
-    background: #ff4d00;
-    border: 0;
-    border-radius: 14px;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-  }
-
-  .sidebar {
-    position: fixed;
-    inset: 0 auto 0 0;
-    z-index: 3003;
-    display: block;
-    width: min(82vw, 320px);
-    height: 100dvh;
-    padding: max(78px, calc(env(safe-area-inset-top) + 68px)) 20px 28px;
-    overflow-y: auto;
-    transform: translateX(-105%);
-    transition: transform 0.24s ease;
-    box-shadow: 22px 0 50px rgba(0, 0, 0, 0.45);
-  }
-
-  .sidebar.mobile-open {
-    transform: translateX(0);
-  }
-
-  .mobile-menu-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 3001;
-    display: block;
-    pointer-events: none;
-    opacity: 0;
-    background: rgba(2, 6, 23, 0.72);
-    backdrop-filter: blur(3px);
-    transition: opacity 0.24s ease;
-  }
-
-  .mobile-menu-overlay.visible {
-    pointer-events: auto;
-    opacity: 1;
-  }
-
-  body.mobile-menu-open {
-    overflow: hidden;
-  }
-
-  .main {
-    padding-top: 82px;
-  }
-}
-
-@media (max-width: 420px) {
-  .mobile-menu-button {
-    min-width: 102px;
-    min-height: 44px;
-    font-size: 15px;
-  }
+      this.classList.add("active");
+    });
+  });
 }
 
 /* =========================================================
-   FINÄÂLNÄÂ MOBILNÄÂ DOLADĂÂNÄÂ
+   PŘIHLÁŠENÍ
 ========================================================= */
-@media (max-width: 700px) {
-  body { overflow-x: hidden; }
-  .main { padding: 18px 10px 110px; overflow: visible; }
 
-  /* PlovoucÄÂ­ menu dole vpravo, aby nepÄšÂekrÄËvalo nadpisy */
-  .mobile-menu-button {
-    top: auto;
-    left: auto;
-    right: 16px;
-    bottom: calc(18px + env(safe-area-inset-bottom));
-    width: 58px;
-    min-width: 58px;
-    height: 58px;
-    min-height: 58px;
-    padding: 0;
-    border-radius: 50%;
-    font-size: 0;
-    box-shadow: 0 14px 35px rgba(0,0,0,.5);
-  }
-  .mobile-menu-button::before { content: "Ă˘ÂÂ°"; font-size: 25px; line-height: 1; }
-
-  .sidebar { width: min(86vw, 330px); padding-top: max(34px, env(safe-area-inset-top)); }
-  .sidebar h2 { margin: 28px 0; font-size: 25px; }
-  .sidebar a { padding: 13px 14px; }
-
-  .topbar { margin-bottom: 18px; }
-  .topbar-actions { gap: 8px; }
-  .topbar-actions > * { min-width: 0; }
-  .section-heading h2, .panel h2 { font-size: clamp(25px, 7vw, 34px); }
-
-  /* Rezervace jako karty mÄÂ­sto ÄšÄirokÄĹ  tabulky */
-  #rezervace .table-wrapper { overflow: visible; }
-  #rezervace table, #rezervace thead, #rezervace tbody, #rezervace tr, #rezervace td { display: block; width: 100%; }
-  #rezervace thead { display: none; }
-  #rezervace tbody { display: grid; gap: 14px; }
-  #rezervace tr {
-    padding: 15px;
-    background: rgba(30,41,59,.95);
-    border: 1px solid rgba(148,163,184,.18);
-    border-radius: 16px;
-    box-shadow: 0 10px 24px rgba(0,0,0,.18);
-  }
-  #rezervace td {
-    display: grid;
-    grid-template-columns: 92px minmax(0,1fr);
-    gap: 10px;
-    align-items: center;
-    padding: 8px 0;
-    border: 0;
-    overflow-wrap: anywhere;
-  }
-  #rezervace td::before {
-    content: attr(data-label);
-    color: var(--muted);
-    font-size: 13px;
-    font-weight: 800;
-  }
-  #rezervace td:first-child { font-size: 20px; font-weight: 800; }
-  #rezervace .tableActions { justify-content: flex-start; flex-wrap: wrap; }
-  #rezervace .tableActions button { min-width: 44px; }
-  #rezervace .tableSelect { min-width: 0; width: 100%; }
-
-  /* KalendÄÄÄšÂ */
-  #kalendar.panel { padding: 10px 6px 18px; }
-  .calendarHour { grid-template-columns: 58px 1fr; }
-  .calendarEventsLayer { left: 58px; right: 6px; }
-  .calendar-reservation { padding: 8px 10px; border-radius: 12px; }
-  .calendar-info strong { font-size: 14px; }
-  .calendar-info small { font-size: 11px; }
-  .calendar-status { display: none; }
-
-  /* Mapa stolÄšĹť: na telefonu kompaktnÄÂ­ mÄšÂÄÂ­ÄšĹžka mÄÂ­sto obÄšÂÄÂ­ plochy */
-  #floorMapWrapper { overflow: visible; }
-  #floorMap.floor-map {
-    transform: none !important;
-    width: 100% !important;
-    min-height: 0;
-    padding: 18px;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0,1fr));
-    gap: 16px;
-  }
-  #floorMap .table {
-    position: relative !important;
-    left: auto !important;
-    top: auto !important;
-    width: 118px;
-    height: 118px;
-    justify-self: center;
-    font-size: 16px;
-  }
-  .table-map-name { font-size: 16px; }
-  .table-map-capacity, .table-map-status { font-size: 12px; }
-  .zoom-controls { display: none; }
-
-  /* FormulÄÄÄšÂe a grafy */
-  .chart-wrap { height: 250px; }
-  .filter-actions { gap: 10px; }
-  input, select, textarea, button { max-width: 100%; }
+function showLogin() {
+  document.getElementById("loginScreen").style.display = "flex";
 }
 
-@media (max-width: 380px) {
-  #floorMap.floor-map { grid-template-columns: 1fr; }
-  #rezervace td { grid-template-columns: 78px minmax(0,1fr); }
+function hideLogin() {
+  document.getElementById("loginScreen").style.display = "none";
 }
 
+function consumeDashboardSessionHandoff() {
+  try {
+    const raw = localStorage.getItem("dashboardSessionHandoff");
+    if (!raw) return false;
+
+    const handoff = JSON.parse(raw);
+    const age = Date.now() - Number(handoff?.created_at || 0);
+
+    // Předání je jen krátkodobé a jednorázové.
+    if (!handoff?.access_token || age < 0 || age > 10 * 60 * 1000) {
+      localStorage.removeItem("dashboardSessionHandoff");
+      return false;
+    }
+
+    sessionStorage.setItem("dashboardLoggedIn", "true");
+    sessionStorage.setItem("supabaseAccessToken", handoff.access_token);
+    if (handoff.refresh_token) {
+      sessionStorage.setItem("supabaseRefreshToken", handoff.refresh_token);
+    }
+
+    localStorage.removeItem("dashboardSessionHandoff");
+    return true;
+  } catch (error) {
+    localStorage.removeItem("dashboardSessionHandoff");
+    return false;
+  }
+}
+
+function getAccessToken() {
+  let token = sessionStorage.getItem("supabaseAccessToken");
+  if (!token && consumeDashboardSessionHandoff()) {
+    token = sessionStorage.getItem("supabaseAccessToken");
+  }
+  return token;
+}
+
+function getRefreshToken() {
+  if (!sessionStorage.getItem("supabaseRefreshToken")) {
+    consumeDashboardSessionHandoff();
+  }
+  return sessionStorage.getItem("supabaseRefreshToken");
+}
+
+function clearSession() {
+  sessionStorage.removeItem("dashboardLoggedIn");
+  sessionStorage.removeItem("supabaseAccessToken");
+  sessionStorage.removeItem("supabaseRefreshToken");
+  localStorage.removeItem("dashboardSessionHandoff");
+}
+
+
+function getHeaders(extra = {}) {
+  return {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${getAccessToken()}`,
+    "Content-Type": "application/json",
+    ...extra
+  };
+}
+
+function parseJwt(token) {
+  try {
+    const part = token
+      .split(".")[1]
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+
+    return JSON.parse(
+      decodeURIComponent(
+        atob(part)
+          .split("")
+          .map(character => {
+            return (
+              "%" +
+              character
+                .charCodeAt(0)
+                .toString(16)
+                .padStart(2, "0")
+            );
+          })
+          .join("")
+      )
+    );
+  } catch {
+    return null;
+  }
+}
+async function loadRestaurantContext() {
+  const token =
+    getAccessToken();
+
+  const payload =
+    parseJwt(token);
+
+  if (!payload?.sub) {
+    return false;
+  }
+
+  try {
+    // 1) Nejdřív hledáme AKTIVNÍ členství v restaurant_team.
+    // To je hlavní zdroj oprávnění pro manager/staff a případně i owner.
+    const teamResponse =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/restaurant_team?user_id=eq.${encodeURIComponent(
+          payload.sub
+        )}&active=eq.true&select=restaurant_id,role&limit=1`,
+        {
+          method: "GET",
+          headers: getHeaders()
+        }
+      );
+
+    if (teamResponse.ok) {
+      const memberships =
+        await teamResponse.json();
+
+      const membership =
+        memberships?.[0];
+
+      if (
+        membership?.restaurant_id
+      ) {
+        const teamRole =
+          String(
+            membership.role || ""
+          )
+            .toLowerCase()
+            .trim();
+
+        if (
+          [
+            "owner",
+            "manager",
+            "staff"
+          ].includes(teamRole)
+        ) {
+          currentUserId =
+            payload.sub;
+
+          currentRestaurantId =
+            membership.restaurant_id;
+
+          currentUserRole =
+            teamRole;
+
+          return true;
+        }
+      }
+    }
+
+    // 2) Když aktivní team membership není nalezený,
+    // zkontrolujeme profiles.
+    //
+    // DŮLEŽITÉ:
+    // fallback přes profiles dovolujeme JEN ownerovi.
+    // Manager/staff tímto nesmí obejít deaktivaci v restaurant_team.
+    const profileResponse =
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(
+          payload.sub
+        )}&select=restaurant_id,role`,
+        {
+          method: "GET",
+          headers: getHeaders()
+        }
+      );
+
+    if (!profileResponse.ok) {
+      throw new Error(
+        await profileResponse.text()
+      );
+    }
+
+    const profiles =
+      await profileResponse.json();
+
+    const profile =
+      profiles?.[0];
+
+    const profileRole =
+      String(
+        profile?.role || ""
+      )
+        .toLowerCase()
+        .trim();
+
+    if (
+      profile?.restaurant_id &&
+      profileRole === "owner"
+    ) {
+      currentUserId =
+        payload.sub;
+
+      currentRestaurantId =
+        profile.restaurant_id;
+
+      currentUserRole =
+        "owner";
+
+      return true;
+    }
+
+    // Pokud je uživatel manager/staff bez aktivního membershipu,
+    // přístup zůstane správně zablokovaný.
+    if (
+      profile?.restaurant_id &&
+      [
+        "manager",
+        "staff"
+      ].includes(profileRole)
+    ) {
+      console.error(
+        "Uživatel nemá aktivní členství v restaurant_team."
+      );
+
+      return false;
+    }
+
+    console.error(
+      "Uživatel není přiřazený k aktivní restauraci."
+    );
+
+    return false;
+  } catch (error) {
+    console.error(
+      "Nepodařilo se načíst restauraci:",
+      error
+    );
+
+    return false;
+  }
+}
+
+async function loadRestaurantContextWithRetry(attempts = 5, delayMs = 350) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    if (await loadRestaurantContext()) return true;
+    if (attempt < attempts - 1) {
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  return false;
+}
+
+let roleRefreshInProgress = false;
+let lastRoleRefreshAt = 0;
+
+async function refreshCurrentUserContext(options = {}) {
+  const { force = false } = options;
+  if (!getAccessToken() || roleRefreshInProgress) return;
+  if (!force && Date.now() - lastRoleRefreshAt < 5000) return;
+
+  roleRefreshInProgress = true;
+  try {
+    if (!(await ensureValidSession())) return;
+    const previousRole = currentUserRole;
+    const previousRestaurantId = currentRestaurantId;
+    const ok = await loadRestaurantContextWithRetry(3, 250);
+
+    if (!ok) {
+      clearSession();
+      showLogin();
+      return;
+    }
+
+    lastRoleRefreshAt = Date.now();
+    applyRolePermissions();
+    showDashboardSection(window.location.hash.replace("#", "") || "prehled", { notifyDenied: false });
+
+    // Když majitel změnil zaměstnanci roli nebo restauraci, přenačteme data
+    // automaticky při návratu do aplikace.
+    if (previousRole && (previousRole !== currentUserRole || previousRestaurantId !== currentRestaurantId)) {
+      history.replaceState(null, "", "#prehled");
+      await loadDashboardData();
+      showDashboardNotice(`Přístup byl aktualizován: ${roleLabel(currentUserRole)}.`, "success");
+    }
+  } catch (error) {
+    console.error("Aktualizace role se nepodařila:", error);
+  } finally {
+    roleRefreshInProgress = false;
+  }
+}
+
+window.addEventListener("focus", () => refreshCurrentUserContext());
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") refreshCurrentUserContext();
+});
+window.addEventListener("pageshow", () => refreshCurrentUserContext({ force: true }));
+
+// Role se může změnit na jiném zařízení (např. Majitel změní Obsluhu na Manažera).
+// Pravidelná tichá kontrola znamená, že zaměstnanec nemusí ručně obnovovat stránku.
+const roleRefreshTimer = setInterval(() => {
+  if (document.visibilityState === "visible" && getAccessToken()) {
+    refreshCurrentUserContext();
+  }
+}, 10000);
+
+function tokenNeedsRefresh() {
+  const token = getAccessToken();
+
+  if (!token) {
+    return true;
+  }
+
+  const payload = parseJwt(token);
+
+  return (
+    !payload?.exp ||
+    payload.exp * 1000 <= Date.now() + 60000
+  );
+}
+
+async function refreshSession() {
+  const refreshToken = getRefreshToken();
+
+  if (!refreshToken) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,
+      {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          refresh_token: refreshToken
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.access_token) {
+      return false;
+    }
+
+    sessionStorage.setItem(
+      "dashboardLoggedIn",
+      "true"
+    );
+
+    sessionStorage.setItem(
+      "supabaseAccessToken",
+      data.access_token
+    );
+
+    if (data.refresh_token) {
+      sessionStorage.setItem(
+        "supabaseRefreshToken",
+        data.refresh_token
+      );
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function ensureValidSession() {
+  if (!getAccessToken()) {
+    return false;
+  }
+
+  if (!tokenNeedsRefresh()) {
+    return true;
+  }
+
+  const refreshed = await refreshSession();
+
+  if (!refreshed) {
+    clearSession();
+  }
+
+  return refreshed;
+}
+
+async function authorizedFetch(url, options = {}) {
+  if (!(await ensureValidSession())) {
+    showLogin();
+    throw new Error("Přihlášení vypršelo.");
+  }
+
+  let response = await fetch(url, {
+    ...options,
+   headers: {
+    ...getHeaders(),
+    ...(options.headers || {})
+}
+  });
+
+  if (
+    response.status === 401 &&
+    await refreshSession()
+  ) {
+    response = await fetch(url, {
+      ...options,
+     headers: {
+    ...getHeaders(),
+    ...(options.headers || {})
+}
+    });
+  }
+
+  if (response.status === 401) {
+    clearSession();
+    showLogin();
+  }
+
+  return response;
+}
+
+async function login(event) {
+  event?.preventDefault();
+
+  const emailInput =
+    document.getElementById("loginEmail");
+
+  const passwordInput =
+    document.getElementById("password");
+
+  const error =
+    document.getElementById("error");
+
+  const button =
+    document.getElementById("loginButton");
+
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!email || !password) {
+    error.textContent =
+      "Vyplň e-mail a heslo.";
+
+    return;
+  }
+
+  button.disabled = true;
+  error.textContent = "Přihlašuji...";
+
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
+      {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email,
+          password
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.access_token) {
+      error.textContent =
+        "Nesprávný e-mail nebo heslo.";
+
+      passwordInput.value = "";
+      return;
+    }
+
+    sessionStorage.setItem(
+      "dashboardLoggedIn",
+      "true"
+    );
+
+    sessionStorage.setItem(
+      "supabaseAccessToken",
+      data.access_token
+    );
+
+    sessionStorage.setItem(
+      "supabaseRefreshToken",
+      data.refresh_token
+    );
+
+    passwordInput.value = "";
+    error.textContent = "";
+
+    // Po přihlášení MUSÍME nejdřív načíst restauraci a roli. Dříve se
+    // dashboard načetl bez nového kontextu a správná role se někdy objevila
+    // až po ručním refreshi.
+    const restaurantLoaded = await loadRestaurantContextWithRetry();
+    if (!restaurantLoaded) {
+      clearSession();
+      showLogin();
+      error.textContent = "Účet není přiřazený k aktivní restauraci.";
+      return;
+    }
+
+    hideLogin();
+    history.replaceState(null, "", "#prehled");
+    await loadDashboardData();
+  } catch (loginError) {
+    console.error(loginError);
+
+    error.textContent =
+      "Přihlášení se nepodařilo.";
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function logoutDashboard() {
+  clearSession();
+  location.reload();
+}
 
 /* =========================================================
-   AUTOMATICKĂ DOPORUÄENĂ STOLU
+   POMOCNÉ FUNKCE
 ========================================================= */
-.tableRecommendation {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 14px 16px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.58);
-  color: #aab5c8;
-  line-height: 1.4;
+
+function getLocalDateString(date = new Date()) {
+  return new Date(
+    date.getTime() -
+    date.getTimezoneOffset() * 60000
+  )
+    .toISOString()
+    .split("T")[0];
 }
 
-.tableRecommendation.available {
-  border-color: rgba(34, 197, 94, 0.55);
-  background: rgba(34, 197, 94, 0.1);
-  color: #d8ffe5;
-}
-
-.tableRecommendation.unavailable {
-  border-color: rgba(239, 68, 68, 0.55);
-  background: rgba(239, 68, 68, 0.1);
-  color: #ffd8d8;
-}
-
-.tableRecommendation strong {
-  color: inherit;
-  font-size: 1rem;
-}
-
-.tableRecommendation span {
-  opacity: 0.78;
-  font-size: 0.9rem;
-}
-
-@media (max-width: 768px) {
-  .tableRecommendation {
-    padding: 13px 14px;
-    font-size: 0.95rem;
+function formatDate(date) {
+  if (!date) {
+    return "-";
   }
+
+  const parts = date.split("-");
+
+  return parts.length === 3
+    ? `${parts[2]}.${parts[1]}.${parts[0]}`
+    : date;
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
-/* Provozní doba a blokace */
-.operations-panel{display:block}.operations-help{color:#94a3b8;margin:0 0 20px}.opening-hours-grid{display:grid;gap:10px;margin-bottom:18px}.opening-day{display:grid;grid-template-columns:minmax(110px,1fr) 130px 140px 20px 140px;align-items:center;gap:12px;padding:14px;border:1px solid #334155;border-radius:14px;background:#111827}.opening-day input[type="time"],.blocked-time-form input{width:100%;padding:12px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff}.blocked-time-form{display:grid;grid-template-columns:1fr 1fr 1fr 2fr auto;gap:12px;align-items:end;margin-top:28px}.blocked-time-form h3{grid-column:1/-1;margin:0}.blocked-times-list{display:grid;gap:10px;margin-top:18px}.blocked-time-item{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px;border:1px solid #334155;border-radius:14px;background:#111827}.blocked-time-item span{color:#94a3b8}@media(max-width:760px){.opening-day{grid-template-columns:1fr 1fr}.opening-day strong{grid-column:1/-1}.opening-day span{display:none}.blocked-time-form{grid-template-columns:1fr}.blocked-time-form h3{grid-column:auto}.blocked-time-item{align-items:flex-start;flex-direction:column}}
+function getReservationGuestName(reservation) {
+  return [reservation?.name, reservation?.last_name]
+    .map(value => String(value || "").trim())
+    .filter(Boolean)
+    .join(" ") || "-";
+}
 
 /* =========================================================
-   BLÍŽÍCÍ SE REZERVACE
+   REZERVACE
 ========================================================= */
-.upcoming-panel {
-  margin-bottom: 24px;
-}
 
-.upcoming-live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 12px;
-  border: 1px solid rgba(34, 197, 94, 0.35);
-  border-radius: 999px;
-  color: #bbf7d0;
-  background: rgba(34, 197, 94, 0.12);
-  font-size: 13px;
-  font-weight: 800;
-}
+async function loadReservations() {
+  const table =
+    document.getElementById("reservationTable");
 
-.upcoming-live-badge::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.12);
-}
+  try {
+    const response = await authorizedFetch(
+  `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${currentRestaurantId}&select=*&order=id.desc`
+);
+    const data = await response.json();
 
-.upcoming-reservations-list {
-  display: grid;
-  gap: 12px;
-}
+    if (!response.ok) {
+      throw new Error(JSON.stringify(data));
+    }
 
-.upcoming-reservation-card {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 120px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 18px;
-  padding: 15px 18px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-left: 5px solid #f59e0b;
-  border-radius: 16px;
-  color: #fff;
-  text-align: left;
-  background: rgba(15, 23, 42, 0.72);
-  cursor: pointer;
-  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-}
+    reservations =
+      Array.isArray(data) ? data : [];
 
-.upcoming-reservation-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(249, 115, 22, 0.55);
-  background: rgba(30, 41, 59, 0.92);
-}
+   updateStatistics();
+renderReservations(reservations);
+refreshReservationNotifications();
+renderCalendar();
+renderCharts();
+renderFloorMap();
+renderUpcomingReservations();
+startUpcomingReservationTimer();
+renderCustomers();
+  } catch (error) {
+    console.error(error);
 
-
-
-.upcoming-reservation-card.imminent {
-  border-color: rgba(249, 115, 22, 0.72);
-  border-left-color: #fb923c;
-  background: linear-gradient(90deg, rgba(249, 115, 22, 0.18), rgba(15, 23, 42, 0.88));
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.16), 0 12px 30px rgba(249, 115, 22, 0.12);
-}
-
-.upcoming-reservation-card.imminent .upcoming-time-block small {
-  color: #fdba74;
-  font-weight: 800;
-}
-
-.upcoming-reservation-card.imminent .upcoming-status {
-  color: #fff7ed;
-  background: rgba(249, 115, 22, 0.3);
-  border: 1px solid rgba(251, 146, 60, 0.42);
-}
-
-.upcoming-reservation-card.confirmed { border-left-color: #22c55e; }
-.upcoming-reservation-card.cancelled { border-left-color: #ef4444; opacity: 0.72; }
-
-.upcoming-time-block,
-.upcoming-main-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.upcoming-time-block strong {
-  font-size: 22px;
-}
-
-.upcoming-time-block small,
-.upcoming-main-info small {
-  color: #94a3b8;
-}
-
-.upcoming-main-info strong {
-  font-size: 18px;
-}
-
-.upcoming-status {
-  padding: 7px 10px;
-  border-radius: 999px;
-  color: #fff7ed;
-  background: rgba(249, 115, 22, 0.18);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.upcoming-reservation-card.confirmed .upcoming-status {
-  color: #dcfce7;
-  background: rgba(34, 197, 94, 0.18);
-}
-
-.upcoming-empty-state {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 18px;
-  border: 1px dashed rgba(148, 163, 184, 0.3);
-  border-radius: 16px;
-  color: #dbeafe;
-  background: rgba(15, 23, 42, 0.45);
-}
-
-.upcoming-empty-state > span {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  color: #dcfce7;
-  background: rgba(34, 197, 94, 0.16);
-  font-size: 21px;
-  font-weight: 900;
-}
-
-.upcoming-empty-state div {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.upcoming-empty-state small { color: #94a3b8; }
-
-@media (max-width: 700px) {
-  .upcoming-reservation-card {
-    grid-template-columns: 84px minmax(0, 1fr);
-    gap: 12px;
-    padding: 14px;
-  }
-
-  .upcoming-status {
-    grid-column: 1 / -1;
-    justify-self: start;
-  }
-
-  .upcoming-time-block strong { font-size: 18px; }
-  .upcoming-main-info strong { font-size: 16px; }
-}
-
-
-/* =========================================================
-   NASTAVENÍ REZERVACÍ
-========================================================= */
-.reservation-settings-panel { display:block; }
-.reservation-settings-help { color:#94a3b8; margin:0 0 22px; max-width:900px; line-height:1.6; }
-.reservation-settings-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-bottom:18px; }
-.reservation-settings-card { padding:20px; border:1px solid #334155; border-radius:18px; background:#111827; }
-.reservation-settings-card h3 { margin:0 0 16px; }
-.reservation-settings-fields { display:grid; gap:12px; }
-.reservation-settings-fields label { display:grid; grid-template-columns:minmax(130px,1fr) 120px 55px; gap:10px; align-items:center; color:#e2e8f0; font-weight:700; }
-.reservation-settings-fields input { width:100%; padding:11px 12px; border:1px solid #334155; border-radius:10px; background:#0f172a; color:#fff; }
-.reservation-settings-fields label span { color:#94a3b8; font-size:13px; font-weight:600; }
-.reservation-settings-summary { display:grid; gap:5px; padding:15px 16px; margin:0 0 18px; border:1px solid rgba(245,158,11,.28); border-radius:14px; background:rgba(245,158,11,.08); color:#fde68a; }
-.reservation-settings-summary span { color:#cbd5e1; line-height:1.45; }
-@media(max-width:850px){
-  .reservation-settings-grid{grid-template-columns:1fr}
-  .reservation-settings-fields label{grid-template-columns:minmax(110px,1fr) 100px 45px}
-}
-@media(max-width:520px){
-  .reservation-settings-card{padding:15px}
-  .reservation-settings-fields label{grid-template-columns:1fr 90px 42px;font-size:14px}
-}
-
-
-/* =========================================================
-   HISTORIE REZERVACÍ
-========================================================= */
-.reservation-history-panel .history-help {
-  margin: 6px 0 0;
-  opacity: .72;
-}
-
-.reservation-history-list {
-  display: grid;
-  gap: 12px;
-}
-
-.history-card {
-  border: 1px solid rgba(148, 163, 184, .22);
-  border-radius: 16px;
-  background: rgba(15, 23, 42, .5);
-  padding: 16px 18px;
-}
-
-.history-card-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.history-card-top > div {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.history-card-top time,
-.history-meta {
-  color: #94a3b8;
-  font-size: .88rem;
-}
-
-.history-action-badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: .78rem;
-  font-weight: 800;
-  background: rgba(249, 115, 22, .15);
-  color: #fdba74;
-}
-
-.history-created .history-action-badge {
-  background: rgba(34, 197, 94, .16);
-  color: #86efac;
-}
-
-.history-deleted .history-action-badge {
-  background: rgba(239, 68, 68, .16);
-  color: #fca5a5;
-}
-
-.history-changes {
-  display: grid;
-  gap: 5px;
-  margin: 12px 0 10px;
-  line-height: 1.45;
-}
-
-.history-empty {
-  padding: 24px;
-  text-align: center;
-  border: 1px dashed rgba(148, 163, 184, .3);
-  border-radius: 16px;
-  color: #94a3b8;
-}
-
-@media (max-width: 720px) {
-  .history-card-top {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .history-actions {
-    width: 100%;
-  }
-
-  .history-actions select,
-  .history-actions button {
-    width: 100%;
+    table.innerHTML = `
+      <tr>
+        <td colspan="10">
+          Nepodařilo se načíst rezervace.
+        </td>
+      </tr>
+    `;
   }
 }
 
 
 /* =========================================================
-   ZÁKAZNÍCI / CRM
+   UPOZORNĚNÍ NA NOVÉ REZERVACE
 ========================================================= */
-.customers-heading { gap: 20px; align-items: flex-end; }
-.customers-help { margin-top: 6px; opacity: .75; }
-.customer-toolbar { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-.customer-toolbar input, .customer-toolbar select { min-width: 220px; }
-.customer-summary { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin: 18px 0; }
-.customer-summary > div { padding: 16px 18px; border: 1px solid rgba(255,255,255,.10); background: rgba(9,19,38,.45); border-radius: 16px; display:flex; flex-direction:column; gap:4px; }
-.customer-summary strong { font-size: 28px; }
-.customer-summary span { opacity:.7; }
-.customer-list { display:grid; gap:16px; }
-.customer-card { border:1px solid rgba(255,255,255,.11); border-radius:18px; padding:18px; background:rgba(12,24,45,.55); }
-.customer-card.is-regular { border-color: rgba(255,183,0,.45); box-shadow: 0 0 0 1px rgba(255,183,0,.08) inset; }
-.customer-card-head { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }
-.customer-name-line { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.customer-name-line h3 { margin:0; font-size:22px; }
-.customer-hint { font-size:12px; padding:5px 9px; border-radius:999px; background:rgba(255,166,0,.14); color:#ffbf4a; }
-.customer-contact { display:flex; gap:14px; flex-wrap:wrap; margin-top:7px; opacity:.78; }
-.regular-toggle { display:flex; align-items:center; gap:8px; white-space:nowrap; font-weight:700; }
-.regular-toggle input { width:20px; height:20px; accent-color:#ff5a1f; }
-.customer-stats-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:16px; }
-.customer-stats-grid > div { background:rgba(255,255,255,.035); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:3px; }
-.customer-stats-grid strong { font-size:18px; }
-.customer-stats-grid span { font-size:12px; opacity:.65; }
-.customer-note-row { display:grid; grid-template-columns:1fr auto; gap:10px; margin-top:14px; align-items:stretch; }
-.customer-note-row textarea { min-height:72px; resize:vertical; }
-.customer-history-toggle { margin-top:12px; width:100%; text-align:left; border:0; background:transparent; color:#ff8a4c; font-weight:700; cursor:pointer; padding:8px 0; }
-.customer-reservation-history { margin-top:8px; border-top:1px solid rgba(255,255,255,.08); padding-top:8px; }
-.customer-reservation-row { display:grid; grid-template-columns:1.2fr .7fr 1fr .8fr; gap:10px; align-items:center; padding:10px 4px; border-bottom:1px solid rgba(255,255,255,.06); }
-@media (max-width: 760px) {
-  .customers-heading, .customer-card-head { flex-direction:column; align-items:stretch; }
-  .customer-toolbar { justify-content:stretch; }
-  .customer-toolbar input, .customer-toolbar select, .customer-toolbar button { width:100%; min-width:0; }
-  .customer-summary { grid-template-columns:1fr; }
-  .customer-stats-grid { grid-template-columns:1fr 1fr; }
-  .customer-note-row { grid-template-columns:1fr; }
-  .customer-reservation-row { grid-template-columns:1fr 1fr; }
+
+function reservationNotificationStorageKey() {
+  return `reservationNotificationsReadThrough:${currentRestaurantId || "default"}`;
 }
 
+function getReservationReadThroughId() {
+  return Number(localStorage.getItem(reservationNotificationStorageKey()) || 0);
+}
+
+function setReservationReadThroughId(id) {
+  localStorage.setItem(reservationNotificationStorageKey(), String(Number(id) || 0));
+}
+
+function getReservationNotificationItems() {
+  const readThrough = getReservationReadThroughId();
+  const sorted = [...reservations]
+    .filter(item => Number(item?.id) > 0)
+    .sort((a, b) => Number(b.id) - Number(a.id));
+
+  // Při prvním spuštění upozornění zobrazíme jen několik nejnovějších,
+  // aby staré testovací rezervace nezaplnily celý zvonek.
+  if (!readThrough) return sorted.slice(0, 8);
+  return sorted.filter(item => Number(item.id) > readThrough).slice(0, 20);
+}
+
+function refreshReservationNotifications() {
+  const badge = document.getElementById("reservationNotificationBadge");
+  const list = document.getElementById("reservationNotificationList");
+  const overview = document.getElementById("reservationAlertOverview");
+  const title = document.getElementById("reservationAlertOverviewTitle");
+  const text = document.getElementById("reservationAlertOverviewText");
+  if (!badge || !list) return;
+
+  const unread = getReservationNotificationItems();
+  const count = unread.length;
+
+  badge.textContent = String(count);
+  badge.hidden = count === 0;
+
+  if (overview) overview.classList.toggle("has-unread", count > 0);
+
+  if (!count) {
+    list.innerHTML = `
+      <div class="reservation-notification-empty">
+        <span>✓</span>
+        <div>
+          <strong>Žádná nepřečtená upozornění</strong>
+          <small>Nové rezervace se objeví automaticky.</small>
+        </div>
+      </div>`;
+    if (title) title.textContent = "Žádná nepřečtená upozornění";
+    if (text) text.textContent = "Jakmile přijde nová rezervace, objeví se tady i ve zvonku nahoře.";
+    return;
+  }
+
+  list.innerHTML = unread.map(reservation => {
+    const fullName = getReservationGuestName(reservation) === "-" ? "Nový host" : getReservationGuestName(reservation);
+    const tableLabel = getReservationTableLabel(reservation);
+    const people = Number(reservation.people || 0);
+    return `
+      <button type="button" class="reservation-notification-item unread" onclick="openReservationFromNotification(${Number(reservation.id)})">
+        <span class="reservation-notification-dot"></span>
+        <span class="reservation-notification-copy">
+          <strong>${escapeHtml(fullName)}</strong>
+          <small>${escapeHtml(formatDate(reservation.date))} · ${escapeHtml(String(reservation.time || "").slice(0,5))} · ${people} ${people === 1 ? "osoba" : "osob"}</small>
+          <em>${escapeHtml(tableLabel || "Bez stolu")}</em>
+        </span>
+      </button>`;
+  }).join("");
+
+  if (title) title.textContent = count === 1 ? "1 nová rezervace" : `${count} nových rezervací`;
+  if (text) {
+    const newest = unread[0];
+    const guest = getReservationGuestName(newest) === "-" ? "Nový host" : getReservationGuestName(newest);
+    text.textContent = `${guest} · ${String(newest.time || "").slice(0,5)} · ${getReservationTableLabel(newest)}`;
+  }
+}
+
+function toggleReservationNotifications(event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  const panel = document.getElementById("reservationNotificationPanel");
+  const button = document.getElementById("reservationNotificationButton");
+  if (!panel) return;
+  const open = !panel.classList.contains("open");
+  panel.classList.toggle("open", open);
+  if (button) button.setAttribute("aria-expanded", String(open));
+}
+
+function markAllReservationNotificationsRead() {
+  const maxId = reservations.reduce((max, item) => Math.max(max, Number(item?.id) || 0), 0);
+  setReservationReadThroughId(maxId);
+  refreshReservationNotifications();
+}
+
+function openReservationFromNotification(id) {
+  const reservation = reservations.find(item => Number(item.id) === Number(id));
+  if (!reservation) return;
+
+  const current = getReservationReadThroughId();
+  if (Number(id) > current) setReservationReadThroughId(Number(id));
+  refreshReservationNotifications();
+
+  showDashboardSection("rezervace", { notifyDenied: false });
+  history.replaceState(null, "", "#rezervace");
+
+  setTimeout(() => {
+    const row = document.querySelector(`[data-reservation-id="${Number(id)}"]`);
+    row?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 100);
+}
+
+// Zavřít panel kliknutím mimo něj.
+document.addEventListener("click", event => {
+  const wrapper = document.getElementById("reservationNotificationWrapper");
+  const panel = document.getElementById("reservationNotificationPanel");
+  const button = document.getElementById("reservationNotificationButton");
+  if (!wrapper || !panel || wrapper.contains(event.target)) return;
+  panel.classList.remove("open");
+  if (button) button.setAttribute("aria-expanded", "false");
+});
+
+function parseReservationDateTime(reservation) {
+  if (!reservation?.date || !reservation?.time) return null;
+
+  const time = String(reservation.time).slice(0, 5);
+  const parsed = new Date(`${reservation.date}T${time}:00`);
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function isCancelledReservation(reservation) {
+  const status = String(reservation?.status || "").toLowerCase();
+  return ["zrušeno", "zruseno", "cancelled", "canceled"].includes(status);
+}
+
+function getReservationTableLabel(reservation) {
+  if (reservation?.table_group_id) {
+    const group = tableGroups.find(
+      item => Number(item.id) === Number(reservation.table_group_id)
+    );
+
+    if (group) {
+      if (group.name) return group.name;
+
+      const memberNames = (Array.isArray(group.table_ids) ? group.table_ids : [])
+        .map(id => restaurantTables.find(table => Number(table.id) === Number(id))?.name)
+        .filter(Boolean);
+
+      if (memberNames.length) return memberNames.join(" + ");
+      return `Spojené stoly #${reservation.table_group_id}`;
+    }
+
+    return `Spojené stoly #${reservation.table_group_id}`;
+  }
+
+  if (!reservation?.table_id) return "Bez stolu";
+
+  const table = restaurantTables.find(
+    item => Number(item.id) === Number(reservation.table_id)
+  );
+
+  return table?.name || `Stůl ${reservation.table_id}`;
+}
+
+function formatUpcomingTime(minutes) {
+  if (minutes <= 0) return "Právě teď";
+  if (minutes < 60) return `Za ${minutes} min`;
+
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `Za ${hours} h ${rest} min` : `Za ${hours} h`;
+}
+
+function getUpcomingReservations() {
+  const now = new Date();
+  const today = getLocalDateString(now);
+
+  return reservations
+    .filter(reservation => reservation.date === today && !isCancelledReservation(reservation))
+    .map(reservation => {
+      const startsAt = parseReservationDateTime(reservation);
+      const minutesUntil = startsAt
+        ? Math.ceil((startsAt.getTime() - now.getTime()) / 60000)
+        : null;
+
+      return { reservation, startsAt, minutesUntil };
+    })
+    .filter(item => item.startsAt && item.minutesUntil >= 0 && item.minutesUntil <= 120)
+    .sort((a, b) => a.startsAt - b.startsAt);
+}
+
+function renderUpcomingReservations() {
+  const list = document.getElementById("upcomingReservationsList");
+  if (!list) return;
+
+  const upcoming = getUpcomingReservations();
+
+  if (!upcoming.length) {
+    list.innerHTML = `
+      <div class="upcoming-empty-state">
+        <span>✓</span>
+        <div>
+          <strong>V příštích 2 hodinách nic nepřijde</strong>
+          <small>Seznam se automaticky aktualizuje každou minutu.</small>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = upcoming.map(({ reservation, minutesUntil }) => {
+    const statusClass = getCalendarStatusClass(reservation.status);
+    const people = Number(reservation.people || 0);
+    const isImminent = minutesUntil <= 30;
+
+    return `
+      <button
+        type="button"
+        class="upcoming-reservation-card ${statusClass}${isImminent ? " imminent" : ""}"
+        onclick="editReservation(${Number(reservation.id)})"
+      >
+        <span class="upcoming-time-block">
+          <strong>${escapeHtml(String(reservation.time || "").slice(0, 5))}</strong>
+          <small>${escapeHtml(formatUpcomingTime(minutesUntil))}</small>
+        </span>
+        <span class="upcoming-main-info">
+          <strong>${escapeHtml(getReservationGuestName(reservation) === "-" ? "Bez jména" : getReservationGuestName(reservation))}</strong>
+          <small>${people} ${people === 1 ? "osoba" : people >= 2 && people <= 4 ? "osoby" : "osob"} · ${escapeHtml(getReservationTableLabel(reservation))}</small>
+        </span>
+        <span class="upcoming-status">${isImminent ? "Brzy přijde" : escapeHtml(getCalendarStatusLabel(reservation.status))}</span>
+      </button>
+    `;
+  }).join("");
+
+  upcoming.forEach(({ reservation, minutesUntil }) => {
+    if (minutesUntil < 0 || minutesUntil > 30) return;
+
+    const alertKey = `${reservation.id}:${reservation.date}:${String(reservation.time).slice(0, 5)}`;
+    if (shownUpcomingReservationAlerts.has(alertKey)) return;
+
+    shownUpcomingReservationAlerts.add(alertKey);
+    const tableLabel = getReservationTableLabel(reservation);
+    showDashboardNotice(
+      `${formatUpcomingTime(minutesUntil)} přijde ${getReservationGuestName(reservation) === "-" ? "rezervace" : getReservationGuestName(reservation)} – ${reservation.people || 0} osob, ${tableLabel}.`,
+      "info"
+    );
+  });
+}
+
+function startUpcomingReservationTimer() {
+  if (upcomingReservationTimer) return;
+
+  upcomingReservationTimer = window.setInterval(() => {
+    renderUpcomingReservations();
+  }, 60000);
+}
+
+function updateStatistics() {
+  const today = getLocalDateString();
+
+  document.getElementById(
+    "todayCount"
+  ).textContent = reservations.filter(
+    reservation => reservation.date === today
+  ).length;
+
+  document.getElementById(
+    "totalCount"
+  ).textContent = reservations.length;
+
+  document.getElementById(
+    "pendingCount"
+  ).textContent = reservations.filter(
+    reservation =>
+      (reservation.status || "Čeká") === "Čeká"
+  ).length;
+}
+
+function renderReservations(data) {
+  const table =
+    document.getElementById("reservationTable");
+
+  if (!data.length) {
+    table.innerHTML = `
+      <tr>
+        <td colspan="10">
+          Žádné rezervace.
+        </td>
+      </tr>
+    `;
+
+    return;
+  }
+
+  table.innerHTML = data
+    .map(reservation => {
+      const currentStatus =
+        String(
+          reservation.status || "Čeká"
+        );
+
+      const currentReservationId =
+        Number(reservation.id);
+
+      const statusBusy =
+        reservationStatusUpdatesInFlight.has(
+          currentReservationId
+        );
+
+      return `
+        <tr>
+
+          <td data-label="Jméno">
+            ${escapeHtml(
+              getReservationGuestName(reservation)
+            )}
+          </td>
+
+          <td data-label="Osob">
+            ${escapeHtml(
+              reservation.people || "-"
+            )}
+          </td>
+
+          <td data-label="Datum">
+            ${escapeHtml(
+              formatDate(reservation.date)
+            )}
+          </td>
+
+          <td data-label="Čas">
+            ${escapeHtml(
+              reservation.time || "-"
+            )}
+          </td>
+
+          <td data-label="Stůl">
+            ${renderTableSelect(reservation)}
+          </td>
+
+          <td data-label="Telefon">
+            ${
+              reservation.phone
+                ? `
+                  <a
+                    class="contactLink"
+                    href="tel:${escapeHtml(
+                      reservation.phone
+                    )}"
+                  >
+                    ${escapeHtml(
+                      reservation.phone
+                    )}
+                  </a>
+                `
+                : "-"
+            }
+          </td>
+
+          <td data-label="E-mail">
+            ${
+              reservation.email
+                ? `
+                  <a
+                    class="contactLink"
+                    href="mailto:${escapeHtml(
+                      reservation.email
+                    )}"
+                  >
+                    ${escapeHtml(
+                      reservation.email
+                    )}
+                  </a>
+                `
+                : "-"
+            }
+          </td>
+
+          <td data-label="Poznámka">
+            ${escapeHtml(
+              reservation.note || "-"
+            )}
+          </td>
+
+          <td data-label="Stav">
+            <span
+              class="status ${escapeHtml(
+                currentStatus
+              )}"
+            >
+              ${escapeHtml(
+                currentStatus
+              )}
+            </span>
+          </td>
+
+          <td data-label="Akce">
+            <div class="tableActions">
+
+  <button
+    type="button"
+    title="Automaticky doporučit stůl"
+    onclick="autoAssignTable(
+      ${Number(reservation.id)}
+    )"
+  >
+    🪄
+  </button>
+
+  <button
+    class="editBtn"
+    type="button"
+    title="Upravit rezervaci"
+    onclick="editReservation(
+      ${Number(reservation.id)}
+    )"
+  >
+    ✏️
+  </button>
+              <button
+                type="button"
+                title="${
+                  currentStatus === "Potvrzeno"
+                    ? "Rezervace už je potvrzená"
+                    : "Potvrdit rezervaci"
+                }"
+                data-reservation-status-id="${
+                  currentReservationId
+                }"
+                data-reservation-status-value="Potvrzeno"
+                ${
+                  statusBusy ||
+                  currentStatus === "Potvrzeno"
+                    ? "disabled"
+                    : ""
+                }
+                onclick="updateStatus(
+                  ${currentReservationId},
+                  'Potvrzeno'
+                )"
+              >
+                ✅
+              </button>
+
+              <button
+                type="button"
+                title="${
+                  currentStatus === "Zrušeno"
+                    ? "Rezervace už je zrušená"
+                    : "Zrušit rezervaci"
+                }"
+                data-reservation-status-id="${
+                  currentReservationId
+                }"
+                data-reservation-status-value="Zrušeno"
+                ${
+                  statusBusy ||
+                  currentStatus === "Zrušeno"
+                    ? "disabled"
+                    : ""
+                }
+                onclick="updateStatus(
+                  ${currentReservationId},
+                  'Zrušeno'
+                )"
+              >
+                ❌
+              </button>
+
+              <button
+                class="deleteBtn"
+                type="button"
+                title="Smazat rezervaci"
+                onclick="deleteReservation(
+                  ${Number(reservation.id)}
+                )"
+              >
+                🗑️
+              </button>
+
+            </div>
+          </td>
+
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+async function sendReservationStatusEmailRequest(id, status) {
+  const controller =
+    new AbortController();
+
+  const timeoutId =
+    setTimeout(
+      () => controller.abort(),
+      15000
+    );
+
+  try {
+    const response =
+      await authorizedFetch(
+        "/api/send-email",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          signal:
+            controller.signal,
+          body: JSON.stringify({
+            action:
+              "reservation-status-email",
+            reservation_id:
+              Number(id),
+            status
+          })
+        }
+      );
+
+    const data =
+      await response
+        .json()
+        .catch(
+          () => ({})
+        );
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error ||
+        "Stav rezervace se změnil, ale e-mail se nepodařilo odeslat."
+      );
+    }
+
+    return data;
+  } catch (error) {
+    if (
+      error?.name ===
+      "AbortError"
+    ) {
+      throw new Error(
+        "Odeslání e-mailu trvalo příliš dlouho. Stav rezervace byl uložen."
+      );
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(
+      timeoutId
+    );
+  }
+}
+
+async function updateStatus(id, status) {
+  const reservationId =
+    Number(id);
+
+  const nextStatus =
+    String(status || "").trim();
+
+  if (
+    !Number.isInteger(
+      reservationId
+    ) ||
+    reservationId < 1 ||
+    ![
+      "Potvrzeno",
+      "Zrušeno"
+    ].includes(nextStatus)
+  ) {
+    showDashboardNotice(
+      "Neplatná změna stavu rezervace.",
+      "error"
+    );
+    return false;
+  }
+
+  const currentReservation =
+    reservations.find(
+      reservation =>
+        Number(reservation.id) ===
+        reservationId
+    );
+
+  const currentStatus =
+    String(
+      currentReservation?.status ||
+      "Čeká"
+    );
+
+  if (
+    currentStatus ===
+    nextStatus
+  ) {
+    showDashboardNotice(
+      nextStatus === "Potvrzeno"
+        ? "Rezervace už je potvrzená."
+        : "Rezervace už je zrušená.",
+      "info"
+    );
+    return false;
+  }
+
+  // Ochrana proti rychlému dvojkliku v jednom prohlížeči.
+  if (
+    reservationStatusUpdatesInFlight.has(
+      reservationId
+    )
+  ) {
+    return false;
+  }
+
+  reservationStatusUpdatesInFlight.add(
+    reservationId
+  );
+
+  setReservationStatusButtonsBusy(
+    reservationId,
+    true
+  );
+
+  try {
+    // Databáze pustí jen první stejnou změnu stavu.
+    const response =
+      await authorizedFetch(
+        `${SUPABASE_URL}/rest/v1/reservations?id=eq.${reservationId}&status=neq.${encodeURIComponent(
+          nextStatus
+        )}`,
+        {
+          method: "PATCH",
+          headers: getHeaders({
+            Prefer:
+              "return=representation"
+          }),
+          body: JSON.stringify({
+            status: nextStatus
+          })
+        }
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        await response.text()
+      );
+    }
+
+    const changedRows =
+      await response
+        .json()
+        .catch(
+          () => []
+        );
+
+    if (
+      !Array.isArray(
+        changedRows
+      ) ||
+      changedRows.length === 0
+    ) {
+      await loadReservations();
+
+      showDashboardNotice(
+        nextStatus === "Potvrzeno"
+          ? "Rezervace už byla potvrzena."
+          : "Rezervace už byla zrušena.",
+        "info"
+      );
+
+      return false;
+    }
+
+    // Stav ukážeme HNED po potvrzení databází.
+    // Na odeslání e-mailu už uživatel nečeká, aby viděl změnu v dashboardu.
+    const updatedReservation =
+      changedRows[0];
+
+    const reservationIndex =
+      reservations.findIndex(
+        reservation =>
+          Number(reservation.id) ===
+          reservationId
+      );
+
+    if (
+      reservationIndex >= 0
+    ) {
+      reservations[
+        reservationIndex
+      ] = {
+        ...reservations[
+          reservationIndex
+        ],
+        ...updatedReservation,
+        status:
+          nextStatus
+      };
+    }
+
+    renderReservations(
+      reservations
+    );
+
+    updateStatistics();
+    renderCharts();
+    renderCalendar();
+    renderUpcomingReservations();
+    renderCustomers();
+
+    showDashboardNotice(
+      nextStatus === "Potvrzeno"
+        ? "Rezervace byla potvrzena. Odesílám e-mail zákazníkovi…"
+        : "Rezervace byla zrušena. Odesílám e-mail zákazníkovi…",
+      "success"
+    );
+
+    let emailError =
+      null;
+
+    try {
+      await sendReservationStatusEmailRequest(
+        reservationId,
+        nextStatus
+      );
+    } catch (error) {
+      emailError =
+        error;
+
+      console.error(
+        "Stav rezervace byl změněn, ale e-mail se nepodařilo odeslat:",
+        error
+      );
+    }
+
+    // Po e-mailu jen synchronizujeme data a historii.
+    // Zobrazený stav už je mezitím správný.
+    await Promise.allSettled([
+      loadReservations(),
+      loadReservationHistory()
+    ]);
+
+    if (emailError) {
+      showDashboardNotice(
+        emailError.message ||
+        "Stav rezervace byl změněn, ale e-mail se nepodařilo odeslat.",
+        "error"
+      );
+
+      return true;
+    }
+
+    showDashboardNotice(
+      "Zákazníkovi byl odeslán e-mail.",
+      "success"
+    );
+
+    return true;
+  } catch (error) {
+    console.error(
+      error
+    );
+
+    showDashboardNotice(
+      "Nepodařilo se změnit stav rezervace.",
+      "error"
+    );
+
+    return false;
+  } finally {
+    reservationStatusUpdatesInFlight.delete(
+      reservationId
+    );
+
+    setReservationStatusButtonsBusy(
+      reservationId,
+      false
+    );
+
+    // Po odemčení překreslíme tlačítka podle aktuálního stavu.
+    renderReservations(
+      reservations
+    );
+  }
+}
+
+async function deleteReservation(id) {
+  if (!confirm("Opravdu smazat rezervaci?")) {
+    return;
+  }
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`,
+      {
+        method: "DELETE",
+        headers: getHeaders()
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    await loadReservations();
+    await loadReservationHistory();
+    return true;
+  } catch (error) {
+    console.error(error);
+
+    showDashboardNotice(
+      "Nepodařilo se smazat rezervaci."
+    );
+  }
+}
+
+
+let reservationHistory = [];
+
+function historyActionLabel(action) {
+  if (action === "created") return "Vytvořeno";
+  if (action === "deleted") return "Smazáno";
+  return "Upraveno";
+}
+
+function historyFieldLabel(field) {
+  const labels = {
+    name: "Jméno",
+    people: "Počet osob",
+    date: "Datum",
+    time: "Čas",
+    duration_minutes: "Délka",
+    table_id: "Stůl",
+    status: "Stav",
+    phone: "Telefon",
+    email: "E-mail",
+    note: "Poznámka"
+  };
+  return labels[field] || field;
+}
+
+function formatHistoryValue(field, value) {
+  if (value === null || value === undefined || value === "") return "—";
+  if (field === "date") return formatDate(value);
+  if (field === "time") return String(value).slice(0, 5);
+  if (field === "duration_minutes") return `${value} min`;
+  if (field === "table_id") return value ? (getTableName(value) || `Stůl ${value}`) : "Bez stolu";
+  return String(value);
+}
+
+function getHistoryChanges(entry) {
+  if (entry.action === "created") return ["Rezervace byla vytvořena."];
+  if (entry.action === "deleted") return ["Rezervace byla smazána."];
+
+  const before = entry.before_data || {};
+  const after = entry.after_data || {};
+  const tracked = ["name", "people", "date", "time", "duration_minutes", "table_id", "status", "phone", "email", "note"];
+
+  return tracked
+    .filter(field => String(before[field] ?? "") !== String(after[field] ?? ""))
+    .map(field => `${historyFieldLabel(field)}: ${formatHistoryValue(field, before[field])} → ${formatHistoryValue(field, after[field])}`);
+}
+
+function renderReservationHistory() {
+  const list = document.getElementById("reservationHistoryList");
+  if (!list) return;
+
+  const filter = document.getElementById("historyActionFilter")?.value || "";
+  const data = filter ? reservationHistory.filter(item => item.action === filter) : reservationHistory;
+
+  if (!data.length) {
+    list.innerHTML = `<div class="history-empty">Zatím tu není žádná historie.</div>`;
+    return;
+  }
+
+  list.innerHTML = data.map(entry => {
+    const changes = getHistoryChanges(entry);
+    const name = entry.reservation_name || entry.after_data?.name || entry.before_data?.name || "Rezervace";
+    const actor = entry.actor_email || (entry.action === "created" ? "Veřejný formulář / systém" : "Systém");
+    const when = entry.created_at ? new Date(entry.created_at).toLocaleString("cs-CZ", { dateStyle: "short", timeStyle: "short" }) : "—";
+
+    return `
+      <article class="history-card history-${escapeHtml(entry.action || "updated")}">
+        <div class="history-card-top">
+          <div>
+            <span class="history-action-badge">${escapeHtml(historyActionLabel(entry.action))}</span>
+            <strong>${escapeHtml(name)}</strong>
+          </div>
+          <time>${escapeHtml(when)}</time>
+        </div>
+        <div class="history-changes">
+          ${(changes.length ? changes : ["Rezervace byla upravena."]).map(change => `<div>${escapeHtml(change)}</div>`).join("")}
+        </div>
+        <div class="history-meta">Provedl: ${escapeHtml(actor)}</div>
+      </article>
+    `;
+  }).join("");
+}
+
+async function loadReservationHistory() {
+  if (!currentRestaurantId) return;
+  const list = document.getElementById("reservationHistoryList");
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/reservation_history?restaurant_id=eq.${currentRestaurantId}&select=*&order=created_at.desc&limit=300`,
+      { headers: getHeaders() }
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    reservationHistory = await response.json();
+    renderReservationHistory();
+  } catch (error) {
+    console.error("Historii rezervací se nepodařilo načíst:", error);
+    if (list) {
+      list.innerHTML = `<div class="history-empty">Historie zatím není připravená. Spusť SQL soubor pro historii v Supabase.</div>`;
+    }
+  }
+}
+
+document.getElementById("historyActionFilter")?.addEventListener("change", renderReservationHistory);
+
+
+/* =========================================================
+   ZÁKAZNÍCI / STÁLÍ HOSTÉ
+========================================================= */
+function normalizeCustomerPhone(value) {
+  let digits = String(value || "").replace(/\D/g, "");
+
+  // České číslo bereme stejně ve tvarech 608123456, +420 608 123 456
+  // i 00420 608 123 456. U ostatních zemí prefix ponecháváme.
+  if (digits.startsWith("00420") && digits.length === 14) {
+    digits = digits.slice(5);
+  } else if (digits.startsWith("420") && digits.length === 12) {
+    digits = digits.slice(3);
+  }
+
+  return digits;
+}
+
+function normalizeCustomerEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getCustomerKey(reservation) {
+  const phone = normalizeCustomerPhone(reservation?.phone);
+  const email = normalizeCustomerEmail(reservation?.email);
+
+  // CRM identita: telefon má vždy přednost. E-mail používáme jen tehdy,
+  // když telefon chybí. Podle jména zákazníky nikdy neslučujeme.
+  if (phone) return `phone:${phone}`;
+  if (email) return `email:${email}`;
+
+  // Rezervace bez telefonu i e-mailu zůstanou samostatné.
+  return `reservation:${reservation?.id ?? Math.random().toString(36).slice(2)}`;
+}
+
+function getCustomerProfile(customerKey) {
+  return customerProfiles.find(item => item.customer_key === customerKey) || null;
+}
+
+function getCustomerProfileForCustomer(customer) {
+  const exact = getCustomerProfile(customer?.key);
+  if (exact) return exact;
+
+  const phone = normalizeCustomerPhone(customer?.phone);
+  if (phone) {
+    const byPhone = customerProfiles.find(item =>
+      normalizeCustomerPhone(item?.phone) === phone
+    );
+    if (byPhone) return byPhone;
+
+    // Kompatibilita se starší verzí CRM, která profil klíčovala e-mailem
+    // i v případech, kdy byl telefon vyplněný.
+    const email = normalizeCustomerEmail(customer?.email);
+    if (email) {
+      const legacyByEmailKey = customerProfiles.find(item =>
+        item?.customer_key === `email:${email}`
+      );
+      if (legacyByEmailKey) return legacyByEmailKey;
+    }
+
+    return null;
+  }
+
+  const email = normalizeCustomerEmail(customer?.email);
+  if (!email) return null;
+  return customerProfiles.find(item =>
+    normalizeCustomerEmail(item?.email) === email ||
+    item?.customer_key === `email:${email}`
+  ) || null;
+}
+
+function buildCustomers() {
+  const groups = new Map();
+
+  reservations.forEach(reservation => {
+    const key = getCustomerKey(reservation);
+    if (!key || key === "name:") return;
+
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        name: reservation.name || "Host",
+        phone: reservation.phone || "",
+        email: reservation.email || "",
+        reservations: [],
+        totalPeople: 0
+      });
+    }
+
+    const customer = groups.get(key);
+    customer.reservations.push(reservation);
+    customer.totalPeople += Number(reservation.people || 0);
+    if (!customer.phone && reservation.phone) customer.phone = reservation.phone;
+    if (!customer.email && reservation.email) customer.email = reservation.email;
+    if (reservation.name) customer.name = reservation.name;
+  });
+
+  return [...groups.values()].map(customer => {
+    const sorted = [...customer.reservations].sort((a, b) => {
+      return String(`${b.date || ""} ${b.time || ""}`).localeCompare(String(`${a.date || ""} ${a.time || ""}`));
+    });
+    const profile = getCustomerProfileForCustomer(customer);
+    const completedOrActive = sorted.filter(item => !isCancelledReservation(item));
+
+    return {
+      ...customer,
+      reservations: sorted,
+      reservationCount: sorted.length,
+      activeReservationCount: completedOrActive.length,
+      lastReservation: completedOrActive[0] || sorted[0] || null,
+      note: profile?.note || "",
+      isRegular: Boolean(profile?.is_regular),
+      profileId: profile?.id || null
+    };
+  }).sort((a, b) => {
+    if (a.isRegular !== b.isRegular) return a.isRegular ? -1 : 1;
+    return b.reservationCount - a.reservationCount;
+  });
+}
+
+function renderCustomerSummary(customers) {
+  const summary = document.getElementById("customerSummary");
+  if (!summary) return;
+  const regulars = customers.filter(c => c.isRegular).length;
+  const returning = customers.filter(c => c.reservationCount >= 2).length;
+  summary.innerHTML = `
+    <div><strong>${customers.length}</strong><span>Zákazníků</span></div>
+    <div><strong>${returning}</strong><span>Vracejících se</span></div>
+    <div><strong>${regulars}</strong><span>Stálých hostů</span></div>
+  `;
+}
+
+function renderCustomers() {
+  const list = document.getElementById("customerList");
+  if (!list) return;
+
+  const allCustomers = buildCustomers();
+  renderCustomerSummary(allCustomers);
+
+  const search = String(document.getElementById("customerSearch")?.value || "").trim().toLowerCase();
+  const filter = document.getElementById("customerTypeFilter")?.value || "";
+
+  const customers = allCustomers.filter(customer => {
+    const haystack = `${customer.name} ${customer.phone} ${customer.email}`.toLowerCase();
+    if (search && !haystack.includes(search)) return false;
+    if (filter === "regular" && !customer.isRegular) return false;
+    if (filter === "returning" && customer.reservationCount < 2) return false;
+    return true;
+  });
+
+  if (!customers.length) {
+    list.innerHTML = `<div class="history-empty">Žádní zákazníci neodpovídají filtru.</div>`;
+    return;
+  }
+
+  list.innerHTML = customers.map((customer, index) => {
+    const last = customer.lastReservation;
+    const lastText = last ? `${formatDate(last.date)} ${String(last.time || "").slice(0,5)}` : "—";
+    const autoHint = !customer.isRegular && customer.reservationCount >= 3
+      ? `<span class="customer-hint">Častý host · vhodný k označení ⭐</span>` : "";
+    const history = customer.reservations.map(r => `
+      <div class="customer-reservation-row">
+        <span>${escapeHtml(formatDate(r.date))} ${escapeHtml(String(r.time || "").slice(0,5))}</span>
+        <span>${escapeHtml(String(r.people || 0))} osob</span>
+        <span>${escapeHtml(getReservationTableLabel(r))}</span>
+        <span class="status ${escapeHtml(r.status || "Čeká")}">${escapeHtml(r.status || "Čeká")}</span>
+      </div>
+    `).join("");
+
+    return `
+      <article class="customer-card ${customer.isRegular ? "is-regular" : ""}">
+        <div class="customer-card-head">
+          <div>
+            <div class="customer-name-line">
+              <h3>${customer.isRegular ? "⭐ " : ""}${escapeHtml(customer.name)}</h3>
+              ${autoHint}
+            </div>
+            <div class="customer-contact">
+              <span>📞 ${escapeHtml(customer.phone || "Bez telefonu")}</span>
+              <span>✉️ ${escapeHtml(customer.email || "Bez e-mailu")}</span>
+            </div>
+          </div>
+          <label class="regular-toggle">
+            <input type="checkbox" ${customer.isRegular ? "checked" : ""} onchange="saveCustomerProfile('${escapeHtml(customer.key)}', { is_regular: this.checked })">
+            <span>Stálý host</span>
+          </label>
+        </div>
+        <div class="customer-stats-grid">
+          <div><strong>${customer.reservationCount}</strong><span>rezervací</span></div>
+          <div><strong>${customer.totalPeople}</strong><span>hostů celkem</span></div>
+          <div><strong>${escapeHtml(lastText)}</strong><span>poslední rezervace</span></div>
+        </div>
+        <div class="customer-note-row">
+          <textarea id="customerNote-${index}" placeholder="Interní poznámka k hostovi…">${escapeHtml(customer.note)}</textarea>
+          <button type="button" class="primary-btn" onclick="saveCustomerNote('${escapeHtml(customer.key)}', 'customerNote-${index}')">Uložit poznámku</button>
+        </div>
+        <button type="button" class="customer-history-toggle" onclick="toggleCustomerHistory('customerHistory-${index}', this)">Zobrazit historii rezervací (${customer.reservationCount})</button>
+        <div id="customerHistory-${index}" class="customer-reservation-history" hidden>${history}</div>
+      </article>
+    `;
+  }).join("");
+}
+
+
+async function refreshCustomers(button) {
+  const originalText = button?.textContent || "↻ Obnovit";
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Obnovuji…";
+  }
+
+  try {
+    // Znovu načteme rezervace i uložené profily zákazníků z databáze.
+    // Samotné renderCustomers() jen překresluje data, která už jsou v paměti.
+    await loadReservations();
+    await loadCustomerProfiles();
+    renderCustomers();
+    showDashboardNotice("Zákazníci byli aktualizováni.", "success");
+  } catch (error) {
+    console.error("Obnovení zákazníků selhalo:", error);
+    showDashboardNotice("Zákazníky se nepodařilo aktualizovat.", "error");
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+}
+
+async function loadCustomerProfiles() {
+  if (!currentRestaurantId) return;
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/customer_profiles?restaurant_id=eq.${encodeURIComponent(currentRestaurantId)}&select=*`,
+      { headers: getHeaders({ "Cache-Control": "no-cache" }) }
+    );
+    if (!response.ok) throw new Error(await response.text());
+
+    const rows = await response.json();
+    customerProfiles = Array.isArray(rows) ? rows : [];
+    renderCustomers();
+  } catch (error) {
+    console.warn("Profily zákazníků zatím nejsou dostupné:", error);
+    // Nemažeme lokální profily při dočasné chybě načtení, aby se právě
+    // uložená poznámka nebo označení stálého hosta neztratily z UI.
+    renderCustomers();
+  }
+}
+
+async function saveCustomerProfile(customerKey, changes) {
+  const customer = buildCustomers().find(item => item.key === customerKey);
+  if (!customer) return;
+
+  const existing = getCustomerProfileForCustomer(customer);
+  const payload = {
+    restaurant_id: Number(currentRestaurantId),
+    customer_key: customerKey,
+    name: customer.name || null,
+    phone: customer.phone || null,
+    email: customer.email || null,
+    note: existing?.note || "",
+    is_regular: Boolean(existing?.is_regular),
+    ...changes,
+    updated_at: new Date().toISOString()
+  };
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/customer_profiles?on_conflict=restaurant_id,customer_key`,
+      {
+        method: "POST",
+        headers: getHeaders({ Prefer: "resolution=merge-duplicates,return=representation" }),
+        body: JSON.stringify(payload)
+      }
+    );
+    if (!response.ok) throw new Error(await response.text());
+
+    const savedRows = await response.json();
+    const saved = Array.isArray(savedRows) && savedRows[0] ? savedRows[0] : payload;
+    const index = customerProfiles.findIndex(item => item.customer_key === customerKey);
+    if (index >= 0) {
+      customerProfiles[index] = { ...customerProfiles[index], ...saved };
+    } else {
+      customerProfiles.push(saved);
+    }
+    renderCustomers();
+
+    // Následně znovu načteme databázi, aby bylo jisté, že hodnota opravdu
+    // přežila refresh a není jen lokálně v prohlížeči.
+    await loadCustomerProfiles();
+
+    const persisted = getCustomerProfile(customerKey);
+    if (Object.prototype.hasOwnProperty.call(changes, "note") &&
+        String(persisted?.note || "") !== String(changes.note || "")) {
+      throw new Error("Poznámka se po uložení nenačetla zpět z databáze.");
+    }
+    if (Object.prototype.hasOwnProperty.call(changes, "is_regular") &&
+        Boolean(persisted?.is_regular) !== Boolean(changes.is_regular)) {
+      throw new Error("Označení stálého hosta se po uložení nenačetlo zpět z databáze.");
+    }
+
+    showDashboardNotice("Profil zákazníka byl uložen.", "success");
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice("Profil zákazníka se nepodařilo trvale uložit.", "error");
+  }
+}
+
+function saveCustomerNote(customerKey, textareaId) {
+  const note = document.getElementById(textareaId)?.value || "";
+  return saveCustomerProfile(customerKey, { note });
+}
+
+function toggleCustomerHistory(id, button) {
+  const element = document.getElementById(id);
+  if (!element) return;
+  element.hidden = !element.hidden;
+  if (button) button.textContent = element.hidden ? `Zobrazit historii rezervací (${element.children.length})` : "Skrýt historii rezervací";
+}
+
+document.getElementById("customerSearch")?.addEventListener("input", renderCustomers);
+document.getElementById("customerTypeFilter")?.addEventListener("change", renderCustomers);
+
+function getFilteredReservations() {
+  const search =
+    document
+      .getElementById("search")
+      .value
+      .toLowerCase()
+      .trim();
+
+  const status =
+    document.getElementById(
+      "statusFilter"
+    ).value;
+
+  return reservations.filter(reservation => {
+    const tableName =
+      getReservationTableLabel(reservation);
+
+    const text = [
+      reservation.name,
+      reservation.last_name,
+      reservation.phone,
+      reservation.email,
+      reservation.note,
+      tableName
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    const matchesSearch =
+      text.includes(search);
+
+    const matchesStatus =
+      !status ||
+      (reservation.status || "Čeká") ===
+        status;
+
+    return matchesSearch && matchesStatus;
+  });
+}
+
+function applyFilters() {
+  renderReservations(
+    getFilteredReservations()
+  );
+}
+
+function resetFilters() {
+  document.getElementById("search").value = "";
+
+  document.getElementById(
+    "statusFilter"
+  ).value = "";
+
+  renderReservations(reservations);
+}
+
+function editReservation(id) {
+    const reservation = reservations.find(
+        item => Number(item.id) === Number(id)
+    );
+
+    if (!reservation) {
+        showDashboardNotice("Rezervace nebyla nalezena.");
+        return;
+    }
+
+    document.getElementById("editReservationId").value =
+        reservation.id;
+
+    document.getElementById("editReservationName").value =
+        reservation.name || "";
+
+    document.getElementById("editReservationPeople").value =
+        reservation.people || "";
+
+    document.getElementById("editReservationDate").value =
+        reservation.date || "";
+
+    document.getElementById("editReservationTime").value =
+        reservation.time || "";
+  
+const durationSelect =
+    document.getElementById("editReservationDuration");
+
+if (durationSelect) {
+    durationSelect.value = String(
+        reservation.duration_minutes || 120
+    );
+}
+    document.getElementById("editReservationPhone").value =
+        reservation.phone || "";
+
+    document.getElementById("editReservationEmail").value =
+        reservation.email || "";
+
+    document.getElementById("editReservationNote").value =
+        reservation.note || "";
+
+    document.getElementById("editReservationStatus").value =
+        reservation.status || "Čeká";
+
+    updateEditReservationTableOptions(reservation.table_id);
+
+    const tableSelect = document.getElementById("editReservationTable");
+    tableSelect.value =
+        reservation.table_id === null ||
+        reservation.table_id === undefined
+            ? ""
+            : String(reservation.table_id);
+
+    [
+        "editReservationPeople",
+        "editReservationDate",
+        "editReservationTime",
+        "editReservationDuration",
+        "editReservationStatus"
+    ].forEach(elementId => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.onchange = () => updateEditReservationTableOptions();
+            element.oninput = () => updateEditReservationTableOptions();
+        }
+    });
+
+    document
+        .getElementById("reservationModal")
+        .classList.add("show");
+}
+
+
+function updateEditReservationTableOptions(preferredTableId = undefined) {
+    const tableSelect = document.getElementById("editReservationTable");
+    const idInput = document.getElementById("editReservationId");
+    const peopleInput = document.getElementById("editReservationPeople");
+    const dateInput = document.getElementById("editReservationDate");
+    const timeInput = document.getElementById("editReservationTime");
+    const durationInput = document.getElementById("editReservationDuration");
+    const statusInput = document.getElementById("editReservationStatus");
+
+    if (!tableSelect || !idInput || !peopleInput || !dateInput || !timeInput || !durationInput || !statusInput) {
+        return;
+    }
+
+    const previousValue = preferredTableId !== undefined
+        ? (preferredTableId === null ? "" : String(preferredTableId))
+        : tableSelect.value;
+
+    const reservationId = Number(idInput.value || 0);
+    const people = Number(peopleInput.value || 0);
+    const proposedReservation = {
+        id: reservationId,
+        people,
+        date: dateInput.value,
+        time: timeInput.value,
+        duration_minutes: Number(durationInput.value || 120),
+        status: statusInput.value || "Čeká"
+    };
+
+    const options = restaurantTables
+        .filter(table => table.active || String(table.id) === previousValue)
+        .sort((a, b) => Number(a.capacity) - Number(b.capacity))
+        .map(table => {
+            const tooSmall = people > Number(table.capacity || 0);
+            const occupied = proposedReservation.status !== "Zrušeno" &&
+                proposedReservation.date && proposedReservation.time &&
+                hasTableConflict(table.id, proposedReservation, reservationId);
+            const unavailable = !table.active || tooSmall || occupied;
+
+            let label = `${table.name} (${table.capacity} míst)`;
+            if (!table.active) label += " — neaktivní";
+            else if (tooSmall) label += " — malá kapacita";
+            else if (occupied) label += " — obsazený";
+            else label += " — volný";
+
+            return `<option value="${table.id}" ${unavailable ? "disabled" : ""}>${label}</option>`;
+        })
+        .join("");
+
+    tableSelect.innerHTML = `<option value="">Bez stolu</option>${options}`;
+
+    const preferredOption = [...tableSelect.options].find(option => option.value === previousValue);
+    if (preferredOption) {
+        preferredOption.disabled = false;
+        tableSelect.value = previousValue;
+    } else {
+        tableSelect.value = "";
+    }
+}
+
+function closeReservationModal() {
+    document
+        .getElementById("reservationModal")
+        .classList.remove("show");
+}
+
+async function saveReservationChanges() {
+    const id = Number(
+        document.getElementById("editReservationId").value
+    );
+
+    const name =
+        document
+            .getElementById("editReservationName")
+            .value
+            .trim();
+
+    const people = Number(
+        document.getElementById("editReservationPeople").value
+    );
+
+    const date =
+        document.getElementById("editReservationDate").value;
+
+    const time =
+        document.getElementById("editReservationTime").value;
+  
+const durationMinutes = Number(
+  document.getElementById("editReservationDuration").value
+);
+  
+    const tableValue =
+        document.getElementById("editReservationTable").value;
+
+    const tableId =
+        tableValue ? Number(tableValue) : null;
+
+    const status =
+        document.getElementById("editReservationStatus").value;
+
+    const phone =
+        document
+            .getElementById("editReservationPhone")
+            .value
+            .trim();
+
+    const email =
+        document
+            .getElementById("editReservationEmail")
+            .value
+            .trim();
+
+    const note =
+        document
+            .getElementById("editReservationNote")
+            .value
+            .trim();
+
+    if (
+        !name ||
+        !date ||
+        !time ||
+        !Number.isInteger(people) ||
+        people < 1 ||
+        people > 30
+    ) {
+        showDashboardNotice("Vyplň správně jméno, počet osob, datum a čas.");
+        return;
+    }
+
+   const updatedReservation = {
+  id,
+  name,
+  people,
+  date,
+  time,
+  duration_minutes: durationMinutes,
+  table_id: tableId,
+  phone,
+  email,
+  note,
+  status
+};
+
+    if (tableId !== null) {
+        const selectedTable = restaurantTables.find(
+            table => Number(table.id) === Number(tableId)
+        );
+
+        if (!selectedTable) {
+            showDashboardNotice("Vybraný stůl nebyl nalezen.");
+            return;
+        }
+
+        if (people > Number(selectedTable.capacity)) {
+            showDashboardNotice(
+                `${selectedTable.name} má jen ` +
+                `${selectedTable.capacity} míst.`
+            );
+            return;
+        }
+
+        if (
+            status !== "Zrušeno" &&
+            hasTableConflict(tableId, updatedReservation, id)
+        ) {
+            showDashboardNotice(
+                `${selectedTable.name} je v tomto čase obsazený.\n\n` +
+                "Vyber jiný stůl nebo jiný čas."
+            );
+            return;
+        }
+    }
+
+    try {
+        const response = await authorizedFetch(
+            `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`,
+            {
+                method: "PATCH",
+                headers: getHeaders({
+                    Prefer: "return=minimal"
+                }),
+              body: JSON.stringify({
+               name,
+               people,
+               date,
+               time,
+               duration_minutes: durationMinutes,
+               table_id: tableId,
+               phone,
+               email,
+               note,
+               status
+})
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+
+       closeReservationModal();
+      
+closeTableModal();
+      
+await loadReservations();
+await loadReservationHistory();
+
+renderTables();
+
+showDashboardNotice("Rezervace byla úspěšně upravena.");
+    } catch (error) {
+        console.error(error);
+        showDashboardNotice("Rezervaci se nepodařilo upravit.");
+    }
+}
+
+async function updateReservation(id, data) {
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`,
+      {
+        method: "PATCH",
+        headers: getHeaders(),
+        body: JSON.stringify(data)
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    await loadReservations();
+  } catch (error) {
+    console.error(error);
+
+    showDashboardNotice(
+      "Nepodařilo se upravit rezervaci."
+    );
+    return false;
+  }
+}
+
+function exportReservations() {
+  const data = getFilteredReservations();
+
+  if (!data.length) {
+    showDashboardNotice(
+      "Nejsou žádné rezervace ke stažení."
+    );
+
+    return;
+  }
+
+  const columns = [
+    "Jméno",
+    "Počet osob",
+    "Datum",
+    "Čas",
+    "Stůl",
+    "Telefon",
+    "E-mail",
+    "Poznámka",
+    "Stav"
+  ];
+
+  const rows = data.map(reservation => [
+    getReservationGuestName(reservation) === "-" ? "" : getReservationGuestName(reservation),
+    reservation.people || "",
+    reservation.date || "",
+    reservation.time || "",
+    getTableName(reservation.table_id),
+    reservation.phone || "",
+    reservation.email || "",
+    reservation.note || "",
+    reservation.status || "Čeká"
+  ]);
+
+  const quote = value => {
+    return `"${String(value).replace(
+      /"/g,
+      '""'
+    )}"`;
+  };
+
+  const csv = [
+    columns.map(quote).join(";"),
+    ...rows.map(row =>
+      row.map(quote).join(";")
+    )
+  ].join("\n");
+
+  const blob = new Blob(
+    ["\uFEFF" + csv],
+    {
+      type: "text/csv;charset=utf-8;"
+    }
+  );
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download =
+    `rezervace-${getLocalDateString()}.csv`;
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+/* =========================================================
+   GRAFY
+========================================================= */
+
+function renderCharts() {
+  if (typeof Chart === "undefined") {
+    return;
+  }
+
+  Chart.defaults.color = "#cbd5e1";
+  Chart.defaults.borderColor =
+    "rgba(148,163,184,.15)";
+
+  const labels = [];
+  const counts = [];
+
+  for (let index = 6; index >= 0; index--) {
+    const date = new Date();
+
+    date.setDate(
+      date.getDate() - index
+    );
+
+    const key =
+      getLocalDateString(date);
+
+    labels.push(
+      date.toLocaleDateString("cs-CZ", {
+        weekday: "short",
+        day: "numeric",
+        month: "numeric"
+      })
+    );
+
+    counts.push(
+      reservations.filter(
+        reservation =>
+          reservation.date === key
+      ).length
+    );
+  }
+
+  reservationChart?.destroy();
+
+  reservationChart = new Chart(
+    document.getElementById(
+      "reservationChart"
+    ),
+    {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Rezervace",
+            data: counts,
+            backgroundColor:
+              "rgba(255,90,31,.75)",
+            borderColor: "#ff5a1f",
+            borderWidth: 1,
+            borderRadius: 8
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            }
+          }
+        }
+      }
+    }
+  );
+
+  const statuses = [
+    "Čeká",
+    "Potvrzeno",
+    "Zrušeno"
+  ];
+
+  statusChart?.destroy();
+
+  statusChart = new Chart(
+    document.getElementById(
+      "statusChart"
+    ),
+    {
+      type: "doughnut",
+      data: {
+        labels: statuses,
+        datasets: [
+          {
+            data: statuses.map(status => {
+              return reservations.filter(
+                reservation =>
+                  (
+                    reservation.status ||
+                    "Čeká"
+                  ) === status
+              ).length;
+            }),
+            backgroundColor: [
+              "#f59e0b",
+              "#22c55e",
+              "#ef4444"
+            ],
+            borderWidth: 0,
+            hoverOffset: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "65%",
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              padding: 18,
+              usePointStyle: true
+            }
+          }
+        }
+      }
+    }
+  );
+}
+
+/* =========================================================
+   STOLY
+========================================================= */
+
+async function loadTables() {
+  const list =
+    document.getElementById("tableList");
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/restaurant_tables?restaurant_id=eq.${currentRestaurantId}&select=*&order=name.asc`
+    );
+const groupsResponse = await authorizedFetch(
+  `${SUPABASE_URL}/rest/v1/table_groups?restaurant_id=eq.${currentRestaurantId}&select=*&order=id.asc`
+);
+    const data = await response.json();
+const groupsData = await groupsResponse.json();
+    if (!response.ok) {
+      throw new Error(JSON.stringify(data));
+    }
+if (!groupsResponse.ok) {
+  throw new Error(JSON.stringify(groupsData));
+}
+    restaurantTables =
+      Array.isArray(data) ? data : [];
+    
+tableGroups =
+  Array.isArray(groupsData) ? groupsData : [];
+    
+    document.getElementById(
+      "tableCount"
+    ).textContent = restaurantTables.filter(
+      table => table.active
+    ).length;
+
+    renderTables();
+    renderFloorMap();
+    renderReservations(getFilteredReservations());
+  } catch (error) {
+    console.error(error);
+
+    restaurantTables = [];
+    tableGroups = [];
+    document.getElementById(
+      "tableCount"
+    ).textContent = "–";
+
+    if (list) {
+      list.innerHTML = `
+        <div class="emptyState">
+          Nepodařilo se načíst stoly.
+        </div>
+      `;
+    }
+  }
+}
+function getTableStatus(tableId) {
+    const now = new Date();
+
+    const relevantReservations = reservations.filter(reservation => {
+        return (
+            Number(reservation.table_id) === Number(tableId) &&
+            (reservation.status || "Čeká") !== "Zrušeno"
+        );
+    });
+
+    for (const reservation of relevantReservations) {
+        const start = new Date(
+            `${reservation.date}T${reservation.time}`
+        );
+
+        const end = new Date(start);
+        end.setHours(end.getHours() + 2);
+
+        const minutesUntilStart =
+            (start.getTime() - now.getTime()) / 60000;
+
+        if (now >= start && now <= end) {
+            return "occupied";
+        }
+
+        if (
+            minutesUntilStart > 0 &&
+            minutesUntilStart <= 30
+        ) {
+            return "busy";
+        }
+    }
+
+    return "free";
+}
+function renderFloorMap() {
+  const floorMap = document.getElementById("floorMap");
+
+  if (!floorMap) return;
+
+  const activeTables = restaurantTables.filter((table) => {
+    const tableRoom = table.room || "Hlavní sál";
+
+    return table.active && tableRoom === selectedRoom;
+  });
+
+  const activeGroups = tableGroups.filter((group) => {
+    const groupRoom = group.room || "Hlavní sál";
+    return groupRoom === selectedRoom;
+  });
+
+  const groupedTableIds = new Set(
+    activeGroups.flatMap((group) =>
+      Array.isArray(group.table_ids)
+        ? group.table_ids.map(Number)
+        : []
+    )
+  );
+
+  const separateTables = activeTables.filter(
+    (table) => !groupedTableIds.has(Number(table.id))
+  );
+
+  const groupTables = activeGroups
+    .map((group) => {
+      const memberIds = Array.isArray(group.table_ids)
+        ? group.table_ids.map(Number)
+        : [];
+
+      const members = activeTables.filter((table) =>
+        memberIds.includes(Number(table.id))
+      );
+
+      if (members.length === 0) return null;
+
+      const x =
+        members.reduce(
+          (sum, table) => sum + Number(table.x || 100),
+          0
+        ) / members.length;
+
+      const y =
+        members.reduce(
+          (sum, table) => sum + Number(table.y || 100),
+          0
+        ) / members.length;
+
+      const statuses = members.map((table) =>
+        getTableStatus(table.id)
+      );
+
+      const statusClass = statuses.includes("occupied")
+        ? "occupied"
+        : statuses.includes("busy")
+          ? "busy"
+          : "free";
+
+      return {
+        id: group.id,
+        name: group.name || "Spojené stoly",
+        capacity: Number(group.total_capacity || 0),
+        x,
+        y,
+        statusClass,
+        isGroup: true
+      };
+    })
+    .filter(Boolean);
+
+  const renderItems = [
+    ...separateTables.map((table) => ({
+      ...table,
+      isGroup: false
+    })),
+    ...groupTables
+  ];
+
+  if (renderItems.length === 0) {
+    floorMap.innerHTML = `
+      <div class="emptyState">
+        V místnosti <strong>${selectedRoom}</strong> zatím nejsou žádné stoly.
+      </div>
+    `;
+    return;
+  }
+
+  floorMap.innerHTML = renderItems
+    .map((item) => {
+      const statusClass = item.isGroup
+        ? item.statusClass
+        : getTableStatus(item.id);
+
+      const statusLabel =
+        statusClass === "occupied"
+          ? "Obsazený"
+          : statusClass === "busy"
+            ? "Rezervace brzy"
+            : "Volný";
+
+      const capacity =
+        item.capacity || item.seats || 0;
+
+      const clickAction = item.isGroup
+  ? `onclick="openTableGroup(${item.id})"`
+  : `onclick="handleTableClick(event, ${item.id})"`;
+      const groupClass = item.isGroup
+        ? " table-group"
+        : "";
+
+      return `
+        <div
+          class="table ${statusClass}${groupClass}"
+          ${
+            item.isGroup
+              ? `data-group-id="${item.id}"`
+              : `data-table-id="${item.id}"`
+          }
+          style="left:${item.x}px; top:${item.y}px;"
+          title="${item.name || `Stůl ${item.id}`} • ${capacity} míst • ${statusLabel}"
+          ${clickAction}
+        >
+          <span class="table-map-name">
+            ${item.name || `Stůl ${item.id}`}
+          </span>
+
+          <span class="table-map-capacity">
+            👥 ${capacity}
+          </span>
+
+          <span class="table-map-status">
+            ${statusLabel}
+          </span>
+        </div>
+      `;
+    })
+    .join("");
+}
+let selectedTableId = null;
+let selectedTableReservationId = null;
+function handleTableClick(event, tableId) {
+  if (tableWasDragged) {
+    return;
+}
+  if (mergeModeActive) {
+  const numericTableId = Number(tableId);
+  const tableElement = event.currentTarget;
+
+  const alreadySelected =
+    selectedTablesForMerge.includes(numericTableId);
+
+  if (alreadySelected) {
+    selectedTablesForMerge =
+      selectedTablesForMerge.filter(
+        id => id !== numericTableId
+      );
+
+    tableElement.classList.remove("merge-selected");
+  } else {
+    selectedTablesForMerge.push(numericTableId);
+    tableElement.classList.add("merge-selected");
+  }
+
+  const mergeSelectionInfo =
+    document.getElementById("mergeSelectionInfo");
+
+  const confirmMergeButton =
+    document.getElementById("confirmMergeButton");
+
+  if (mergeSelectionInfo) {
+    mergeSelectionInfo.textContent =
+      `Vybráno: ${selectedTablesForMerge.length} stolů`;
+  }
+
+  if (confirmMergeButton) {
+    confirmMergeButton.style.display =
+      selectedTablesForMerge.length >= 2
+        ? "inline-block"
+        : "none";
+  }
+
+  return;
+}
+  openTable(tableId);
+}
+function openTableGroup(groupId) {
+  const group = tableGroups.find(
+    (item) => Number(item.id) === Number(groupId)
+  );
+
+  if (!group) return;
+
+  const primaryButton = document.getElementById(
+    "tableModalPrimaryButton"
+  );
+
+  const deleteButton = document.getElementById(
+    "deleteTableButton"
+  );
+
+  document.getElementById("tableModalTitle").textContent =
+    group.name || "Spojené stoly";
+
+  document.getElementById("tableModalCapacity").textContent =
+    group.total_capacity || 0;
+
+  document.getElementById("tableModalStatus").textContent =
+    "Spojená skupina stolů";
+
+  if (primaryButton) {
+    primaryButton.textContent = "Rozpojit stoly";
+    primaryButton.onclick = () => unmergeTableGroup(group.id);
+  }
+
+  if (deleteButton) {
+    deleteButton.style.display = "none";
+  }
+
+  document
+    .getElementById("tableModal")
+    .classList.add("show");
+}
+
+  async function unmergeTableGroup(groupId) {
+  const confirmed = confirm(
+    "Opravdu chcete tyto stoly rozpojit?"
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/table_groups?id=eq.${groupId}&restaurant_id=eq.${currentRestaurantId}`,
+      {
+        method: "DELETE",
+        headers: getHeaders({
+          Prefer: "return=minimal"
+        })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    closeTableModal();
+    await loadTables();
+
+    showDashboardNotice("Stoly byly úspěšně rozpojeny.");
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice("Stoly se nepodařilo rozpojit.");
+  }
+}
+function openTable(tableId) {
+    const table = restaurantTables.find(
+        t => Number(t.id) === Number(tableId)
+    );
+
+    if (!table) return;
+
+    selectedTableId = tableId;
+
+    const tableStatus = getTableStatus(tableId);
+
+    const reservation = reservations.find(r => {
+        if (Number(r.table_id) !== Number(tableId)) {
+            return false;
+        }
+
+        if ((r.status || "Čeká") === "Zrušeno") {
+            return false;
+        }
+
+        const start = new Date(`${r.date}T${r.time}`);
+        const end = new Date(start);
+        end.setHours(end.getHours() + 2);
+
+        const now = new Date();
+        const minutesUntilStart =
+            (start.getTime() - now.getTime()) / 60000;
+
+        return (
+            (now >= start && now <= end) ||
+            (minutesUntilStart > 0 && minutesUntilStart <= 30)
+        );
+    });
+
+    selectedTableReservationId = reservation
+        ? Number(reservation.id)
+        : null;
+
+    const primaryButton =
+        document.getElementById("tableModalPrimaryButton");
+
+    primaryButton.textContent = reservation
+        ? "✏️ Upravit rezervaci"
+        : "+ Nová rezervace";
+
+    document.getElementById("tableModalTitle").textContent =
+        table.name;
+
+    document.getElementById("tableModalCapacity").textContent =
+        table.capacity;
+
+    document.getElementById("tableModalStatus").textContent =
+        !table.active
+            ? "Neaktivní"
+            : tableStatus === "occupied"
+                ? "Obsazený"
+                : tableStatus === "busy"
+                    ? "Brzy obsazený"
+                    : "Volný";
+
+    if (reservation) {
+        document.getElementById("tableModalCapacity").innerHTML =
+            `👤 ${getReservationGuestName(reservation)}<br>
+             👥 ${reservation.people || "-"} osoby<br>
+             🕒 ${reservation.time || "-"}<br>
+             📞 ${reservation.phone || "-"}`;
+
+        document.getElementById("tableModalStatus").textContent =
+            reservation.status || "Čeká";
+    }
+
+    document
+        .getElementById("tableModal")
+        .classList.add("show");
+}
+function closeTableModal() {
+    document
+        .getElementById("tableModal")
+        .classList.remove("show");
+
+    selectedTableReservationId = null;
+}
+
+function handleTableModalPrimaryAction() {
+    if (selectedTableReservationId !== null) {
+        const reservationId = selectedTableReservationId;
+
+        closeTableModal();
+        editReservation(reservationId);
+        return;
+    }
+
+    createReservationFromTable();
+}
+
+
+function getNewReservationDraft() {
+  const people = Number(document.getElementById("newPeople")?.value || 0);
+  const date = document.getElementById("newDate")?.value || "";
+  const time = document.getElementById("newTime")?.value || "";
+  const durationMinutes = Number(
+    document.getElementById("newDuration")?.value || 120
+  );
+
+  return {
+    people,
+    date,
+    time,
+    duration_minutes: durationMinutes,
+    status: "Čeká"
+  };
+}
+
+function fillNewTableOptions(preferredValue = "auto") {
+  const tableSelect = document.getElementById("newTable");
+  if (!tableSelect) return;
+
+  const activeTables = restaurantTables
+    .filter(table => table.active)
+    .sort((a, b) => Number(a.capacity) - Number(b.capacity));
+
+  tableSelect.innerHTML = `
+    <option value="auto">🪄 Automaticky vybrat nejlepší stůl</option>
+    ${activeTables.map(table => `
+      <option value="${Number(table.id)}">
+        ${escapeHtml(table.name)} (${Number(table.capacity)} míst)
+      </option>
+    `).join("")}
+  `;
+
+  const optionExists = Array.from(tableSelect.options)
+    .some(option => option.value === String(preferredValue));
+  tableSelect.value = optionExists ? String(preferredValue) : "auto";
+}
+
+function updateNewTableRecommendation() {
+  const box = document.getElementById("tableRecommendation");
+  const tableSelect = document.getElementById("newTable");
+  if (!box || !tableSelect) return;
+
+  const draft = getNewReservationDraft();
+
+  if (!draft.people || !draft.date || !draft.time) {
+    box.className = "tableRecommendation";
+    box.textContent =
+      "Zadej počet osob, datum a čas. Systém potom doporučí nejlepší volný stůl.";
+    return;
+  }
+
+  const bestTable = findBestAvailableTable(draft);
+
+  if (!bestTable) {
+    box.className = "tableRecommendation unavailable";
+    box.textContent =
+      `Pro ${draft.people} osob v ${draft.time} není volný vhodný stůl.`;
+    return;
+  }
+
+  box.className = "tableRecommendation available";
+  box.innerHTML = `
+    <strong>🪄 Doporučení: ${escapeHtml(bestTable.name)}</strong>
+    <span>${Number(bestTable.capacity)} míst · volný po celou dobu rezervace</span>
+  `;
+}
+
+function setupAutomaticTableRecommendation() {
+  ["newPeople", "newDate", "newTime", "newDuration", "newTable"]
+    .forEach(id => {
+      const element = document.getElementById(id);
+      if (!element || element.dataset.autoTableListener === "1") return;
+      element.dataset.autoTableListener = "1";
+      element.addEventListener("input", updateNewTableRecommendation);
+      element.addEventListener("change", updateNewTableRecommendation);
+    });
+}
+
+function createReservationFromTable() {
+    closeTableModal();
+
+    const reservationSection = document.getElementById("novaRezervace");
+    const tableSelect = document.getElementById("newTable");
+
+    if (!reservationSection || !tableSelect) {
+        showDashboardNotice("Formulář rezervace se nepodařilo otevřít.");
+        return;
+    }
+
+    fillNewTableOptions(selectedTableId);
+    setupAutomaticTableRecommendation();
+    updateNewTableRecommendation();
+    reservationSection.style.display = "block";
+    reservationSection.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+}
+async function saveNewReservation() {
+    const name = document.getElementById("newName").value.trim();
+    const people = Number(document.getElementById("newPeople").value);
+    const date = document.getElementById("newDate").value;
+    const time = document.getElementById("newTime").value;
+    const durationMinutes = Number(
+        document.getElementById("newDuration")?.value || 120
+    );
+    const tableValue = document.getElementById("newTable").value;
+    const phone = document.getElementById("newPhone").value.trim();
+    const email = document.getElementById("newEmail").value.trim();
+    const note = document.getElementById("newNote").value.trim();
+
+    if (!name || !date || !time || !Number.isInteger(people) || people < 1) {
+        showDashboardNotice("Vyplň jméno, počet osob, datum a čas.");
+        return;
+    }
+
+    const openingAvailability = await checkDashboardOpeningAvailability({
+        date,
+        time,
+        durationMinutes
+    });
+
+    if (!openingAvailability.ok) {
+        showDashboardNotice(openingAvailability.message);
+        return;
+    }
+
+    const reservationDraft = {
+        people,
+        date,
+        time,
+        duration_minutes: durationMinutes,
+        status: "Čeká"
+    };
+
+    let selectedTable = null;
+
+    if (tableValue === "auto" || tableValue === "") {
+        selectedTable = findBestAvailableTable(reservationDraft);
+
+        if (!selectedTable) {
+            showDashboardNotice(
+                `Pro ${people} osob v ${time} není volný vhodný stůl.
+
+` +
+                "Zvol jiný čas, kratší délku nebo vytvoř větší stůl."
+            );
+            return;
+        }
+    } else {
+        selectedTable = restaurantTables.find(
+            table => Number(table.id) === Number(tableValue)
+        );
+    }
+
+    if (!selectedTable) {
+        showDashboardNotice("Vyber platný stůl.");
+        return;
+    }
+
+    const tableId = Number(selectedTable.id);
+
+    if (people > Number(selectedTable.capacity)) {
+        showDashboardNotice(
+            `${selectedTable.name} má pouze ${selectedTable.capacity} míst.`
+        );
+        return;
+    }
+
+    const newReservation = {
+        name,
+        people,
+        date,
+        time,
+        duration_minutes: durationMinutes,
+        table_id: tableId,
+        phone,
+        email,
+        note,
+        status: "Čeká",
+        restaurant_id: currentRestaurantId
+    };
+
+    if (hasTableConflict(tableId, newReservation)) {
+        showDashboardNotice(
+            `${selectedTable.name} je v tomto čase obsazený.\n\n` +
+            "Vyber jiný stůl nebo jiný čas."
+        );
+        return;
+    }
+
+    try {
+        const response = await authorizedFetch(
+            `${SUPABASE_URL}/rest/v1/reservations`,
+            {
+                method: "POST",
+                headers: getHeaders({
+                    Prefer: "return=minimal"
+                }),
+                body: JSON.stringify(newReservation)
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+
+        document.getElementById("novaRezervace").style.display = "none";
+
+        [
+            "newName",
+            "newPeople",
+            "newDate",
+            "newTime",
+            "newPhone",
+            "newEmail",
+            "newNote"
+        ].forEach(id => {
+            document.getElementById(id).value = "";
+        });
+
+        const newDuration = document.getElementById("newDuration");
+        if (newDuration) newDuration.value = "120";
+
+        selectedTableId = null;
+
+        await loadReservations();
+
+        showDashboardNotice("Rezervace byla úspěšně uložena.");
+    } catch (error) {
+        console.error(error);
+        showDashboardNotice("Rezervaci se nepodařilo uložit.");
+    }
+}
+function renderTables() {
+  const list =
+    document.getElementById("tableList");
+
+  if (!list) {
+    return;
+  }
+
+  if (!restaurantTables.length) {
+    list.innerHTML = `
+      <div class="emptyState">
+        Zatím nejsou vytvořené žádné stoly.
+      </div>
+    `;
+
+    return;
+  }
+
+  list.innerHTML = restaurantTables
+    .map(table => {
+      return `
+        <div
+          class="tableItem ${
+            table.active
+              ? ""
+              : "tableInactive"
+          }"
+        >
+
+          <div class="tableIcon">
+            🪑
+          </div>
+
+          <div class="tableInfo">
+
+            <b>
+              ${escapeHtml(
+                table.name || "Stůl"
+              )}
+            </b>
+
+            <div class="tableCapacity">
+              ${escapeHtml(
+                table.capacity || 0
+              )}
+              míst
+            </div>
+
+            <small>
+              ${escapeHtml(
+                table.note || "Bez poznámky"
+              )}
+              •
+              ${
+                table.active
+                  ? "Aktivní"
+                  : "Neaktivní"
+              }
+            </small>
+
+          </div>
+
+          <div class="tableActions">
+
+            <button
+              class="editBtn"
+              type="button"
+              title="Upravit stůl"
+              onclick="editTable(
+                ${Number(table.id)}
+              )"
+            >
+              ✏️
+            </button>
+
+            <button
+              class="deleteBtn"
+              type="button"
+              title="Smazat stůl"
+              onclick="deleteTable(
+                ${Number(table.id)}
+              )"
+            >
+              🗑️
+            </button>
+
+          </div>
+
+        </div>
+      `;
+    })
+    .join("");
+}
+
+async function saveTable() {
+  const name =
+    document
+      .getElementById("tableName")
+      .value
+      .trim();
+
+  const capacity = Number(
+    document.getElementById(
+      "tableCapacity"
+    ).value
+  );
+
+  const note =
+    document
+      .getElementById("tableNote")
+      .value
+      .trim();
+
+  const active =
+    document.getElementById(
+      "tableActive"
+    ).checked;
+
+  if (name.length < 2) {
+    showDashboardNotice("Zadej název stolu.");
+    return;
+  }
+
+  if (
+    !Number.isInteger(capacity) ||
+    capacity < 1 ||
+    capacity > 30
+  ) {
+    showDashboardNotice(
+      "Kapacita musí být od 1 do 30 míst."
+    );
+
+    return;
+  }
+
+  const duplicate =
+    restaurantTables.some(table => {
+      return (
+        table.name
+          .trim()
+          .toLowerCase() ===
+          name.toLowerCase() &&
+        Number(table.id) !==
+          Number(editingTableId)
+      );
+    });
+
+  if (duplicate) {
+    showDashboardNotice(
+      "Stůl s tímto názvem už existuje."
+    );
+
+    return;
+  }
+
+  try {
+    const editing =
+      editingTableId !== null;
+
+    const url = editing
+      ? `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${editingTableId}&restaurant_id=eq.${currentRestaurantId}`
+      : `${SUPABASE_URL}/rest/v1/restaurant_tables`;
+
+    const tablePayload = {
+      name,
+      capacity,
+      note,
+      active
+    };
+
+    // Při vytvoření musí být stůl vždy navázaný na aktuální restauraci.
+    // Bez restaurant_id Supabase insert selže (a RLS by ho stejně neměl pustit).
+    if (!editing) {
+      tablePayload.restaurant_id = currentRestaurantId;
+    }
+
+    const response = await authorizedFetch(
+      url,
+      {
+        method: editing
+          ? "PATCH"
+          : "POST",
+        headers: getHeaders({
+          Prefer: "return=minimal"
+        }),
+        body: JSON.stringify(tablePayload)
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    resetTableForm();
+    await loadTables();
+
+    renderReservations(
+      getFilteredReservations()
+    );
+  } catch (error) {
+    console.error(error);
+
+    showDashboardNotice(
+      "Nepodařilo se uložit stůl."
+    );
+  }
+}
+
+function editTable(id) {
+  const table = restaurantTables.find(
+    item => Number(item.id) === Number(id)
+  );
+
+  if (!table) {
+    return;
+  }
+
+  editingTableId = Number(table.id);
+
+  document.getElementById(
+    "tableName"
+  ).value = table.name || "";
+
+  document.getElementById(
+    "tableCapacity"
+  ).value = table.capacity || "";
+
+  document.getElementById(
+    "tableNote"
+  ).value = table.note || "";
+
+  document.getElementById(
+    "tableActive"
+  ).checked = table.active !== false;
+
+  document.getElementById(
+    "tableBtn"
+  ).textContent = "Uložit změny";
+
+  document.getElementById(
+    "cancelTableEditBtn"
+  ).style.display = "inline-block";
+
+  document.getElementById(
+    "tableName"
+  ).scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+}
+
+function resetTableForm() {
+  editingTableId = null;
+
+  document.getElementById(
+    "tableName"
+  ).value = "";
+
+  document.getElementById(
+    "tableCapacity"
+  ).value = "";
+
+  document.getElementById(
+    "tableNote"
+  ).value = "";
+
+  document.getElementById(
+    "tableActive"
+  ).checked = true;
+
+  document.getElementById(
+    "tableBtn"
+  ).textContent = "Přidat stůl";
+
+  document.getElementById(
+    "cancelTableEditBtn"
+  ).style.display = "none";
+}
+
+async function deleteTable(id) {
+  const table = restaurantTables.find(
+    item => Number(item.id) === Number(id)
+  );
+
+  const tableName =
+    table?.name || "tento stůl";
+
+  if (
+    !confirm(
+      `Opravdu smazat ${tableName}? Rezervace se od stolu odpojí.`
+    )
+  ) {
+    return;
+  }
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${id}`,
+      {
+        method: "DELETE",
+        headers: getHeaders()
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    if (
+      Number(editingTableId) ===
+      Number(id)
+    ) {
+      resetTableForm();
+    }
+
+    await loadTables();
+    await loadReservations();
+  } catch (error) {
+    console.error(error);
+
+    showDashboardNotice(
+      "Nepodařilo se smazat stůl."
+    );
+  }
+}
+
+function getTableName(tableId) {
+  const table = restaurantTables.find(
+    item =>
+      Number(item.id) === Number(tableId)
+  );
+
+  return table?.name || "";
+}
+
+function renderTableSelect(reservation) {
+  if (reservation?.table_group_id) {
+    const label = getReservationTableLabel(reservation);
+    return `
+      <div
+        class="tableSelect tableGroupAssigned"
+        title="Tato rezervace používá spojenou skupinu stolů"
+      >
+        🔗 ${escapeHtml(label)}
+      </div>
+    `;
+  }
+
+  const assignedId =
+    reservation.table_id === null ||
+    reservation.table_id === undefined
+      ? ""
+      : String(reservation.table_id);
+
+  const availableTables =
+    restaurantTables.filter(table => {
+      return (
+        table.active ||
+        String(table.id) === assignedId
+      );
+    });
+
+  const options = availableTables
+    .map(table => {
+      const selected =
+        String(table.id) === assignedId
+          ? "selected"
+          : "";
+
+      const inactiveText =
+        table.active
+          ? ""
+          : " – neaktivní";
+
+      return `
+        <option
+          value="${Number(table.id)}"
+          ${selected}
+        >
+          ${escapeHtml(table.name)}
+          (${escapeHtml(table.capacity)} míst)
+          ${inactiveText}
+        </option>
+      `;
+    })
+    .join("");
+
+  return `
+    <select
+      class="tableSelect"
+      aria-label="Přiřadit stůl"
+      onchange="assignTable(
+        ${Number(reservation.id)},
+        this.value
+      )"
+    >
+      <option value="">
+        Bez stolu
+      </option>
+
+      ${options}
+    </select>
+  `;
+}
+
+function timeToMinutes(time) {
+  if (!time || !String(time).includes(":")) {
+    return 0;
+  }
+
+  const [hours, minutes] = String(time)
+    .split(":")
+    .map(Number);
+
+  return hours * 60 + minutes;
+}
+
+function reservationsOverlap(first, second) {
+  if (
+    !first ||
+    !second ||
+    first.date !== second.date
+  ) {
+    return false;
+  }
+
+  const firstStart = timeToMinutes(first.time);
+  const secondStart = timeToMinutes(second.time);
+
+  const firstDuration = Math.max(
+    30,
+    Number(first.duration_minutes || 120)
+  );
+
+  const secondDuration = Math.max(
+    30,
+    Number(second.duration_minutes || 120)
+  );
+
+  const firstEnd = firstStart + firstDuration;
+  const secondEnd = secondStart + secondDuration;
+
+  return (
+    firstStart < secondEnd &&
+    secondStart < firstEnd
+  );
+}
+
+function hasTableConflict(
+  tableId,
+  reservation,
+  ignoredReservationId = null
+) {
+  return reservations.some(item => {
+    if (
+      ignoredReservationId !== null &&
+      Number(item.id) ===
+        Number(ignoredReservationId)
+    ) {
+      return false;
+    }
+
+    if (
+      Number(item.table_id) !==
+      Number(tableId)
+    ) {
+      return false;
+    }
+
+    if (
+      (item.status || "Čeká") ===
+      "Zrušeno"
+    ) {
+      return false;
+    }
+
+    return reservationsOverlap(
+      reservation,
+      item
+    );
+  });
+}
+
+function findBestAvailableTable(reservation) {
+  return (
+    restaurantTables
+      .filter(table => {
+        return (
+          table.active &&
+          Number(table.capacity) >=
+            Number(reservation.people) &&
+          !hasTableConflict(
+            table.id,
+            reservation,
+            reservation.id
+          )
+        );
+      })
+      .sort((first, second) => {
+        return (
+          Number(first.capacity) -
+          Number(second.capacity)
+        );
+      })[0] || null
+  );
+}
+
+async function autoAssignTable(reservationId) {
+  const reservation =
+    reservations.find(item => {
+      return (
+        Number(item.id) ===
+        Number(reservationId)
+      );
+    });
+
+  if (!reservation) {
+    showDashboardNotice("Rezervace nebyla nalezena.");
+    return;
+  }
+
+  if (
+    (reservation.status || "Čeká") ===
+    "Zrušeno"
+  ) {
+    showDashboardNotice(
+      "Zrušené rezervaci nelze přiřadit stůl."
+    );
+
+    return;
+  }
+
+  const bestTable =
+    findBestAvailableTable(reservation);
+
+  if (!bestTable) {
+    showDashboardNotice(
+      `Pro rezervaci na ${formatDate(
+        reservation.date
+      )} v ${reservation.time || "-"} není volný vhodný stůl.\n\n` +
+      "Kontrola používá skutečnou délku rezervace."
+    );
+
+    return;
+  }
+
+  const confirmed = confirm(
+    `Doporučený stůl: ${bestTable.name}\n` +
+    `Kapacita: ${bestTable.capacity} míst\n` +
+    `Rezervace: ${reservation.people} osob\n\n` +
+    "Přiřadit tento stůl?"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  await assignTable(
+    reservationId,
+    bestTable.id
+  );
+}
+
+async function assignTable(
+  reservationId,
+  value
+) {
+  const tableId =
+    value ? Number(value) : null;
+
+  const reservation =
+    reservations.find(item => {
+      return (
+        Number(item.id) ===
+        Number(reservationId)
+      );
+    });
+
+  if (!reservation) {
+    showDashboardNotice("Rezervace nebyla nalezena.");
+    return;
+  }
+
+  const selectedTable =
+    restaurantTables.find(item => {
+      return (
+        Number(item.id) ===
+        Number(tableId)
+      );
+    });
+
+  if (
+    selectedTable &&
+    selectedTable.active === false
+  ) {
+    showDashboardNotice(
+      `${selectedTable.name} je neaktivní.`
+    );
+
+    renderReservations(
+      getFilteredReservations()
+    );
+
+    return;
+  }
+
+  if (
+    selectedTable &&
+    Number(reservation.people) >
+      Number(selectedTable.capacity)
+  ) {
+    showDashboardNotice(
+      `${selectedTable.name} má pouze ` +
+      `${selectedTable.capacity} míst, ale ` +
+      `rezervace je pro ${reservation.people} osob.`
+    );
+
+    renderReservations(
+      getFilteredReservations()
+    );
+
+    return;
+  }
+
+  if (
+    selectedTable &&
+    hasTableConflict(
+      selectedTable.id,
+      reservation,
+      reservation.id
+    )
+  ) {
+    showDashboardNotice(
+      `${selectedTable.name} je v tomto čase obsazený.\n\n` +
+      "Vyber jiný stůl nebo jiný čas."
+    );
+
+    renderReservations(
+      getFilteredReservations()
+    );
+
+    return;
+  }
+
+  try {
+    const response =
+      await authorizedFetch(
+        `${SUPABASE_URL}/rest/v1/reservations?id=eq.${reservationId}`,
+        {
+          method: "PATCH",
+          headers: getHeaders(),
+          body: JSON.stringify({
+            table_id: tableId
+          })
+        }
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        await response.text()
+      );
+    }
+
+    await loadReservations();
+    await loadReservationHistory();
+  } catch (error) {
+    console.error(error);
+
+    showDashboardNotice(
+      "Nepodařilo se přiřadit stůl."
+    );
+
+    renderReservations(
+      getFilteredReservations()
+    );
+  }
+}
+
+/* =========================================================
+   MENU
+========================================================= */
+
+async function loadFoods() {
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/menu?restaurant_id=eq.${currentRestaurantId}&select=*&order=id.desc`
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(JSON.stringify(data));
+    }
+
+    foods =
+      Array.isArray(data) ? data : [];
+
+    document.getElementById(
+      "foodCount"
+    ).textContent = foods.length;
+
+    renderFoods();
+  } catch (error) {
+    console.error(error);
+
+    document.getElementById(
+      "foodList"
+    ).innerHTML = `
+      <p>
+        Nepodařilo se načíst menu.
+      </p>
+    `;
+  }
+}
+
+async function saveFood() {
+  const name =
+    document
+      .getElementById("foodName")
+      .value
+      .trim();
+
+  const price =
+    document
+      .getElementById("foodPrice")
+      .value
+      .trim();
+
+  const emoji =
+    document
+      .getElementById("foodEmoji")
+      .value
+      .trim() || "🍽️";
+
+  const category =
+    document.getElementById(
+      "foodCategory"
+    ).value;
+
+  const description =
+    document
+      .getElementById("foodDescription")
+      .value
+      .trim();
+
+  const ingredients =
+    document
+      .getElementById("foodIngredients")
+      .value
+      .trim();
+
+  const allergens =
+    document
+      .getElementById("foodAllergens")
+      .value
+      .trim();
+
+  const weight =
+    document
+      .getElementById("foodWeight")
+      .value
+      .trim();
+
+  const imageFile =
+    document.getElementById(
+      "foodImage"
+    ).files?.[0];
+
+  if (!name || !price) {
+    showDashboardNotice("Vyplň název i cenu.");
+    return;
+  }
+
+  let imageUrl =
+    editingImageUrl || "";
+
+  try {
+    if (imageFile) {
+      const extension =
+        imageFile.name
+          .split(".")
+          .pop();
+
+      const fileName =
+        `${Date.now()}-` +
+        `${Math.random()
+          .toString(36)
+          .slice(2)}.` +
+        extension;
+      const objectPath = `${currentRestaurantId}/${fileName}`;
+
+const upload = await authorizedFetch(
+  `${SUPABASE_URL}/storage/v1/object/food-images/${objectPath}`,
+  {
+    method: "POST",
+    headers: getHeaders({
+      "Content-Type": imageFile.type,
+      "x-upsert": "true"
+    }),
+    body: imageFile
+  }
+);
+
+if (!upload.ok) {
+  throw new Error(
+    await upload.text()
+  );
+}
+
+imageUrl =
+  `${SUPABASE_URL}/storage/v1/object/public/food-images/${objectPath}`;
+    }
+
+    const foodData = {
+      name,
+      price: Number(price),
+      emoji,
+      image_url: imageUrl,
+      category,
+      description,
+      ingredients,
+      allergens,
+      weight,
+      restaurant_id: currentRestaurantId
+    };
+
+    const editing =
+      editingFoodId !== null;
+
+    const url = editing
+      ? `${SUPABASE_URL}/rest/v1/menu?id=eq.${editingFoodId}`
+      : `${SUPABASE_URL}/rest/v1/menu`;
+
+    const response = await authorizedFetch(
+      url,
+      {
+        method: editing
+          ? "PATCH"
+          : "POST",
+        headers: getHeaders({
+          Prefer: "return=minimal"
+        }),
+        body: JSON.stringify(foodData)
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        await response.text()
+      );
+    }
+
+    resetFoodForm();
+    await loadFoods();
+  } catch (error) {
+    console.error(error);
+
+    showDashboardNotice(
+      "Nepodařilo se uložit jídlo nebo nahrát fotografii."
+    );
+  }
+}
+
+function renderFoods() {
+  const list =
+    document.getElementById("foodList");
+
+  if (!foods.length) {
+    list.innerHTML = `
+      <p>Žádná jídla.</p>
+    `;
+
+    return;
+  }
+
+  list.innerHTML = foods
+    .map(food => {
+      const photo = food.image_url
+        ? `
+          <img
+            src="${escapeHtml(food.image_url)}"
+            class="foodPhoto"
+            alt="${escapeHtml(
+              food.name || "Jídlo"
+            )}"
+          >
+        `
+        : `
+          <div
+            class="foodPhoto"
+            style="
+              display:grid;
+              place-items:center;
+              font-size:30px;
+              background:#0f172a;
+            "
+          >
+            ${escapeHtml(
+              food.emoji || "🍽️"
+            )}
+          </div>
+        `;
+
+      return `
+        <div class="foodItem">
+
+          ${photo}
+
+          <div class="foodInfo">
+
+            <b>
+              ${escapeHtml(
+                food.emoji || "🍽️"
+              )}
+
+              ${escapeHtml(
+                food.name || "Bez názvu"
+              )}
+            </b>
+
+            <div class="foodPrice">
+              ${escapeHtml(
+                food.price || 0
+              )}
+              Kč
+            </div>
+
+            <small>
+              ${escapeHtml(
+                food.category ||
+                "Bez kategorie"
+              )}
+            </small>
+
+          </div>
+
+          <div class="foodActions">
+
+            <button
+              class="editBtn"
+              type="button"
+              title="Upravit jídlo"
+              onclick="editFood(
+                ${Number(food.id)}
+              )"
+            >
+              ✏️
+            </button>
+
+            <button
+              class="deleteBtn"
+              type="button"
+              title="Smazat jídlo"
+              onclick="deleteFood(
+                ${Number(food.id)}
+              )"
+            >
+              🗑️
+            </button>
+
+          </div>
+
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function editFood(id) {
+  const food = foods.find(
+    item => Number(item.id) === Number(id)
+  );
+
+  if (!food) {
+    return;
+  }
+
+  editingFoodId = food.id;
+  editingImageUrl =
+    food.image_url || "";
+
+  document.getElementById(
+    "foodName"
+  ).value = food.name || "";
+
+  document.getElementById(
+    "foodPrice"
+  ).value = food.price || "";
+
+  document.getElementById(
+    "foodEmoji"
+  ).value = food.emoji || "";
+
+  document.getElementById(
+    "foodCategory"
+  ).value =
+    food.category || "Pizza";
+
+  document.getElementById(
+    "foodDescription"
+  ).value = food.description || "";
+
+  document.getElementById(
+    "foodIngredients"
+  ).value = food.ingredients || "";
+
+  document.getElementById(
+    "foodAllergens"
+  ).value = food.allergens || "";
+
+  document.getElementById(
+    "foodWeight"
+  ).value = food.weight || "";
+
+  document.getElementById(
+    "foodBtn"
+  ).textContent = "Uložit změny";
+
+  document.getElementById(
+    "cancelEditBtn"
+  ).style.display = "inline-block";
+
+  document.getElementById(
+    "foodName"
+  ).scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+}
+
+function resetFoodForm() {
+  editingFoodId = null;
+  editingImageUrl = "";
+
+  [
+    "foodName",
+    "foodPrice",
+    "foodEmoji",
+    "foodDescription",
+    "foodIngredients",
+    "foodAllergens",
+    "foodWeight"
+  ].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+
+  document.getElementById(
+    "foodImage"
+  ).value = "";
+
+  document.getElementById(
+    "foodBtn"
+  ).textContent = "Přidat jídlo";
+
+  document.getElementById(
+    "cancelEditBtn"
+  ).style.display = "none";
+}
+
+async function deleteFood(id) {
+  if (!confirm("Opravdu smazat jídlo?")) {
+    return;
+  }
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/menu?id=eq.${id}`,
+      {
+        method: "DELETE",
+        headers: getHeaders()
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        await response.text()
+      );
+    }
+
+    if (
+      Number(editingFoodId) === Number(id)
+    ) {
+      resetFoodForm();
+    }
+
+    await loadFoods();
+  } catch (error) {
+    console.error(error);
+
+    showDashboardNotice(
+      "Nepodařilo se smazat jídlo."
+    );
+  }
+}
+function createCalendarTimeline(eventsHtml = "") {
+  const hours = [];
+
+  for (let hour = 10; hour <= 22; hour++) {
+    const time = `${String(hour).padStart(2, "0")}:00`;
+
+    hours.push(`
+      <div class="calendarHour">
+        <span>${time}</span>
+        <div class="calendarLine"></div>
+      </div>
+    `);
+  }
+
+  return `
+    <div class="calendarTimeline">
+      ${hours.join("")}
+      <div class="calendarEventsLayer">
+        ${eventsHtml}
+      </div>
+
+      <div class="calendar-current-time" id="calendarCurrentTime" hidden>
+        <span class="calendar-current-time-label"></span>
+        <span class="calendar-current-time-dot"></span>
+        <span class="calendar-current-time-line"></span>
+      </div>
+    </div>
+  `;
+}
+
+let calendarCurrentTimeTimer = null;
+
+function updateCalendarCurrentTime() {
+  const indicator = document.getElementById("calendarCurrentTime");
+  const dateInput = document.getElementById("calendarDate");
+
+  if (!indicator || !dateInput) return;
+
+  const now = new Date();
+  const selectedDate = dateInput.value || getLocalDateString();
+  const currentDate = getLocalDateString();
+  const totalMinutes = ((now.getHours() - 10) * 60) + now.getMinutes();
+
+  if (selectedDate !== currentDate || totalMinutes < 0 || totalMinutes > 780) {
+    indicator.hidden = true;
+    return;
+  }
+
+  indicator.hidden = false;
+  indicator.style.top = `${10 + totalMinutes}px`;
+
+  const label = indicator.querySelector(".calendar-current-time-label");
+  if (label) {
+    label.textContent = now.toLocaleTimeString("cs-CZ", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+}
+
+function startCalendarCurrentTimeTimer() {
+  if (calendarCurrentTimeTimer) {
+    clearInterval(calendarCurrentTimeTimer);
+  }
+
+  updateCalendarCurrentTime();
+  calendarCurrentTimeTimer = setInterval(updateCalendarCurrentTime, 30000);
+}
+
+function getCalendarStartMinutes(reservation) {
+  const [hours, minutes] = String(reservation.time || "10:00")
+    .split(":")
+    .map(Number);
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return 0;
+  return Math.max(0, ((hours - 10) * 60) + minutes);
+}
+
+function buildCalendarLayout(dayReservations) {
+  const events = dayReservations
+    .map(reservation => {
+      const start = getCalendarStartMinutes(reservation);
+      const duration = Math.max(30, Number(reservation.duration_minutes || 120));
+
+      return {
+        reservation,
+        start,
+        duration,
+        end: start + duration,
+        column: 0,
+        columnCount: 1
+      };
+    })
+    .sort((a, b) => a.start - b.start || b.duration - a.duration);
+
+  let clusterStart = 0;
+
+  while (clusterStart < events.length) {
+    let clusterEnd = clusterStart + 1;
+    let latestEnd = events[clusterStart].end;
+
+    while (clusterEnd < events.length && events[clusterEnd].start < latestEnd) {
+      latestEnd = Math.max(latestEnd, events[clusterEnd].end);
+      clusterEnd += 1;
+    }
+
+    const cluster = events.slice(clusterStart, clusterEnd);
+    const columnEnds = [];
+
+    cluster.forEach(event => {
+      let column = columnEnds.findIndex(end => end <= event.start);
+
+      if (column === -1) {
+        column = columnEnds.length;
+      }
+
+      event.column = column;
+      columnEnds[column] = event.end;
+    });
+
+    const columnCount = Math.max(1, columnEnds.length);
+    cluster.forEach(event => {
+      event.columnCount = columnCount;
+    });
+
+    clusterStart = clusterEnd;
+  }
+
+  return events;
+}
+
+function openReservationFromCalendar(date, time) {
+  const reservationSection = document.getElementById("novaRezervace");
+  const tableSelect = document.getElementById("newTable");
+  const dateInput = document.getElementById("newDate");
+  const timeInput = document.getElementById("newTime");
+
+  if (!reservationSection || !tableSelect || !dateInput || !timeInput) {
+    showDashboardNotice("Formulář nové rezervace se nepodařilo otevřít.");
+    return;
+  }
+
+  showDashboardSection("rezervace");
+
+  fillNewTableOptions("auto");
+  setupAutomaticTableRecommendation();
+
+  dateInput.value = date;
+  timeInput.value = time;
+  updateNewTableRecommendation();
+  reservationSection.style.display = "block";
+
+  requestAnimationFrame(() => {
+    reservationSection.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+
+    document.getElementById("newName")?.focus();
+  });
+}
+
+function attachCalendarClickHandler() {
+  const timeline = document.querySelector("#calendarReservations .calendarTimeline");
+  const eventsLayer = timeline?.querySelector(".calendarEventsLayer");
+  const dateInput = document.getElementById("calendarDate");
+
+  if (!timeline || !eventsLayer || !dateInput) return;
+
+  timeline.addEventListener("click", event => {
+    if (event.target.closest(".calendar-reservation")) return;
+
+    const rect = eventsLayer.getBoundingClientRect();
+    const clickedY = event.clientY - rect.top;
+
+    if (clickedY < 0 || clickedY > 780) return;
+
+    const roundedMinutes = Math.max(
+      0,
+      Math.min(720, Math.round(clickedY / 30) * 30)
+    );
+
+    const totalMinutes = (10 * 60) + roundedMinutes;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+    const date = dateInput.value || getLocalDateString();
+
+    openReservationFromCalendar(date, time);
+  });
+}
+
+
+let calendarDragJustFinished = false;
+
+function handleCalendarReservationClick(event, reservationId) {
+  if (calendarDragJustFinished) {
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
+
+  editReservation(reservationId);
+}
+
+function minutesToTime(totalMinutes) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function attachCalendarDragHandlers() {
+  const timeline = document.querySelector("#calendarReservations .calendarTimeline");
+  const cards = timeline?.querySelectorAll(".calendar-reservation");
+
+  if (!timeline || !cards?.length) return;
+
+  cards.forEach(card => {
+    card.addEventListener("pointerdown", event => {
+      if (event.button !== 0) return;
+
+      const originalTop = Number.parseFloat(card.style.top) || 0;
+      const duration = Number(card.dataset.duration || 120);
+      const startY = event.clientY;
+      let moved = false;
+      let previewTop = originalTop;
+
+      card.setPointerCapture(event.pointerId);
+      card.classList.add("is-dragging");
+
+      const onPointerMove = moveEvent => {
+        const deltaY = moveEvent.clientY - startY;
+
+        if (Math.abs(deltaY) >= 5) moved = true;
+        if (!moved) return;
+
+        const maxTop = Math.max(0, 780 - duration);
+        previewTop = Math.max(0, Math.min(maxTop, originalTop + deltaY));
+        card.style.top = `${previewTop}px`;
+
+        const snappedMinutes = Math.round(previewTop / 30) * 30;
+        card.querySelector(".calendar-time")?.replaceChildren(
+          document.createTextNode(minutesToTime((10 * 60) + snappedMinutes))
+        );
+      };
+
+      const finishDrag = async upEvent => {
+        card.removeEventListener("pointermove", onPointerMove);
+        card.removeEventListener("pointerup", finishDrag);
+        card.removeEventListener("pointercancel", cancelDrag);
+        card.classList.remove("is-dragging");
+
+        if (!moved) return;
+
+        calendarDragJustFinished = true;
+        setTimeout(() => {
+          calendarDragJustFinished = false;
+        }, 300);
+
+        upEvent.preventDefault();
+        upEvent.stopPropagation();
+
+        const snappedMinutes = Math.max(
+          0,
+          Math.min(780 - duration, Math.round(previewTop / 30) * 30)
+        );
+        const newTime = minutesToTime((10 * 60) + snappedMinutes);
+        const reservationId = card.dataset.reservationId;
+
+        const draggedReservation = reservations.find(
+          item => Number(item.id) === Number(reservationId)
+        );
+
+        if (!draggedReservation) {
+          showDashboardNotice("Rezervace nebyla nalezena.");
+          renderCalendar();
+          return;
+        }
+
+        const proposedReservation = {
+          ...draggedReservation,
+          time: newTime
+        };
+
+        if (
+          proposedReservation.table_id !== null &&
+          proposedReservation.table_id !== undefined &&
+          (proposedReservation.status || "Čeká") !== "Zrušeno" &&
+          hasTableConflict(
+            proposedReservation.table_id,
+            proposedReservation,
+            proposedReservation.id
+          )
+        ) {
+          showDashboardNotice(
+            `${getTableName(proposedReservation.table_id)} je v čase ${newTime} obsazený.\n\n` +
+            "Rezervace nebyla přesunuta."
+          );
+          renderCalendar();
+          return;
+        }
+
+        card.style.top = `${snappedMinutes}px`;
+        card.classList.add("is-saving");
+
+        const saved = await updateReservation(reservationId, { time: newTime });
+        card.classList.remove("is-saving");
+
+        if (saved) {
+          renderCalendar();
+        } else {
+          card.style.top = `${originalTop}px`;
+          renderCalendar();
+        }
+      };
+
+      const cancelDrag = () => {
+        card.removeEventListener("pointermove", onPointerMove);
+        card.removeEventListener("pointerup", finishDrag);
+        card.removeEventListener("pointercancel", cancelDrag);
+        card.classList.remove("is-dragging");
+        card.style.top = `${originalTop}px`;
+      };
+
+      card.addEventListener("pointermove", onPointerMove);
+      card.addEventListener("pointerup", finishDrag);
+      card.addEventListener("pointercancel", cancelDrag);
+    });
+  });
+}
+
+function renderCalendar() {
+  const container = document.getElementById("calendarReservations");
+  if (!container) return;
+
+  const selectedDate =
+    document.getElementById("calendarDate")?.value || getLocalDateString();
+
+  const dayReservations = reservations.filter(
+    reservation => reservation.date === selectedDate
+  );
+
+  if (dayReservations.length === 0) {
+    container.innerHTML = createCalendarTimeline();
+    attachCalendarClickHandler();
+    attachCalendarDragHandlers();
+    startCalendarCurrentTimeTimer();
+    return;
+  }
+
+  const eventsHtml = buildCalendarLayout(dayReservations)
+    .map(event => {
+      const r = event.reservation;
+      const widthPercent = 100 / event.columnCount;
+      const leftPercent = event.column * widthPercent;
+      const height = Math.max(30, event.duration - 2);
+      const statusClass = getCalendarStatusClass(r.status);
+      const statusLabel = getCalendarStatusLabel(r.status);
+      const tableName = r.table_name
+        ? ` • 🪑 ${escapeHtml(r.table_name)}`
+        : "";
+
+      return `
+        <button
+          type="button"
+          class="calendar-reservation ${statusClass}"
+          style="top:${event.start}px;height:${height}px;left:calc(${leftPercent}% + 3px);width:calc(${widthPercent}% - 6px);"
+          data-reservation-id="${escapeHtml(r.id)}"
+          data-duration="${event.duration}"
+          onclick="handleCalendarReservationClick(event, '${r.id}')"
+          aria-label="Upravit rezervaci ${escapeHtml(r.name || "")}" 
+        >
+          <span class="calendar-time">${escapeHtml(r.time || "")}</span>
+
+          <span class="calendar-info">
+            <strong>${escapeHtml(r.name || "Bez jména")}</strong>
+            <small>👥 ${escapeHtml(r.people || 0)} osob${tableName}</small>
+          </span>
+
+          <span class="calendar-status ${statusClass}">${escapeHtml(statusLabel)}</span>
+        </button>
+      `;
+    })
+    .join("");
+
+  container.innerHTML = createCalendarTimeline(eventsHtml);
+  attachCalendarClickHandler();
+  attachCalendarDragHandlers();
+  startCalendarCurrentTimeTimer();
+}
+
+const calendarDateInput =
+    document.getElementById("calendarDate");
+
+if (calendarDateInput && !calendarDateInput.value) {
+    calendarDateInput.value = getLocalDateString();
+}
+
+calendarDateInput?.addEventListener(
+    "change",
+    renderCalendar
+);
+function changeCalendarDay(days) {
+    const input = document.getElementById("calendarDate");
+
+    if (!input) return;
+
+    const currentValue =
+        input.value || getLocalDateString();
+
+    const date = new Date(`${currentValue}T12:00:00`);
+
+    date.setDate(date.getDate() + days);
+
+    input.value = date.toISOString().split("T")[0];
+
+    renderCalendar();
+}
+function getCalendarStatusClass(status) {
+    const normalizedStatus =
+        String(status || "").toLowerCase();
+
+    if (
+        normalizedStatus === "potvrzeno" ||
+        normalizedStatus === "confirmed"
+    ) {
+        return "confirmed";
+    }
+
+    if (
+        normalizedStatus === "zrušeno" ||
+        normalizedStatus === "zruseno" ||
+        normalizedStatus === "cancelled" ||
+        normalizedStatus === "canceled"
+    ) {
+        return "cancelled";
+    }
+
+    return "pending";
+}
+
+function getCalendarStatusLabel(status) {
+    const normalizedStatus =
+        String(status || "").toLowerCase();
+
+    if (
+        normalizedStatus === "potvrzeno" ||
+        normalizedStatus === "confirmed"
+    ) {
+        return "Potvrzeno";
+    }
+
+    if (
+        normalizedStatus === "zrušeno" ||
+        normalizedStatus === "zruseno" ||
+        normalizedStatus === "cancelled" ||
+        normalizedStatus === "canceled"
+    ) {
+        return "Zrušeno";
+    }
+
+    return "Čeká";
+}
 
 /* =========================================================
    TÝM / ROLE
 ========================================================= */
-.current-role-badge {
-  display: inline-flex;
-  margin-top: 7px;
-  padding: 5px 10px;
-  border: 1px solid rgba(255, 122, 63, .28);
-  border-radius: 999px;
-  color: #ff9b6f;
-  background: rgba(255, 90, 31, .08);
-  font-size: 12px;
-  font-weight: 800;
-}
-.team-heading { align-items: flex-end; gap: 18px; }
-.team-help { margin-top: 6px; opacity: .75; max-width: 720px; }
-.team-count-box { min-width: 150px; padding: 14px 18px; border-radius: 16px; background: rgba(9,19,38,.45); border: 1px solid rgba(255,255,255,.1); display:flex; flex-direction:column; }
-.team-count-box strong { font-size: 28px; }
-.team-count-box span { opacity: .68; font-size: 12px; }
-.team-invite-form { margin-top: 18px; padding: 18px; border-radius: 18px; border: 1px solid rgba(255,255,255,.1); background: rgba(8,18,36,.45); }
-.team-invite-grid { display:grid; grid-template-columns:1fr 1.25fr .8fr auto; gap:12px; align-items:end; }
-.team-invite-grid label { display:flex; flex-direction:column; gap:7px; font-weight:700; }
-.team-invite-grid input, .team-invite-grid select { width:100%; }
-.team-invite-grid .primary-btn { min-height: 48px; white-space: nowrap; }
-.team-role-help { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
-.team-role-help > div { padding:12px 14px; border-radius:12px; background:rgba(255,255,255,.035); display:flex; flex-direction:column; gap:3px; }
-.team-role-help span { opacity:.68; font-size:12px; }
-.team-member-list { display:grid; gap:12px; margin-top:18px; }
-.team-member-card { display:flex; justify-content:space-between; align-items:center; gap:20px; padding:16px 18px; border-radius:16px; border:1px solid rgba(255,255,255,.1); background:rgba(12,24,45,.56); }
-.team-member-card.is-inactive { opacity:.58; }
-.team-member-main { display:flex; align-items:center; gap:12px; min-width:0; }
-.team-avatar { width:46px; height:46px; flex:0 0 46px; border-radius:14px; display:grid; place-items:center; font-weight:900; font-size:20px; background:rgba(255,90,31,.16); color:#ff8b58; }
-.team-name-line { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.team-name-line h3 { margin:0; font-size:18px; }
-.team-email { margin-top:4px; opacity:.66; font-size:13px; overflow-wrap:anywhere; }
-.team-you-badge { padding:3px 7px; border-radius:999px; background:rgba(46,204,113,.13); color:#5de28f; font-size:11px; font-weight:800; }
-.team-controls { display:flex; gap:9px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
-.team-controls select { min-width:130px; }
-.team-status { padding:6px 9px; border-radius:999px; font-size:11px; font-weight:800; }
-.team-status--active { color:#5de28f; background:rgba(46,204,113,.13); }
-.team-status--pending { color:#ffbf4a; background:rgba(255,166,0,.13); }
-.team-status--inactive { color:#ff7777; background:rgba(255,70,70,.12); }
-.team-action-button { min-height:40px; padding:8px 12px; }
-.successButton { background:#19a957; color:#fff; border:0; border-radius:10px; font-weight:800; cursor:pointer; }
-@media (max-width: 900px) {
-  .team-invite-grid { grid-template-columns:1fr 1fr; }
-  .team-member-card { align-items:flex-start; flex-direction:column; }
-  .team-controls { width:100%; justify-content:flex-start; }
-}
-@media (max-width: 620px) {
-  .team-heading { flex-direction:column; align-items:stretch; }
-  .team-count-box { width:100%; }
-  .team-invite-grid, .team-role-help { grid-template-columns:1fr; }
-  .team-controls select, .team-controls button { width:100%; }
+
+const ROLE_LABELS = {
+  owner: "Majitel",
+  manager: "Manažer",
+  staff: "Obsluha"
+};
+
+const ROLE_ALLOWED_SECTIONS = {
+  owner: new Set(["prehled", "grafy", "rezervace", "historie", "customers", "team", "kalendar", "stoly", "mapa", "provoz", "reservationSettings", "menu"]),
+  manager: new Set(["prehled", "grafy", "rezervace", "historie", "customers", "kalendar", "stoly", "mapa", "provoz", "reservationSettings", "menu"]),
+  staff: new Set(["prehled", "rezervace", "customers", "kalendar", "stoly", "mapa"])
+};
+
+function roleLabel(role) {
+  return ROLE_LABELS[String(role || "").toLowerCase()] || "Neznámá role";
 }
 
+function canAccessSection(sectionId) {
+  const allowed = ROLE_ALLOWED_SECTIONS[currentUserRole] || ROLE_ALLOWED_SECTIONS.staff;
+  return allowed.has(sectionId);
+}
 
-@media (max-width: 700px) {
-  .reservation-notification-panel {
-    position: fixed;
-    top: max(72px, calc(env(safe-area-inset-top) + 58px));
-    left: 12px;
-    right: 12px;
-    width: auto;
-    max-height: 70vh;
-    transform-origin: top center;
+function applyRolePermissions() {
+  document.querySelectorAll('.sidebar nav a[data-section]').forEach(link => {
+    const section = link.dataset.section;
+    link.hidden = !canAccessSection(section);
+  });
+
+  const badge = document.getElementById('currentUserRoleBadge');
+  if (badge) badge.textContent = roleLabel(currentUserRole);
+
+  // Tým smí spravovat pouze majitel. Zobrazení samotné sekce ale vždy
+  // řídí showDashboardSection(), aby po změně role nezůstával starý stav.
+  const teamSection = document.getElementById('team');
+  if (teamSection && currentUserRole !== 'owner') teamSection.style.display = 'none';
+}
+
+function getCurrentUserEmail() {
+  return String(parseJwt(getAccessToken())?.email || '').trim().toLowerCase();
+}
+
+function renderTeamMembers() {
+  const list = document.getElementById('teamMemberList');
+  const count = document.getElementById('teamMemberCount');
+  if (!list) return;
+
+  if (count) count.textContent = String(teamMembers.filter(member => member.active !== false).length);
+
+  if (!teamMembers.length) {
+    list.innerHTML = `<div class="history-empty">Zatím tu není žádný člen týmu.</div>`;
+    return;
   }
 
-  .reservation-notification-button {
-    width: 42px;
-    min-width: 42px;
-    height: 42px;
-    min-height: 42px;
+  list.innerHTML = teamMembers.map(member => {
+    const isCurrent = member.user_id && member.user_id === currentUserId;
+    const isOwner = member.role === 'owner';
+    const status = member.active === false ? 'Neaktivní' : (member.user_id ? 'Aktivní' : 'Pozván');
+    const statusClass = member.active === false ? 'inactive' : (member.user_id ? 'active' : 'pending');
+    const safeId = Number(member.id);
+
+    return `
+      <article class="team-member-card ${member.active === false ? 'is-inactive' : ''}">
+        <div class="team-member-main">
+          <div class="team-avatar">${escapeHtml((member.full_name || member.email || '?').trim().charAt(0).toUpperCase())}</div>
+          <div>
+            <div class="team-name-line">
+              <h3>${escapeHtml(member.full_name || member.email || 'Člen týmu')}</h3>
+              ${isCurrent ? '<span class="team-you-badge">Ty</span>' : ''}
+            </div>
+            <div class="team-email">${escapeHtml(member.email || '')}</div>
+          </div>
+        </div>
+
+        <div class="team-controls">
+          <span class="team-status team-status--${statusClass}">${status}</span>
+          <select aria-label="Role zaměstnance" onchange="updateTeamMemberRole(${safeId}, this.value)" ${isOwner || isCurrent ? 'disabled' : ''}>
+            <option value="manager" ${member.role === 'manager' ? 'selected' : ''}>Manažer</option>
+            <option value="staff" ${member.role === 'staff' ? 'selected' : ''}>Obsluha</option>
+            ${isOwner ? '<option value="owner" selected>Majitel</option>' : ''}
+          </select>
+          ${!isOwner && !isCurrent ? `
+            <button type="button" class="${member.active === false ? 'successButton' : 'dangerButton'} team-action-button" onclick="toggleTeamMemberActive(${safeId}, ${member.active === false ? 'true' : 'false'})">
+              ${member.active === false ? 'Aktivovat' : 'Deaktivovat'}
+            </button>
+          ` : ''}
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+async function loadTeamMembers() {
+  if (!currentRestaurantId || currentUserRole !== 'owner') {
+    teamMembers = [];
+    renderTeamMembers();
+    return;
+  }
+
+  const list = document.getElementById('teamMemberList');
+  if (list) list.innerHTML = `<div class="history-empty">Načítám tým…</div>`;
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/restaurant_team?restaurant_id=eq.${currentRestaurantId}&select=*&order=created_at.asc`,
+      { headers: getHeaders() }
+    );
+
+    if (!response.ok) throw new Error(await response.text());
+    teamMembers = await response.json();
+    renderTeamMembers();
+  } catch (error) {
+    console.error('Tým se nepodařilo načíst:', error);
+    teamMembers = [];
+    if (list) list.innerHTML = `<div class="history-empty">Tým zatím není připravený. Spusť SQL soubor supabase-team-roles.sql.</div>`;
+  }
+}
+
+async function inviteTeamMember(event) {
+  event?.preventDefault();
+  if (currentUserRole !== 'owner') {
+    showDashboardNotice('Pozvat zaměstnance může pouze majitel.');
+    return;
+  }
+
+  const nameInput = document.getElementById('teamInviteName');
+  const emailInput = document.getElementById('teamInviteEmail');
+  const roleInput = document.getElementById('teamInviteRole');
+  const button = document.getElementById('teamInviteButton');
+
+  const fullName = nameInput?.value.trim() || '';
+  const email = emailInput?.value.trim().toLowerCase() || '';
+  const role = roleInput?.value || 'staff';
+
+  if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+    showDashboardNotice('Zadej platný e-mail zaměstnance.');
+    return;
+  }
+
+  if (!['manager', 'staff'].includes(role)) {
+    showDashboardNotice('Vyber platnou roli.');
+    return;
+  }
+
+  if (email === getCurrentUserEmail()) {
+    showDashboardNotice('Tento e-mail patří aktuálně přihlášenému majiteli.');
+    return;
+  }
+
+  button.disabled = true;
+  const oldText = button.textContent;
+  button.textContent = 'Odesílám pozvánku…';
+
+  try {
+    const response = await fetch('/api/invite-team-member', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getAccessToken()}`
+      },
+      body: JSON.stringify({ full_name: fullName, email, role })
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Pozvánku se nepodařilo odeslat.');
+
+    nameInput.value = '';
+    emailInput.value = '';
+    roleInput.value = 'staff';
+    await loadTeamMembers();
+    showDashboardNotice(data.message || 'Pozvánka zaměstnanci byla odeslána.', 'success');
+  } catch (error) {
+    console.error(error);
+    const msg = String(error.message || 'Pozvánku se nepodařilo odeslat.');
+    showDashboardNotice(msg.includes('SUPABASE_SERVICE_ROLE_KEY')
+      ? 'Na Vercelu chybí bezpečný klíč pro pozvánky. Přidej SUPABASE_SERVICE_ROLE_KEY do Environment Variables.'
+      : msg);
+  } finally {
+    button.disabled = false;
+    button.textContent = oldText;
+  }
+}
+
+async function updateTeamMemberRole(memberId, role) {
+  if (currentUserRole !== 'owner' || !['manager', 'staff'].includes(role)) return;
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/restaurant_team?id=eq.${Number(memberId)}&restaurant_id=eq.${currentRestaurantId}`,
+      {
+        method: 'PATCH',
+        headers: getHeaders({ Prefer: 'return=representation' }),
+        body: JSON.stringify({ role })
+      }
+    );
+    if (!response.ok) throw new Error(await response.text());
+    await loadTeamMembers();
+    showDashboardNotice('Role zaměstnance byla změněna.', 'success');
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice('Roli zaměstnance se nepodařilo změnit.');
+    await loadTeamMembers();
+  }
+}
+
+async function toggleTeamMemberActive(memberId, active) {
+  if (currentUserRole !== 'owner') return;
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/restaurant_team?id=eq.${Number(memberId)}&restaurant_id=eq.${currentRestaurantId}`,
+      {
+        method: 'PATCH',
+        headers: getHeaders({ Prefer: 'return=representation' }),
+        body: JSON.stringify({ active: Boolean(active) })
+      }
+    );
+    if (!response.ok) throw new Error(await response.text());
+    await loadTeamMembers();
+    showDashboardNotice(active ? 'Zaměstnanec byl aktivován.' : 'Zaměstnanec byl deaktivován.', 'success');
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice('Stav zaměstnance se nepodařilo změnit.');
+    await loadTeamMembers();
+  }
+}
+
+function showDashboardSection(sectionId, options = {}) {
+    const { notifyDenied = true } = options;
+    const requestedSection = String(sectionId || "prehled").replace(/^#/, "");
+    const sectionExists = document.getElementById(requestedSection);
+    const denied = Boolean(currentUserRole) && (!sectionExists || !canAccessSection(requestedSection));
+    const resolvedSection = denied ? "prehled" : (sectionExists ? requestedSection : "prehled");
+
+    if (denied && notifyDenied) {
+        showDashboardNotice("Pro tuto část nemáš oprávnění.", "info");
+    }
+
+    const sectionIds = [
+        "prehled",
+        "grafy",
+        "rezervace",
+        "historie",
+        "customers",
+        "team",
+        "novaRezervace",
+        "kalendar",
+        "stoly",
+        "mapa",
+        "provoz",
+        "reservationSettings",
+        "menu"
+    ];
+
+    sectionIds.forEach(id => {
+        const section = document.getElementById(id);
+        if (!section) return;
+
+        if (resolvedSection === "rezervace" && id === "novaRezervace") {
+            section.style.display = "none";
+            return;
+        }
+
+        section.style.display = id === resolvedSection ? "" : "none";
+    });
+
+    const upcomingPanel = document.getElementById("upcomingReservationsPanel");
+    if (upcomingPanel) {
+        upcomingPanel.style.display = resolvedSection === "prehled" ? "" : "none";
+    }
+
+    document.querySelectorAll(".sidebar nav a").forEach(link => {
+        link.classList.toggle("active", link.dataset.section === resolvedSection);
+    });
+
+    const targetHash = `#${resolvedSection}`;
+    if (window.location.hash !== targetHash) {
+        history.replaceState(null, "", targetHash);
+    }
+}
+
+document.querySelectorAll(".sidebar nav a[data-section]").forEach(link => {
+    link.addEventListener("click", event => {
+        event.preventDefault();
+        showDashboardSection(link.dataset.section);
+    });
+});
+
+// Pokud někdo ručně změní hash v URL (např. #team), oprávnění se
+// zkontrolují okamžitě a zakázaná sekce skončí na #prehled.
+window.addEventListener("hashchange", () => {
+    if (!currentUserRole) return;
+    showDashboardSection(window.location.hash.replace("#", "") || "prehled");
+});
+
+// Před načtením role zobrazíme bezpečně Přehled. Po přihlášení a načtení
+// role loadDashboardData() zpracuje skutečně požadovaný hash.
+showDashboardSection("prehled", { notifyDenied: false });
+let draggedTable = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+let tableWasDragged = false;
+document.addEventListener("mousedown", event => {
+    const tableElement = event.target.closest(".table");
+
+    if (!tableElement) return;
+
+    const floorMap = tableElement.closest(".floor-map");
+
+    if (!floorMap) return;
+
+    draggedTable = tableElement;
+    tableWasDragged = false;
+    const tableRect = tableElement.getBoundingClientRect();
+
+    dragOffsetX = event.clientX - tableRect.left;
+    dragOffsetY = event.clientY - tableRect.top;
+
+    tableElement.classList.add("dragging");
+
+    event.preventDefault();
+});
+
+document.addEventListener("mousemove", event => {
+    if (!draggedTable) return;
+
+    const floorMap = draggedTable.closest(".floor-map");
+
+    if (!floorMap) return;
+
+    const mapRect = floorMap.getBoundingClientRect();
+
+    let x = event.clientX - mapRect.left - dragOffsetX;
+    let y = event.clientY - mapRect.top - dragOffsetY;
+
+    const maxX = floorMap.clientWidth - draggedTable.offsetWidth;
+    const maxY = floorMap.clientHeight - draggedTable.offsetHeight;
+
+    x = Math.max(0, Math.min(x, maxX));
+    y = Math.max(0, Math.min(y, maxY));
+    tableWasDragged = true;
+  
+    draggedTable.style.left = `${Math.round(x)}px`;
+    draggedTable.style.top = `${Math.round(y)}px`;
+});
+
+document.addEventListener("mouseup", async () => {
+    if (!draggedTable) return;
+
+    const tableElement = draggedTable;
+    draggedTable = null;
+  
+if (tableWasDragged) {
+  setTimeout(() => {
+    tableWasDragged = false;
+  }, 0);
+}
+    tableElement.classList.remove("dragging");
+
+    const tableId = tableElement.dataset.tableId;
+  
+  if (!tableId) {
+  return;
+}
+    const x = Math.round(
+      parseFloat(tableElement.style.left) || 0
+    );
+    const y = Math.round(
+      parseFloat(tableElement.style.top) || 0
+    );
+
+    try {
+        const response = await authorizedFetch(
+            `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${tableId}&restaurant_id=eq.${currentRestaurantId}`,
+            {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    Prefer: "return=minimal"
+                },
+                body: JSON.stringify({ x, y })
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+
+        const table = restaurantTables.find(
+            item => Number(item.id) === Number(tableId)
+        );
+
+        if (table) {
+            table.x = x;
+            table.y = y;
+        }
+    } catch (error) {
+        console.error("Nepodařilo se uložit pozici stolu:", error);
+        showDashboardNotice("Pozici stolu se nepodařilo uložit.");
+        await loadRestaurantTables();
+    }
+});
+let floorMapZoom = 1;
+
+function updateFloorMapZoom() {
+    const floorMap = document.getElementById("floorMap");
+    const zoomValue = document.getElementById("zoomValue");
+
+    if (!floorMap || !zoomValue) return;
+
+    floorMap.style.transform = `scale(${floorMapZoom})`;
+    zoomValue.textContent = `${Math.round(floorMapZoom * 100)}%`;
+}
+
+function zoomIn() {
+    if (floorMapZoom >= 1.8) return;
+
+    floorMapZoom += 0.1;
+    floorMapZoom = Math.round(floorMapZoom * 10) / 10;
+
+    updateFloorMapZoom();
+}
+
+function zoomOut() {
+    if (floorMapZoom <= 0.5) return;
+
+    floorMapZoom -= 0.1;
+    floorMapZoom = Math.round(floorMapZoom * 10) / 10;
+
+    updateFloorMapZoom();
+}
+
+function resetZoom() {
+    floorMapZoom = 1;
+    updateFloorMapZoom();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    updateFloorMapZoom();
+});
+document.addEventListener("click", event => {
+  const floorMap = document.getElementById("floorMap");
+
+  if (!floorMap) return;
+
+  const clickedInsideMap = event.target.closest("#floorMap");
+
+  if (!clickedInsideMap) return;
+
+  const clickedTable = event.target.closest(".table");
+
+  if (clickedTable) return;
+
+  const mapRect = floorMap.getBoundingClientRect();
+
+  pendingTableX =
+    (event.clientX - mapRect.left) / floorMapZoom;
+
+  pendingTableY =
+    (event.clientY - mapRect.top) / floorMapZoom;
+
+  const modal =
+    document.getElementById("quickTableModal");
+
+  const nameInput =
+    document.getElementById("quickTableName");
+
+  const capacityInput =
+    document.getElementById("quickTableCapacity");
+
+  if (!modal || !nameInput || !capacityInput) {
+    return;
+  }
+
+  nameInput.value = "";
+  capacityInput.value = "2";
+
+  modal.style.display = "flex";
+
+  setTimeout(() => {
+    nameInput.focus();
+  }, 50);
+});
+function closeQuickTableModal() {
+  const modal =
+    document.getElementById("quickTableModal");
+
+  const nameInput =
+    document.getElementById("quickTableName");
+
+  const capacityInput =
+    document.getElementById("quickTableCapacity");
+
+  if (modal) {
+    modal.style.display = "none";
+  }
+
+  if (nameInput) {
+    nameInput.value = "";
+  }
+
+  if (capacityInput) {
+    capacityInput.value = "2";
+  }
+
+  pendingTableX = null;
+  pendingTableY = null;
+}
+
+async function createTableFromMap() {
+  const nameInput =
+    document.getElementById("quickTableName");
+
+  const capacityInput =
+    document.getElementById("quickTableCapacity");
+  
+const roomInput =
+  document.getElementById("quickTableRoom");
+  const addButton =
+    document.querySelector(
+      "#quickTableModal .primary-button"
+    );
+
+  if (!nameInput || !capacityInput || !roomInput) {
+  return;
+}
+
+  const name = nameInput.value.trim();
+  const capacity = Number(capacityInput.value);
+  const room = roomInput.value;
+  if (name.length < 2) {
+    showDashboardNotice("Zadej název stolu.");
+    nameInput.focus();
+    return;
+  }
+
+  if (
+    !Number.isInteger(capacity) ||
+    capacity < 1 ||
+    capacity > 30
+  ) {
+    showDashboardNotice("Počet míst musí být od 1 do 30.");
+    capacityInput.focus();
+    return;
+  }
+
+  if (
+    pendingTableX === null ||
+    pendingTableY === null
+  ) {
+    showDashboardNotice("Nejdříve klikni do mapy.");
+    closeQuickTableModal();
+    return;
+  }
+
+  const duplicate = restaurantTables.some(table => {
+    return (
+      String(table.name || "")
+        .trim()
+        .toLowerCase() === name.toLowerCase()
+    );
+  });
+
+  if (duplicate) {
+    showDashboardNotice("Stůl s tímto názvem už existuje.");
+    nameInput.focus();
+    return;
+  }
+
+  const x = Math.max(
+    0,
+    Math.round(pendingTableX - 45)
+  );
+
+  const y = Math.max(
+    0,
+    Math.round(pendingTableY - 45)
+  );
+
+  try {
+    if (addButton) {
+      addButton.disabled = true;
+      addButton.textContent = "Ukládám...";
+    }
+
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/restaurant_tables`,
+      {
+        method: "POST",
+
+        headers: getHeaders({
+          Prefer: "return=minimal"
+        }),
+
+        body: JSON.stringify({
+          restaurant_id: currentRestaurantId,
+          name,
+          capacity,
+          room,
+          note: "",
+          active: true,
+          x,
+          y
+        })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    closeQuickTableModal();
+
+    await loadTables();
+
+    renderReservations(
+      getFilteredReservations()
+    );
+  } catch (error) {
+    console.error(
+      "Nepodařilo se vytvořit stůl:",
+      error
+    );
+
+    showDashboardNotice("Stůl se nepodařilo přidat.");
+  } finally {
+    if (addButton) {
+      addButton.disabled = false;
+      addButton.textContent = "Přidat stůl";
+    }
   }
 }
 
 
-/* ===== Výraznější centrum upozornění ===== */
-.reservation-notification-button {
-  width: auto;
-  min-width: 132px;
-  padding: 0 14px;
-  gap: 8px;
-  font-weight: 800;
-  color: #fff;
-}
-.reservation-notification-icon { font-size: 18px; }
-.reservation-notification-label { font-size: 13px; }
-.reservation-alert-panel {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:20px;
-  margin-top:18px;
-  padding:18px 20px;
-}
-.reservation-alert-overview-copy { display:flex; align-items:center; gap:14px; min-width:0; }
-.reservation-alert-overview-icon {
-  width:48px; height:48px; flex:0 0 48px; border-radius:14px;
-  display:grid; place-items:center; font-size:22px;
-  background:rgba(255,90,31,.13); border:1px solid rgba(255,90,31,.22);
-}
-.reservation-alert-panel h2 { margin:2px 0 4px; font-size:20px; }
-.reservation-alert-panel p { margin:0; color:var(--muted); }
-.reservation-alert-overview-button { white-space:nowrap; }
-.reservation-alert-panel.has-unread { border-color:rgba(255,90,31,.55); box-shadow:0 0 0 1px rgba(255,90,31,.08) inset; }
-.reservation-alert-panel.has-unread .reservation-alert-overview-icon { animation: reservationBellPulse 1.8s ease-in-out infinite; }
-@keyframes reservationBellPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
-@media (max-width:700px) {
-  .reservation-notification-button { min-width:42px; width:42px; padding:0; }
-  .reservation-notification-label { display:none; }
-  .reservation-alert-panel { align-items:stretch; flex-direction:column; padding:15px; }
-  .reservation-alert-overview-button { width:100%; }
-  .reservation-alert-panel h2 { font-size:17px; }
-  .reservation-alert-panel p { font-size:13px; }
-}
+// Automatické doporučení stolu v nové rezervaci.
+document.addEventListener("DOMContentLoaded", () => {
+  fillNewTableOptions("auto");
+  setupAutomaticTableRecommendation();
+  updateNewTableRecommendation();
+});
+
 
 /* =========================================================
-   MOBILE UI V2 — compact app-like dashboard
-   Keeps desktop layout unchanged.
+   PROVOZNÍ DOBA A BLOKOVANÉ ČASY
 ========================================================= */
-@media (max-width: 700px) {
-  html { font-size: 14px; }
-  body { min-width: 0; }
-  .main { padding: 12px 10px calc(86px + env(safe-area-inset-bottom)); }
+const DAY_NAMES = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
+let openingHours = [];
+let blockedTimes = [];
 
-  .topbar {
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-    min-height: 44px;
+async function loadOpeningHours() {
+  if (!currentRestaurantId) return;
+  try {
+    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/opening_hours?restaurant_id=eq.${currentRestaurantId}&select=*&order=day_of_week.asc`, { headers: getHeaders() });
+    if (!response.ok) throw new Error(await response.text());
+    openingHours = await response.json();
+    if (!openingHours.length) {
+      openingHours = DAY_NAMES.map((_, day) => ({ day_of_week: day, is_open: true, open_time: "10:00", close_time: "22:00" }));
+    }
+    renderOpeningHours();
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice("Nejdřív spusť soubor supabase-opening-hours.sql v Supabase SQL Editoru.");
   }
-  .topbar > div:first-child { min-width: 0; flex: 1; }
-  .topbar h1 { font-size: 20px; line-height: 1.15; margin: 0 0 2px; }
-  .topbar p { font-size: 11px; line-height: 1.3; }
-  .topbar-actions { width: auto; flex: 0 0 auto; gap: 6px; }
-  .topbar-actions > * { flex: 0 0 auto; }
-  .topbar-actions button { min-height: 38px; height: 38px; padding: 0 10px; font-size: 12px; border-radius: 10px; }
-
-  .panel { padding: 14px; border-radius: 14px; }
-  .section-heading { margin-bottom: 12px; }
-  .section-heading h2, .panel h2 { font-size: 20px; line-height: 1.2; }
-  .eyebrow { font-size: 10px; }
-
-  /* Overview cards: 2 columns instead of giant one-per-row cards. */
-  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
-  .card { min-width: 0; padding: 12px; gap: 9px; border-radius: 13px; }
-  .cardIcon { width: 36px; height: 36px; flex-basis: 36px; font-size: 17px; border-radius: 10px; }
-  .card p { font-size: 11px; line-height: 1.2; }
-  .card h2 { margin-top: 2px; font-size: 22px; line-height: 1; }
-  .cards .card:last-child:nth-child(odd) { grid-column: 1 / -1; }
-
-  .charts-grid, .tables-grid, .menu-grid { gap: 12px; margin-bottom: 12px; }
-  .chart-wrap { height: 220px; }
-  .reservations-panel { margin-bottom: 12px; }
-
-  input, select, textarea { min-height: 40px; padding: 9px 10px; border-radius: 9px; font-size: 14px; }
-  textarea { min-height: 70px; }
-  button, .secondaryButton { min-height: 40px; padding: 9px 12px; border-radius: 9px; font-size: 13px; }
-  .form-grid { gap: 9px; margin-bottom: 9px; }
-  .form-actions { gap: 8px; margin-top: 8px; }
-
-  /* Reservation toolbar stays compact. */
-  .panel-top { gap: 10px; }
-  .filter-actions { grid-template-columns: minmax(0,1fr) 108px; gap: 7px; }
-  .filter-actions button { width: auto; }
-  .filter-actions > *:nth-child(n+3) { grid-column: span 1; }
-
-  /* Reservation cards */
-  #rezervace tbody { gap: 9px; }
-  #rezervace tr { padding: 11px 12px; border-radius: 13px; }
-  #rezervace td { grid-template-columns: 78px minmax(0,1fr); gap: 7px; padding: 5px 0; font-size: 13px; }
-  #rezervace td::before { font-size: 11px; }
-  #rezervace td:first-child { font-size: 16px; }
-  #rezervace .tableActions { gap: 5px; }
-  #rezervace .tableActions button { width: 34px; min-width: 34px; height: 34px; min-height: 34px; }
-
-  /* Customers */
-  .customers-heading { gap: 10px; }
-  .customer-summary { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 7px; margin: 12px 0; }
-  .customer-summary > div { padding: 10px; border-radius: 11px; }
-  .customer-summary strong { font-size: 20px; }
-  .customer-summary span { font-size: 10px; }
-  .customer-list { gap: 10px; }
-  .customer-card { padding: 12px; border-radius: 13px; }
-  .customer-card-head { gap: 8px; }
-  .customer-name-line h3 { font-size: 17px; }
-  .customer-contact { gap: 7px 12px; margin-top: 5px; font-size: 12px; }
-  .customer-stats-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; margin-top: 10px; }
-  .customer-stats-grid > div { padding: 8px; border-radius: 9px; }
-  .customer-stats-grid strong { font-size: 15px; }
-  .customer-stats-grid span { font-size: 10px; }
-  .customer-note-row { margin-top: 9px; gap: 7px; }
-  .customer-note-row textarea { min-height: 58px; }
-  .customer-history-toggle { margin-top: 6px; padding: 6px 0; font-size: 12px; }
-
-  /* Calendar */
-  #kalendar.panel { padding: 12px 8px 14px; }
-  .calendarHour { grid-template-columns: 48px 1fr; }
-  .calendarEventsLayer { left: 48px; right: 4px; }
-  .calendar-reservation { padding: 6px 8px; border-radius: 9px; }
-  .calendar-info strong { font-size: 12px; }
-  .calendar-info small { font-size: 10px; }
-
-  /* Tables and menu cards */
-  .foodItem, .tableItem { grid-template-columns: 54px minmax(0,1fr); gap: 10px; padding: 10px; }
-  .foodPhoto { width: 54px; height: 54px; }
-  .foodInfo b { font-size: 15px; }
-  .foodActions, .tableActions { justify-content: flex-start; }
-
-  /* Floor map */
-  #floorMap.floor-map { padding: 12px; gap: 10px; border-radius: 13px; }
-  #floorMap .table { width: 92px; height: 92px; font-size: 13px; }
-  .table-map-name { font-size: 13px; }
-  .table-map-capacity, .table-map-status { font-size: 10px; }
-
-  /* Modals: fit inside phone viewport and scroll internally. */
-  .table-modal { padding: 8px; align-items: flex-end; }
-  .table-modal-content, .reservation-modal-content {
-    max-width: none;
-    max-height: calc(100dvh - 16px);
-    overflow-y: auto;
-    padding: 18px 14px calc(16px + env(safe-area-inset-bottom));
-    border-radius: 18px 18px 12px 12px;
-  }
-  .table-modal-content h2 { margin: 0 38px 14px 0; font-size: 20px; }
-  .table-modal-close { top: 7px; right: 8px; width: 38px; height: 38px; min-height: 38px; padding: 0; font-size: 24px; }
-  .reservation-modal-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
-  .reservation-modal-grid label { min-width: 0; font-size: 11px; font-weight: 700; color: #cbd5e1; }
-  .reservation-modal-grid input, .reservation-modal-grid select, .reservation-modal-grid textarea { margin-top: 4px; }
-  .reservation-modal-full { grid-column: 1 / -1; }
-  .table-modal-actions { gap: 7px; margin-top: 12px; }
-  .table-modal-actions button { padding: 9px 8px; font-size: 12px; }
-
-  /* Notifications */
-  .reservation-notification-panel {
-    position: fixed;
-    top: max(58px, calc(env(safe-area-inset-top) + 52px));
-    left: 8px;
-    right: 8px;
-    width: auto;
-    max-height: min(68dvh, 520px);
-    transform-origin: top center;
-  }
-  .reservation-notification-list { max-height: calc(68dvh - 66px); }
-  .reservation-alert-panel { padding: 11px; gap: 10px; }
-  .reservation-alert-panel h2 { font-size: 15px; }
-  .reservation-alert-panel p { font-size: 11px; }
-
-  /* Floating menu button: clean icon, smaller and unobtrusive. */
-  .mobile-menu-button { right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); width: 50px; min-width: 50px; height: 50px; min-height: 50px; }
-  .mobile-menu-button::before { content: "☰"; font-size: 22px; }
-  .sidebar { width: min(84vw, 300px); padding: max(24px, env(safe-area-inset-top)) 14px 24px; }
-  .sidebar h2 { margin: 18px 0 20px; font-size: 22px; }
-  .sidebar nav { gap: 5px; }
-  .sidebar a { padding: 10px 11px; font-size: 14px; border-radius: 9px; }
 }
 
-@media (max-width: 390px) {
-  .main { padding-left: 8px; padding-right: 8px; }
-  .card { padding: 10px; }
-  .cardIcon { width: 32px; height: 32px; flex-basis: 32px; }
-  .card h2 { font-size: 20px; }
-  .reservation-modal-grid { grid-template-columns: 1fr; }
-  .reservation-modal-full { grid-column: auto; }
-  .customer-stats-grid { grid-template-columns: 1fr 1fr; }
+function renderOpeningHours() {
+  const container = document.getElementById("openingHoursGrid");
+  if (!container) return;
+  const byDay = new Map(openingHours.map(row => [Number(row.day_of_week), row]));
+  container.innerHTML = DAY_NAMES.map((name, day) => {
+    const row = byDay.get(day) || { is_open: true, open_time: "10:00", close_time: "22:00" };
+    return `<div class="opening-day" data-day="${day}">
+      <strong>${name}</strong>
+      <label><input class="day-open" type="checkbox" ${row.is_open ? "checked" : ""}> Otevřeno</label>
+      <input class="day-from" type="time" value="${String(row.open_time).slice(0,5)}">
+      <span>–</span>
+      <input class="day-to" type="time" value="${String(row.close_time).slice(0,5)}">
+    </div>`;
+  }).join("");
 }
+
+async function saveOpeningHours() {
+  const rows = [...document.querySelectorAll(".opening-day")].map(element => ({
+    restaurant_id: currentRestaurantId,
+    day_of_week: Number(element.dataset.day),
+    is_open: element.querySelector(".day-open").checked,
+    open_time: element.querySelector(".day-from").value,
+    close_time: element.querySelector(".day-to").value
+  }));
+
+  if (rows.some(row => row.is_open && (!row.open_time || !row.close_time || row.close_time <= row.open_time))) {
+    showDashboardNotice("U otevřených dnů musí být konec později než začátek.");
+    return;
+  }
+
+  try {
+    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/opening_hours?on_conflict=restaurant_id,day_of_week`, {
+      method: "POST",
+      headers: getHeaders({ Prefer: "resolution=merge-duplicates,return=representation" }),
+      body: JSON.stringify(rows)
+    });
+    if (!response.ok) throw new Error(await response.text());
+    openingHours = await response.json();
+    renderOpeningHours();
+    showDashboardNotice("Otevírací doba byla uložena.", "success");
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice("Otevírací dobu se nepodařilo uložit.");
+  }
+}
+
+async function loadBlockedTimes() {
+  if (!currentRestaurantId) return;
+  try {
+    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/blocked_times?restaurant_id=eq.${currentRestaurantId}&select=*&order=date.asc,start_time.asc`, { headers: getHeaders() });
+    if (!response.ok) throw new Error(await response.text());
+    blockedTimes = await response.json();
+    renderBlockedTimes();
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function renderBlockedTimes() {
+  const container = document.getElementById("blockedTimesList");
+  if (!container) return;
+  if (!blockedTimes.length) {
+    container.innerHTML = '<p class="empty-state">Žádné blokované časy.</p>';
+    return;
+  }
+  container.innerHTML = blockedTimes.map(block => `<div class="blocked-time-item">
+    <div><strong>${block.date}</strong> · ${String(block.start_time).slice(0,5)}–${String(block.end_time).slice(0,5)}<br><span>${escapeHtml(block.reason || "Bez důvodu")}</span></div>
+    <button type="button" class="dangerButton" onclick="deleteBlockedTime(${Number(block.id)})">Smazat</button>
+  </div>`).join("");
+}
+
+async function addBlockedTime() {
+  const date = document.getElementById("blockDate").value;
+  const start_time = document.getElementById("blockStart").value;
+  const end_time = document.getElementById("blockEnd").value;
+  const reason = document.getElementById("blockReason").value.trim();
+  if (!date || !start_time || !end_time || end_time <= start_time) {
+    showDashboardNotice("Vyplň datum a platný čas blokace.");
+    return;
+  }
+  try {
+    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/blocked_times`, {
+      method: "POST",
+      headers: getHeaders({ Prefer: "return=representation" }),
+      body: JSON.stringify({ restaurant_id: currentRestaurantId, date, start_time, end_time, reason })
+    });
+    if (!response.ok) throw new Error(await response.text());
+    document.getElementById("blockReason").value = "";
+    await loadBlockedTimes();
+    showDashboardNotice("Čas byl zablokován.", "success");
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice("Blokaci se nepodařilo uložit.");
+  }
+}
+
+async function deleteBlockedTime(id) {
+  try {
+    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/blocked_times?id=eq.${Number(id)}&restaurant_id=eq.${currentRestaurantId}`, { method: "DELETE", headers: getHeaders() });
+    if (!response.ok) throw new Error(await response.text());
+    await loadBlockedTimes();
+    showDashboardNotice("Blokace byla odstraněna.", "success");
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice("Blokaci se nepodařilo odstranit.");
+  }
+}
+
+async function checkDashboardOpeningAvailability({ date, time, durationMinutes }) {
+  const day = new Date(`${date}T12:00:00`).getDay();
+  const hours = openingHours.find(row => Number(row.day_of_week) === day) || { is_open: true, open_time: "10:00", close_time: "22:00" };
+  if (!hours.is_open) return { ok: false, message: "V tento den má restaurace zavřeno." };
+  const start = timeToMinutes(time);
+  const end = start + Number(durationMinutes || 120);
+  if (start < timeToMinutes(hours.open_time) || end > timeToMinutes(hours.close_time)) {
+    return { ok: false, message: `Rezervace musí celá proběhnout mezi ${String(hours.open_time).slice(0,5)} a ${String(hours.close_time).slice(0,5)}.` };
+  }
+  const block = blockedTimes.find(item => item.date === date && start < timeToMinutes(item.end_time) && timeToMinutes(item.start_time) < end);
+  if (block) {
+    const reservationEnd = `${String(Math.floor(end / 60) % 24).padStart(2, "0")}:${String(end % 60).padStart(2, "0")}`;
+    const blockStart = String(block.start_time).slice(0, 5);
+    const blockEnd = String(block.end_time).slice(0, 5);
+    return {
+      ok: false,
+      message: block.reason
+        ? `Rezervace by končila v ${reservationEnd} a zasahovala do blokace ${blockStart}–${blockEnd}: ${block.reason}`
+        : `Rezervace by končila v ${reservationEnd} a zasahovala do blokovaného času ${blockStart}–${blockEnd}.`
+    };
+  }
+  return { ok: true };
+}
+
 
 /* =========================================================
-   MOBILE UI V3 — cleaner header + compact reservation cards
+   NASTAVENÍ REZERVACÍ PRO KAŽDOU RESTAURACI
 ========================================================= */
-@media (max-width: 700px) {
-  /* Header: keep identity left, actions as three compact icons right. */
-  .topbar {
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 14px;
-  }
-  .topbar > div:first-child {
-    padding-top: 4px;
-  }
-  .topbar h1 {
-    font-size: 20px;
-    white-space: nowrap;
-  }
-  .topbar p { font-size: 11px; }
-  .current-role-badge { margin-top: 7px; }
+const DEFAULT_RESERVATION_SETTINGS = {
+  duration_1_2: 90,
+  duration_3_4: 120,
+  duration_5_6: 150,
+  duration_7_plus: 180,
+  min_advance_minutes: 60,
+  max_advance_days: 30,
+  min_people: 1,
+  max_people: 20
+};
 
-  .topbar-actions {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 6px;
-    width: auto;
-  }
-  .topbar-actions .reservation-notification-wrapper,
-  .topbar-actions > .secondaryButton,
-  .topbar-actions > .dangerButton {
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-    min-height: 40px;
-    padding: 0;
-    border-radius: 11px;
-    display: grid;
-    place-items: center;
-    flex: 0 0 40px;
-  }
-  .topbar-actions .reservation-notification-button {
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-    min-height: 40px;
-    padding: 0;
-    border-radius: 11px;
-  }
-  .topbar-actions > .secondaryButton,
-  .topbar-actions > .dangerButton {
-    font-size: 0;
-    text-decoration: none;
-  }
-  .topbar-actions > .secondaryButton::before {
-    content: "↩";
-    font-size: 20px;
-    line-height: 1;
-  }
-  .topbar-actions > .dangerButton::before {
-    content: "⎋";
-    font-size: 20px;
-    line-height: 1;
-  }
+let reservationSettings = { ...DEFAULT_RESERVATION_SETTINGS };
 
-  /* Reservation page toolbar: cleaner, no cramped giant controls. */
-  #rezervace .panel-top {
-    align-items: stretch;
-    gap: 10px;
-  }
-  #rezervace .filter-actions {
-    grid-template-columns: minmax(0, 1fr) minmax(105px, .55fr);
-    gap: 7px;
-  }
-  #rezervace .filter-actions > * {
-    min-width: 0;
-  }
-  #rezervace .filter-actions button {
-    min-height: 40px;
-  }
+function normalizeReservationSettings(row = {}) {
+  return {
+    duration_1_2: Math.max(30, Number(row.duration_1_2 || DEFAULT_RESERVATION_SETTINGS.duration_1_2)),
+    duration_3_4: Math.max(30, Number(row.duration_3_4 || DEFAULT_RESERVATION_SETTINGS.duration_3_4)),
+    duration_5_6: Math.max(30, Number(row.duration_5_6 || DEFAULT_RESERVATION_SETTINGS.duration_5_6)),
+    duration_7_plus: Math.max(30, Number(row.duration_7_plus || DEFAULT_RESERVATION_SETTINGS.duration_7_plus)),
+    min_advance_minutes: Math.max(0, Number(row.min_advance_minutes ?? DEFAULT_RESERVATION_SETTINGS.min_advance_minutes)),
+    max_advance_days: Math.max(1, Number(row.max_advance_days || DEFAULT_RESERVATION_SETTINGS.max_advance_days)),
+    min_people: Math.max(1, Number(row.min_people || DEFAULT_RESERVATION_SETTINGS.min_people)),
+    max_people: Math.max(1, Number(row.max_people || DEFAULT_RESERVATION_SETTINGS.max_people))
+  };
+}
 
-  /* Compact two-column reservation cards. */
-  #rezervace tbody {
-    display: grid;
-    gap: 10px;
-  }
-  #rezervace tr {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
-    padding: 11px;
-    border-radius: 14px;
-    overflow: hidden;
-  }
-  #rezervace td {
-    width: auto;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 3px;
-    padding: 8px 9px;
-    border-radius: 9px;
-    background: rgba(15, 23, 42, .34);
-    font-size: 13px;
-    line-height: 1.25;
-  }
-  #rezervace td::before {
-    font-size: 9px;
-    line-height: 1;
-    letter-spacing: .05em;
-    text-transform: uppercase;
-    opacity: .85;
-  }
-  #rezervace td:first-child {
-    grid-column: 1 / -1;
-    background: transparent;
-    padding: 3px 2px 7px;
-    font-size: 17px;
-    font-weight: 900;
-  }
-  #rezervace td:first-child::before { display: none; }
+function renderReservationSettings() {
+  const mapping = {
+    settingDuration12: reservationSettings.duration_1_2,
+    settingDuration34: reservationSettings.duration_3_4,
+    settingDuration56: reservationSettings.duration_5_6,
+    settingDuration7Plus: reservationSettings.duration_7_plus,
+    settingMinAdvance: reservationSettings.min_advance_minutes,
+    settingMaxAdvanceDays: reservationSettings.max_advance_days,
+    settingMinPeople: reservationSettings.min_people,
+    settingMaxPeople: reservationSettings.max_people
+  };
 
-  /* Table selector and note/status/actions deserve full width. */
-  #rezervace td:nth-child(5),
-  #rezervace td:nth-child(8),
-  #rezervace td:nth-child(9),
-  #rezervace td:nth-child(10) {
-    grid-column: 1 / -1;
-  }
-  #rezervace .tableSelect {
-    width: 100%;
-    min-height: 38px;
-    padding: 7px 9px;
-  }
-  #rezervace .contactLink {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  #rezervace .tableActions {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(5, 38px);
-    gap: 6px;
-    justify-content: start;
-  }
-  #rezervace .tableActions button {
-    width: 38px;
-    min-width: 38px;
-    height: 38px;
-    min-height: 38px;
-    padding: 0;
-    border-radius: 10px;
+  Object.entries(mapping).forEach(([id, value]) => {
+    const input = document.getElementById(id);
+    if (input) input.value = String(value);
+  });
+
+  updateReservationSettingsSummary();
+}
+
+function updateReservationSettingsSummary() {
+  const summary = document.getElementById("reservationSettingsSummary");
+  if (!summary) return;
+
+  summary.innerHTML = `
+    <strong>Jak to uvidí host:</strong>
+    <span>Host vybere pouze počet osob, datum a dostupný čas. Délka zůstává interní a systém ji použije automaticky.</span>
+  `;
+}
+
+async function loadReservationSettings() {
+  if (!currentRestaurantId) return;
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/reservation_settings?restaurant_id=eq.${currentRestaurantId}&select=*`,
+      { headers: getHeaders() }
+    );
+
+    if (!response.ok) throw new Error(await response.text());
+
+    const rows = await response.json();
+    reservationSettings = normalizeReservationSettings(rows[0] || {});
+    renderReservationSettings();
+  } catch (error) {
+    console.error("Nastavení rezervací se nepodařilo načíst:", error);
+    reservationSettings = { ...DEFAULT_RESERVATION_SETTINGS };
+    renderReservationSettings();
+    showDashboardNotice("Pro nastavení rezervací spusť v Supabase nový SQL soubor z projektu.", "info");
   }
 }
 
-@media (max-width: 390px) {
-  .topbar-actions .reservation-notification-wrapper,
-  .topbar-actions > .secondaryButton,
-  .topbar-actions > .dangerButton,
-  .topbar-actions .reservation-notification-button {
-    width: 36px;
-    min-width: 36px;
-    height: 36px;
-    min-height: 36px;
-    flex-basis: 36px;
-  }
-  #rezervace tr { padding: 9px; gap: 6px; }
-  #rezervace td { padding: 7px; }
-}
+async function saveReservationSettings() {
+  if (!currentRestaurantId) return;
 
-/* =========================================================
-   MOBILE UI V4 — real phone width + safer CRM + live tables
-========================================================= */
-.map-live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: 10px;
-  padding: 5px 9px;
-  border: 1px solid rgba(34,197,94,.42);
-  border-radius: 999px;
-  background: rgba(34,197,94,.12);
-  color: #86efac;
-  font-size: 11px;
-  font-weight: 800;
-  vertical-align: middle;
-}
-.map-live-badge i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 0 5px rgba(34,197,94,.10);
-}
+  const values = {
+    restaurant_id: Number(currentRestaurantId),
+    duration_1_2: Number(document.getElementById("settingDuration12")?.value),
+    duration_3_4: Number(document.getElementById("settingDuration34")?.value),
+    duration_5_6: Number(document.getElementById("settingDuration56")?.value),
+    duration_7_plus: Number(document.getElementById("settingDuration7Plus")?.value),
+    min_advance_minutes: Number(document.getElementById("settingMinAdvance")?.value),
+    max_advance_days: Number(document.getElementById("settingMaxAdvanceDays")?.value),
+    min_people: Number(document.getElementById("settingMinPeople")?.value),
+    max_people: Number(document.getElementById("settingMaxPeople")?.value)
+  };
 
-@media (max-width: 700px) {
-  /* Header actions are one clean horizontal row below the title. */
-  .topbar {
-    display: grid;
-    grid-template-columns: minmax(0,1fr);
-    align-items: start;
-    gap: 9px;
-  }
-  .topbar-actions {
-    width: 100%;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 7px;
-  }
-  .topbar-actions .reservation-notification-wrapper,
-  .topbar-actions .reservation-notification-button {
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-    min-height: 40px;
-    flex: 0 0 40px;
-  }
-  .topbar-actions > .secondaryButton,
-  .topbar-actions > .dangerButton {
-    width: auto;
-    min-width: 0;
-    height: 40px;
-    min-height: 40px;
-    flex: 0 0 auto;
-    padding: 0 12px;
-    font-size: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .topbar-actions > .secondaryButton::before {
-    content: "← Web";
-    font-size: 12px;
-    font-weight: 800;
-  }
-  .topbar-actions > .dangerButton::before {
-    content: "Odhlásit";
-    font-size: 12px;
-    font-weight: 800;
+  const durations = [values.duration_1_2, values.duration_3_4, values.duration_5_6, values.duration_7_plus];
+  if (durations.some(value => !Number.isFinite(value) || value < 30 || value > 360)) {
+    showDashboardNotice("Délka rezervace musí být mezi 30 a 360 minutami.");
+    return;
   }
 
-  /* Critical Safari fix: desktop table min-width:1140px must not survive mobile.
-     Otherwise Safari scales the whole reservation page down. */
-  #rezervace .table-wrapper,
-  #rezervace table,
-  #rezervace thead,
-  #rezervace tbody,
-  #rezervace tr,
-  #rezervace td {
-    min-width: 0 !important;
-    max-width: 100% !important;
-    box-sizing: border-box;
-  }
-  #rezervace table {
-    width: 100% !important;
-    table-layout: fixed;
-  }
-  #rezervace .panel-top,
-  #rezervace .filter-actions {
-    width: 100%;
-    max-width: 100%;
+  if (!Number.isFinite(values.min_advance_minutes) || values.min_advance_minutes < 0) {
+    showDashboardNotice("Minimální čas předem nemůže být záporný.");
+    return;
   }
 
-  /* Map live badge stays compact on phones. */
-  #mapa .map-toolbar h2 {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 7px;
-  }
-  #mapa .map-live-badge { margin-left: 0; }
-}
-
-/* =========================================================
-   MOBILE V5 — live calendar + polished controls/opening hours
-========================================================= */
-.calendar-title {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.calendar-live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 10px;
-  border: 1px solid rgba(34, 197, 94, .45);
-  border-radius: 999px;
-  background: rgba(34, 197, 94, .12);
-  color: #bbf7d0;
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
-}
-.calendar-live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, .12);
-  animation: calendarLivePulse 1.8s ease-in-out infinite;
-}
-@keyframes calendarLivePulse {
-  0%, 100% { box-shadow: 0 0 0 3px rgba(34,197,94,.10); }
-  50% { box-shadow: 0 0 0 7px rgba(34,197,94,.03); }
-}
-
-/* The old calendar date field was light/white on iOS. Keep it native but dark. */
-#calendarDate {
-  color-scheme: dark;
-  background: #0f172a;
-  color: #f8fafc;
-  border-color: #334155;
-}
-#calendarDate:focus {
-  border-color: #64748b;
-  box-shadow: 0 0 0 3px rgba(100,116,139,.18);
-}
-
-/* Better opening-hours structure on every screen. */
-.opening-day .opening-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.opening-day .opening-time-field {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-}
-.opening-day .opening-time-field > span {
-  display: none;
-  color: #94a3b8;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-}
-.opening-day .opening-time-separator {
-  color: #64748b;
-  text-align: center;
-}
-
-@media (max-width: 700px) {
-  .calendar-title { gap: 8px; }
-  .calendar-live-badge { padding: 5px 9px; font-size: 11px; }
-
-  /* One compact control row: previous | date | next. */
-  .calendar-controls {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(132px, 1.05fr) minmax(0, 1fr);
-    gap: 7px;
-    align-items: stretch;
-    width: 100%;
-  }
-  .calendar-controls .neutralButton,
-  .calendar-controls #calendarDate {
-    width: 100%;
-    min-width: 0;
-    min-height: 42px;
-    height: 42px;
-    margin: 0;
-    padding: 7px 8px;
-    font-size: 11px;
-    border-radius: 10px;
-  }
-  .calendar-controls #calendarDate {
-    text-align: center;
-    font-size: 12px;
+  if (!Number.isFinite(values.max_advance_days) || values.max_advance_days < 1 || values.max_advance_days > 365) {
+    showDashboardNotice("Počet dní dopředu musí být od 1 do 365.");
+    return;
   }
 
-  /* Opening hours become a clean day card, not scattered time fields. */
-  .opening-hours-grid { gap: 9px; }
-  .opening-day {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-areas:
-      "day toggle"
-      "from to";
-    gap: 10px 8px;
-    padding: 12px;
-    border-radius: 13px;
-  }
-  .opening-day > strong {
-    grid-area: day;
-    align-self: center;
-    font-size: 15px;
-  }
-  .opening-day .opening-toggle {
-    grid-area: toggle;
-    justify-self: end;
-    font-size: 12px;
-  }
-  .opening-day .opening-toggle input {
-    width: 22px;
-    height: 22px;
-    min-height: 0;
-  }
-  .opening-day .opening-time-field:nth-of-type(1) { grid-area: from; }
-  .opening-day .opening-time-field:nth-of-type(2) { grid-area: to; }
-  .opening-day .opening-time-field > span { display: block; }
-  .opening-day .opening-time-field input[type="time"] {
-    min-height: 42px;
-    height: 42px;
-    padding: 7px 9px;
-    font-size: 14px;
-    text-align: center;
-    color-scheme: dark;
-  }
-  .opening-day .opening-time-separator { display: none; }
-  .operations-help { margin-bottom: 12px; font-size: 12px; line-height: 1.45; }
-}
-
-@media (max-width: 390px) {
-  .calendar-controls {
-    grid-template-columns: .82fr 1.36fr .82fr;
-    gap: 5px;
-  }
-  .calendar-controls .neutralButton { font-size: 10px; padding-left: 5px; padding-right: 5px; }
-  .calendar-controls #calendarDate { font-size: 11px; }
-}
-
-/* =========================================================
-   MOBILE UI V6 — final production polish
-   Compact, consistent, touch-friendly. Desktop untouched.
-========================================================= */
-@media (max-width: 700px) {
-  /* ---------- global rhythm ---------- */
-  .main {
-    padding-top: 10px;
-    padding-left: 9px;
-    padding-right: 9px;
-    padding-bottom: calc(76px + env(safe-area-inset-bottom));
-  }
-  .panel { padding: 12px; border-radius: 14px; }
-  .section-heading { margin-bottom: 10px; }
-  .section-heading h2, .panel h2 { font-size: 19px; line-height: 1.15; }
-  .eyebrow { font-size: 9px; letter-spacing: .08em; }
-
-  /* ---------- header ---------- */
-  .topbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 8px 10px;
-    align-items: start;
-    margin-bottom: 12px;
-    min-height: 0;
-  }
-  .topbar > div:first-child { min-width: 0; padding-top: 0; }
-  .topbar h1 { font-size: 19px; line-height: 1.08; margin: 0; white-space: normal; }
-  .topbar p { margin: 3px 0 0; font-size: 10px; line-height: 1.25; }
-  .current-role-badge { margin-top: 6px; padding: 4px 8px; font-size: 10px; }
-  .topbar-actions {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    width: auto;
-    gap: 5px;
-    margin: 0;
-  }
-  .topbar-actions .reservation-notification-wrapper,
-  .topbar-actions .reservation-notification-button {
-    width: 36px;
-    min-width: 36px;
-    height: 36px;
-    min-height: 36px;
-    flex: 0 0 36px;
-    border-radius: 10px;
-  }
-  .topbar-actions > .secondaryButton,
-  .topbar-actions > .dangerButton {
-    height: 36px;
-    min-height: 36px;
-    padding: 0 10px;
-    border-radius: 10px;
-  }
-  .topbar-actions > .secondaryButton::before { font-size: 11px; }
-  .topbar-actions > .dangerButton::before { font-size: 11px; }
-
-  /* ---------- dashboard cards ---------- */
-  .cards { gap: 7px; margin-bottom: 10px; }
-  .card { padding: 10px; gap: 8px; min-height: 70px; }
-  .cardIcon { width: 34px; height: 34px; flex-basis: 34px; font-size: 16px; }
-  .card p { font-size: 10px; }
-  .card h2 { font-size: 20px; }
-  .reservation-alert-panel { margin-bottom: 10px; }
-
-  /* ---------- charts / stats ---------- */
-  .charts-grid { gap: 10px; margin-bottom: 10px; }
-  .chart-wrap { height: 195px; }
-  .chart-card, .statistics-card { padding: 12px; }
-
-  /* ---------- reservation list ---------- */
-  #rezervace .panel { padding: 11px; }
-  #rezervace .panel-top { gap: 8px; }
-  #rezervace .filter-actions { gap: 6px; }
-  #rezervace .filter-actions input,
-  #rezervace .filter-actions select,
-  #rezervace .filter-actions button { min-height: 38px; height: 38px; }
-  #rezervace tbody { gap: 8px; }
-  #rezervace tr {
-    gap: 5px;
-    padding: 9px;
-    border-radius: 13px;
-  }
-  #rezervace td {
-    gap: 2px;
-    padding: 6px 7px;
-    border-radius: 8px;
-    font-size: 12px;
-    min-height: 0;
-  }
-  #rezervace td::before { font-size: 8px; }
-  #rezervace td:first-child { padding: 2px 2px 5px; font-size: 16px; }
-  #rezervace .tableSelect { min-height: 35px; height: 35px; padding: 5px 8px; font-size: 12px; }
-  #rezervace .tableActions { grid-template-columns: repeat(5, 34px); gap: 5px; }
-  #rezervace .tableActions button {
-    width: 34px; min-width: 34px; height: 34px; min-height: 34px;
-    border-radius: 9px; font-size: 14px;
+  if (!Number.isInteger(values.min_people) || !Number.isInteger(values.max_people) || values.min_people < 1 || values.max_people < values.min_people) {
+    showDashboardNotice("Zkontroluj minimální a maximální počet hostů.");
+    return;
   }
 
-  /* ---------- history ---------- */
-  .history-list, #historyList { gap: 8px; }
-  .history-item, .history-card { padding: 11px; border-radius: 12px; }
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/reservation_settings?on_conflict=restaurant_id`,
+      {
+        method: "POST",
+        headers: getHeaders({ Prefer: "resolution=merge-duplicates,return=representation" }),
+        body: JSON.stringify(values)
+      }
+    );
 
-  /* ---------- customers ---------- */
-  .customer-summary { gap: 6px; margin: 10px 0; }
-  .customer-summary > div { padding: 8px; }
-  .customer-summary strong { font-size: 18px; }
-  .customer-list { gap: 8px; }
-  .customer-card { padding: 10px; }
-  .customer-name-line h3 { font-size: 16px; }
-  .customer-contact { margin-top: 4px; font-size: 11px; }
-  .customer-stats-grid { gap: 5px; margin-top: 8px; }
-  .customer-stats-grid > div { padding: 7px; }
-  .customer-stats-grid strong { font-size: 14px; }
-  .customer-note-row { margin-top: 7px; gap: 6px; }
-  .customer-note-row textarea { min-height: 48px; max-height: 72px; padding: 8px 9px; }
-  .customer-note-row button { min-height: 36px; padding: 7px 10px; }
-  .customer-history-toggle { margin-top: 4px; padding: 4px 0; font-size: 11px; }
+    if (!response.ok) throw new Error(await response.text());
 
-  /* ---------- team ---------- */
-  .team-panel { padding: 12px; }
-  .team-invite-form { padding: 10px; }
-  .team-invite-grid { gap: 7px; }
-  .team-invite-grid label { font-size: 11px; }
-  .team-invite-grid input,
-  .team-invite-grid select { min-height: 38px; height: 38px; }
-  .team-invite-form .primary-btn { min-height: 38px; }
-  .team-role-help { gap: 6px; margin-top: 8px; }
-  .team-role-help > div { padding: 8px; }
-  .team-member-list { gap: 8px; }
-
-  /* ---------- calendar ---------- */
-  #kalendar.panel { padding: 11px 8px 12px; }
-  .calendar-title { gap: 7px; }
-  .calendar-live-badge { padding: 4px 8px; font-size: 10px; }
-  .calendar-controls { gap: 6px; margin-bottom: 8px; }
-  .calendar-controls .neutralButton,
-  .calendar-controls #calendarDate { min-height: 38px; height: 38px; }
-  .calendar-reservation { padding: 5px 7px; border-radius: 8px; }
-
-  /* ---------- table editor/list ---------- */
-  .table-form-panel { padding: 12px; }
-  .table-form-panel .form-grid { gap: 7px; }
-  .table-form-panel input,
-  .table-form-panel select { min-height: 38px; height: 38px; }
-  .table-form-panel textarea { min-height: 58px; }
-  .table-form-panel .form-actions button { min-height: 38px; }
-  .tableItem { padding: 9px; }
-
-  /* ---------- map ---------- */
-  #mapa.panel { padding: 12px; }
-  #floorMap.floor-map { padding: 10px; gap: 9px; }
-  #floorMap .table { width: 86px; height: 86px; }
-  .map-live-badge { padding: 4px 8px; font-size: 10px; }
-
-  /* ---------- opening hours ---------- */
-  .opening-hours-grid { gap: 7px; }
-  .opening-day {
-    grid-template-columns: minmax(0,1fr) auto;
-    grid-template-areas:
-      "day toggle"
-      "from to";
-    gap: 7px 8px;
-    padding: 10px;
-    border-radius: 12px;
-  }
-  .opening-day > strong { font-size: 14px; }
-  .opening-day .opening-toggle { gap: 5px; font-size: 11px; }
-  .opening-day .opening-toggle input { width: 20px; height: 20px; }
-  .opening-day .opening-time-field { gap: 3px; }
-  .opening-day .opening-time-field > span { font-size: 9px; }
-  .opening-day .opening-time-field input[type="time"] {
-    min-height: 36px; height: 36px; padding: 5px 7px; font-size: 12px;
-  }
-
-  /* ---------- reservation rules / operational inputs ---------- */
-  .reservation-rules-grid, .reservation-settings-grid { gap: 7px; }
-  .reservation-rules-grid input,
-  .reservation-settings-grid input,
-  .reservation-rules-grid select,
-  .reservation-settings-grid select { min-height: 36px; height: 36px; padding: 6px 8px; }
-
-  /* ---------- food/menu editor ---------- */
-  .menu-grid { gap: 10px; }
-  .food-form-panel { padding: 12px; }
-  .food-form-panel .form-grid { gap: 7px; }
-  .food-form-panel input,
-  .food-form-panel select { min-height: 38px; height: 38px; padding: 7px 9px; }
-  .food-form-panel textarea { min-height: 54px; max-height: 76px; padding: 8px 9px; }
-  .food-form-panel input[type="file"] { min-height: 40px; height: auto; padding: 7px; }
-  .food-form-panel .form-actions { margin-top: 7px; }
-  .food-form-panel .form-actions button { min-height: 38px; }
-  .foodItem { padding: 9px; }
-
-  /* ---------- floating menu ---------- */
-  .mobile-menu-button {
-    right: 10px;
-    bottom: calc(10px + env(safe-area-inset-bottom));
-    width: 44px; min-width: 44px; height: 44px; min-height: 44px;
-    border-radius: 50%;
-    box-shadow: 0 8px 20px rgba(0,0,0,.28);
-  }
-  .mobile-menu-button::before { content: "☰"; font-size: 19px; }
-
-  /* ---------- safety ---------- */
-  .panel, .card, .customer-card, .tableItem, .foodItem,
-  .team-invite-form, .team-member-card, .opening-day {
-    max-width: 100%;
-    box-sizing: border-box;
+    const rows = await response.json();
+    reservationSettings = normalizeReservationSettings(rows[0] || values);
+    renderReservationSettings();
+    showDashboardNotice("Nastavení rezervací bylo uloženo.", "success");
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice("Nastavení rezervací se nepodařilo uložit.");
   }
 }
 
-@media (max-width: 390px) {
-  .topbar { grid-template-columns: minmax(0,1fr) auto; gap: 6px; }
-  .topbar h1 { font-size: 18px; }
-  .topbar-actions { gap: 4px; }
-  .topbar-actions .reservation-notification-wrapper,
-  .topbar-actions .reservation-notification-button { width: 34px; min-width: 34px; height: 34px; min-height: 34px; flex-basis: 34px; }
-  .topbar-actions > .secondaryButton,
-  .topbar-actions > .dangerButton { height: 34px; min-height: 34px; padding: 0 8px; }
-  .topbar-actions > .secondaryButton::before,
-  .topbar-actions > .dangerButton::before { font-size: 10px; }
-  .chart-wrap { height: 180px; }
-  #floorMap .table { width: 82px; height: 82px; }
-}
-
-/* =========================================================
-   MOBILE UI V7 — final polish
-   Final compact pass for first production-ready mobile build.
-========================================================= */
-@media (max-width: 700px) {
-  /* Header: consistent spacing and compact action strip. */
-  .topbar {
-    gap: 6px 8px;
-    margin-bottom: 10px;
-  }
-  .topbar h1 { font-size: 18px; }
-  .topbar p { font-size: 9.5px; }
-  .topbar-actions { gap: 4px; align-self: start; }
-  .topbar-actions .reservation-notification-wrapper,
-  .topbar-actions .reservation-notification-button {
-    width: 34px; min-width: 34px; height: 34px; min-height: 34px; flex-basis: 34px;
-    border-radius: 9px;
-  }
-  .topbar-actions > .secondaryButton,
-  .topbar-actions > .dangerButton {
-    height: 34px; min-height: 34px; padding: 0 9px; border-radius: 9px; font-size: 11px;
-  }
-
-  /* Stats: slightly denser but keep charts legible. */
-  .chart-card, .statistics-card { padding: 10px; }
-  .chart-wrap { height: 178px; }
-  .charts-grid { gap: 8px; }
-
-  /* Reservations: one card should expose all useful info without feeling huge. */
-  #rezervace tr { padding: 8px; gap: 4px; }
-  #rezervace td { padding: 5px 6px; }
-  #rezervace td:first-child { font-size: 15px; padding-bottom: 4px; }
-  #rezervace .tableActions { grid-template-columns: repeat(5, 31px); gap: 4px; }
-  #rezervace .tableActions button {
-    width: 31px; min-width: 31px; height: 31px; min-height: 31px; border-radius: 8px; font-size: 13px;
-  }
-  #rezervace .tableSelect { height: 33px; min-height: 33px; }
-
-  /* History */
-  .history-item, .history-card { padding: 9px; }
-  .history-list, #historyList { gap: 7px; }
-
-  /* CRM cards: preserve readability, remove wasted vertical space. */
-  .customer-card { padding: 9px; }
-  .customer-note-row textarea {
-    min-height: 42px; max-height: 58px; padding: 7px 8px; resize: vertical;
-  }
-  .customer-note-row button { min-height: 34px; }
-  .customer-history-toggle { font-size: 10.5px; }
-
-  /* Team */
-  .team-invite-form { padding: 9px; }
-  .team-invite-grid input, .team-invite-grid select { height: 36px; min-height: 36px; }
-  .team-role-help > div { padding: 7px 8px; }
-
-  /* Calendar: keep live badge, slightly denser controls. */
-  .calendar-controls .neutralButton,
-  .calendar-controls #calendarDate { height: 36px; min-height: 36px; }
-  .calendar-controls { gap: 5px; }
-  .calendar-reservation { padding: 5px 6px; }
-
-  /* Tables editor */
-  .table-form-panel .form-grid { gap: 6px; }
-  .table-form-panel input, .table-form-panel select { height: 36px; min-height: 36px; }
-  .table-form-panel textarea { min-height: 48px; max-height: 64px; }
-  .table-form-panel .form-actions button { min-height: 36px; }
-
-  /* Map: retain large enough touch targets while reducing blank space. */
-  #floorMap.floor-map { padding: 9px; gap: 8px; }
-  #floorMap .table { width: 82px; height: 82px; }
-
-  /* Opening hours: true two-column mobile row, no oversized/overlapping time controls. */
-  .opening-day {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas:
-      "day toggle"
-      "from to";
-    gap: 6px 7px;
-    padding: 9px;
-  }
-  .opening-day > strong { align-self: center; }
-  .opening-day .opening-toggle { justify-self: end; }
-  .opening-day .opening-time-field { width: 100%; min-width: 0; }
-  .opening-day .opening-time-field input[type="time"] {
-    width: 100%; min-width: 0; box-sizing: border-box;
-    height: 34px; min-height: 34px; padding: 4px 6px; font-size: 11px; text-align: center;
-  }
-  .opening-day .opening-time-field > span { margin-bottom: 2px; }
-  .blocked-time-form { gap: 6px; }
-  .blocked-time-form input, .blocked-time-form button { min-height: 36px; height: 36px; }
-
-  /* Reservation settings: compact rows, consistent numbers/units. */
-  .reservation-settings-panel { padding: 11px; }
-  .reservation-settings-grid { gap: 8px; }
-  .reservation-settings-card { padding: 10px; border-radius: 12px; }
-  .reservation-settings-card h3 { margin-bottom: 8px; font-size: 15px; }
-  .reservation-settings-fields { gap: 6px; }
-  .reservation-settings-fields label {
-    grid-template-columns: minmax(0, 1fr) 82px 46px;
-    gap: 7px;
-    align-items: center;
-    font-size: 11px;
-  }
-  .reservation-settings-fields label input {
-    width: 82px; height: 34px; min-height: 34px; padding: 4px 7px; font-size: 12px;
-  }
-  .reservation-settings-fields label span { font-size: 10px; }
-  .reservation-settings-summary { padding: 9px 10px; font-size: 11px; line-height: 1.4; }
-  .reservation-settings-panel > .successButton { min-height: 36px; padding: 7px 10px; }
-
-  /* Menu editor: biggest remaining vertical-space win. */
-  .food-form-panel { padding: 10px; }
-  .food-form-panel .section-heading { margin-bottom: 8px; }
-  .food-form-panel .form-grid { gap: 6px; }
-  .food-form-panel input,
-  .food-form-panel select {
-    height: 36px; min-height: 36px; padding: 6px 8px; font-size: 12px;
-  }
-  .food-form-panel textarea {
-    min-height: 44px; max-height: 60px; padding: 7px 8px; font-size: 12px; resize: vertical;
-  }
-  .food-form-panel input[type="file"] {
-    min-height: 36px; height: auto; padding: 5px 6px; font-size: 11px;
-  }
-  .food-form-panel label { font-size: 11px; }
-  .food-form-panel .form-actions { margin-top: 6px; }
-  .food-form-panel .form-actions button,
-  .food-form-panel > .primaryButton,
-  .food-form-panel > .primary-btn { min-height: 36px; padding: 7px 10px; }
-  .foodItem { padding: 8px; }
-
-  /* Final floating menu button: visible but no longer covers content. */
-  .mobile-menu-button {
-    right: 8px;
-    bottom: calc(8px + env(safe-area-inset-bottom));
-    width: 40px; min-width: 40px; height: 40px; min-height: 40px;
-    box-shadow: 0 6px 16px rgba(0,0,0,.25);
-  }
-  .mobile-menu-button::before { font-size: 17px; }
-}
-
-@media (max-width: 390px) {
-  .reservation-settings-fields label {
-    grid-template-columns: minmax(0, 1fr) 74px 42px;
-    gap: 5px;
-  }
-  .reservation-settings-fields label input { width: 74px; }
-  #floorMap .table { width: 78px; height: 78px; }
-}
-
-
-/* =========================================================
-   MOBILE V8 — FINAL HEADER FIX
-   Fixes duplicated "Zpět na web" / "Odhlásit" text and keeps
-   the mobile header clean without changing desktop behavior.
-   ========================================================= */
-@media (max-width: 760px) {
-  .topbar {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 10px !important;
-    margin-bottom: 14px !important;
-  }
-
-  .topbar > div:first-child {
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-
-  .topbar h1 {
-    margin: 0 !important;
-    font-size: 22px !important;
-    line-height: 1.08 !important;
-    white-space: nowrap !important;
-  }
-
-  .topbar p {
-    margin: 4px 0 0 !important;
-    font-size: 12px !important;
-    line-height: 1.25 !important;
-  }
-
-  .current-role-badge {
-    margin-top: 8px !important;
-  }
-
-  .topbar-actions {
-    width: 100% !important;
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: flex-end !important;
-    flex-wrap: nowrap !important;
-    gap: 8px !important;
-    align-self: stretch !important;
-  }
-
-  .topbar-actions .reservation-notification-wrapper {
-    width: 40px !important;
-    min-width: 40px !important;
-    height: 40px !important;
-    flex: 0 0 40px !important;
-  }
-
-  .topbar-actions .reservation-notification-button {
-    width: 40px !important;
-    min-width: 40px !important;
-    height: 40px !important;
-    min-height: 40px !important;
-    flex: 0 0 40px !important;
-    padding: 0 !important;
-    border-radius: 11px !important;
-  }
-
-  .reservation-notification-button .reservation-notification-label {
-    display: none !important;
-  }
-
-  .reservation-notification-button .reservation-notification-icon {
-    font-size: 18px !important;
-    line-height: 1 !important;
-  }
-
-  /* Hide original HTML label completely; render one short mobile label only. */
-  .topbar-actions > .secondaryButton {
-    width: auto !important;
-    min-width: 72px !important;
-    height: 40px !important;
-    min-height: 40px !important;
-    flex: 0 0 auto !important;
-    padding: 0 12px !important;
-    border-radius: 11px !important;
-    font-size: 0 !important;
-    line-height: 0 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-decoration: none !important;
-  }
-
-  .topbar-actions > .secondaryButton::before {
-    content: "← Web" !important;
-    display: inline-block !important;
-    font-size: 13px !important;
-    line-height: 1 !important;
-    font-weight: 800 !important;
-  }
-
-  .topbar-actions > .dangerButton {
-    width: auto !important;
-    min-width: 84px !important;
-    height: 40px !important;
-    min-height: 40px !important;
-    flex: 0 0 auto !important;
-    padding: 0 13px !important;
-    border-radius: 11px !important;
-    font-size: 0 !important;
-    line-height: 0 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-  }
-
-  .topbar-actions > .dangerButton::before {
-    content: "Odhlásit" !important;
-    display: inline-block !important;
-    font-size: 13px !important;
-    line-height: 1 !important;
-    font-weight: 800 !important;
-  }
-
-  .reservation-notification-panel {
-    right: 0 !important;
-    left: auto !important;
-    max-width: min(340px, calc(100vw - 32px)) !important;
-  }
-}
-
-@media (max-width: 390px) {
-  .topbar h1 {
-    font-size: 20px !important;
-  }
-
-  .topbar-actions {
-    gap: 6px !important;
-  }
-
-  .topbar-actions > .secondaryButton {
-    min-width: 68px !important;
-    padding: 0 10px !important;
-  }
-
-  .topbar-actions > .dangerButton {
-    min-width: 78px !important;
-    padding: 0 11px !important;
-  }
-
-  .topbar-actions > .secondaryButton::before,
-  .topbar-actions > .dangerButton::before {
-    font-size: 12px !important;
-  }
-}
+[
+  "settingDuration12",
+  "settingDuration34",
+  "settingDuration56",
+  "settingDuration7Plus",
+  "settingMinAdvance",
+  "settingMaxAdvanceDays",
+  "settingMinPeople",
+  "settingMaxPeople"
+].forEach(id => {
+  document.getElementById(id)?.addEventListener("input", updateReservationSettingsSummary);
+});
