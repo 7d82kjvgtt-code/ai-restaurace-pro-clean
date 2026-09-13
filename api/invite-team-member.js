@@ -1,128 +1,657 @@
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://decpnnbaejxjbpmyjocs.supabase.co";
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL =
+  process.env.SUPABASE_URL ||
+  "https://decpnnbaejxjbpmyjocs.supabase.co";
 
-function send(res, status, body) {
-  res.status(status).json(body);
+const SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  "";
+
+
+function send(
+  res,
+  status,
+  body
+) {
+  res.setHeader(
+    "Cache-Control",
+    "no-store"
+  );
+
+  return res
+    .status(status)
+    .json(body);
 }
 
-async function supabase(path, options = {}) {
-  return fetch(`${SUPABASE_URL}${path}`, {
-    ...options,
-    headers: {
-      apikey: SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    }
-  });
-}
 
-module.exports = async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return send(res, 405, { error: "Použij POST." });
-  }
-
+function serviceHeaders(
+  extra = {}
+) {
   if (!SERVICE_ROLE_KEY) {
-    return send(res, 500, { error: "SUPABASE_SERVICE_ROLE_KEY není nastavený na Vercelu." });
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY není nastavený na Vercelu."
+    );
   }
 
-  const callerToken = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
-  if (!callerToken) return send(res, 401, { error: "Chybí přihlášení." });
+  return {
+    apikey:
+      SERVICE_ROLE_KEY,
 
-  const fullName = String(req.body?.full_name || "").trim().slice(0, 120);
-  const email = String(req.body?.email || "").trim().toLowerCase();
-  const role = String(req.body?.role || "staff").toLowerCase();
+    Authorization:
+      `Bearer ${SERVICE_ROLE_KEY}`,
 
-  if (!/^\S+@\S+\.\S+$/.test(email)) return send(res, 400, { error: "Neplatný e-mail." });
-  if (!["manager", "staff"].includes(role)) return send(res, 400, { error: "Neplatná role." });
+    "Content-Type":
+      "application/json",
 
-  try {
-    const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: {
-        apikey: SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${callerToken}`
-      }
-    });
+    ...extra
+  };
+}
 
-    if (!userResponse.ok) return send(res, 401, { error: "Přihlášení vypršelo." });
-    const caller = await userResponse.json();
 
-    let restaurantId = null;
-    let callerRole = null;
+async function supabase(
+  path,
+  options = {}
+) {
+  return fetch(
+    `${SUPABASE_URL}${path}`,
+    {
+      ...options,
 
-    const membershipResponse = await supabase(`/rest/v1/restaurant_team?user_id=eq.${encodeURIComponent(caller.id)}&active=eq.true&select=restaurant_id,role&limit=1`);
-    if (membershipResponse.ok) {
-      const rows = await membershipResponse.json();
-      if (rows[0]) {
-        restaurantId = rows[0].restaurant_id;
-        callerRole = String(rows[0].role || "").toLowerCase();
-      }
+      headers:
+        serviceHeaders(
+          options.headers ||
+          {}
+        )
     }
+  );
+}
 
-    
 
-    if (!restaurantId || callerRole !== "owner") {
-      return send(res, 403, { error: "Pozvat zaměstnance může pouze majitel." });
-    }
+async function getAuthenticatedUser(
+  req
+) {
+  const callerToken =
+    String(
+      req.headers.authorization ||
+      ""
+    ).replace(
+      /^Bearer\s+/i,
+      ""
+    );
 
-    const existingResponse = await supabase(`/rest/v1/restaurant_team?restaurant_id=eq.${restaurantId}&email=eq.${encodeURIComponent(email)}&select=id,user_id,active&limit=1`);
-    if (existingResponse.ok) {
-      const existing = (await existingResponse.json())[0];
-      if (existing?.active) return send(res, 409, { error: "Tento e-mail už je v týmu." });
-    }
+  if (!callerToken) {
+    const error =
+      new Error(
+        "Chybí přihlášení."
+      );
 
-    const origin = req.headers.origin || `https://${req.headers.host}`;
-    const inviteResponse = await supabase(`/auth/v1/invite?redirect_to=${encodeURIComponent(`${origin}/invite.html`)}`, {
-      method: "POST",
-      body: JSON.stringify({
-        email,
-        data: { full_name: fullName, restaurant_id: restaurantId, role }
-      })
-    });
+    error.status = 401;
 
-    const inviteData = await inviteResponse.json().catch(() => ({}));
-    if (!inviteResponse.ok) {
-      const message = String(inviteData.msg || inviteData.message || inviteData.error_description || "Pozvánku se nepodařilo odeslat.");
-      return send(res, inviteResponse.status, { error: message });
-    }
-
-    const userId = inviteData.id || inviteData.user?.id || null;
-
-    const teamResponse = await supabase(`/rest/v1/restaurant_team?on_conflict=restaurant_id,email`, {
-      method: "POST",
-      headers: { Prefer: "resolution=merge-duplicates,return=representation" },
-      body: JSON.stringify({
-        restaurant_id: Number(restaurantId),
-        user_id: userId,
-        email,
-        full_name: fullName,
-        role,
-        active: true,
-        invited_at: new Date().toISOString(),
-        joined_at: null
-      })
-    });
-
-    if (!teamResponse.ok) {
-      return send(res, 500, { error: `Pozvánka odešla, ale člen týmu se neuložil: ${await teamResponse.text()}` });
-    }
-
-    // Profily používají i stávající RLS pravidla aplikace, proto ho vytvoříme hned.
-    if (userId) {
-      await supabase(`/rest/v1/profiles?on_conflict=id`, {
-        method: "POST",
-        headers: { Prefer: "resolution=merge-duplicates" },
-        body: JSON.stringify({ id: userId, restaurant_id: Number(restaurantId), role })
-      });
-    }
-
-    return send(res, 200, {
-      ok: true,
-      message: `Pozvánka byla odeslána na ${email}.`
-    });
-  } catch (error) {
-    console.error(error);
-    return send(res, 500, { error: "Pozvánku se nepodařilo odeslat." });
+    throw error;
   }
-};
+
+  const userResponse =
+    await fetch(
+      `${SUPABASE_URL}/auth/v1/user`,
+      {
+        headers: {
+          apikey:
+            SERVICE_ROLE_KEY,
+
+          Authorization:
+            `Bearer ${callerToken}`
+        }
+      }
+    );
+
+  if (!userResponse.ok) {
+    const error =
+      new Error(
+        "Přihlášení vypršelo."
+      );
+
+    error.status = 401;
+
+    throw error;
+  }
+
+  return userResponse.json();
+}
+
+
+async function getOwnerContext(
+  userId
+) {
+  const membershipResponse =
+    await supabase(
+      `/rest/v1/restaurant_team?user_id=eq.${encodeURIComponent(
+        userId
+      )}&active=eq.true&select=restaurant_id,role&limit=1`
+    );
+
+  if (!membershipResponse.ok) {
+    const errorText =
+      await membershipResponse
+        .text()
+        .catch(
+          () => ""
+        );
+
+    throw new Error(
+      errorText ||
+      "Nepodařilo se ověřit členství v restauraci."
+    );
+  }
+
+  const memberships =
+    await membershipResponse.json();
+
+  const membership =
+    Array.isArray(
+      memberships
+    )
+      ? memberships[0]
+      : null;
+
+  // Pokud aktivní team membership existuje,
+  // je autoritativní. Manager/staff nesmí obejít
+  // svou roli přes starý záznam v profiles.
+  if (
+    membership?.restaurant_id
+  ) {
+    const role =
+      String(
+        membership.role ||
+        ""
+      )
+        .toLowerCase()
+        .trim();
+
+    if (role !== "owner") {
+      const error =
+        new Error(
+          "Pozvat zaměstnance může pouze majitel."
+        );
+
+      error.status = 403;
+
+      throw error;
+    }
+
+    return {
+      restaurantId:
+        Number(
+          membership.restaurant_id
+        ),
+
+      role:
+        "owner",
+
+      source:
+        "restaurant_team"
+    };
+  }
+
+  // Historický owner může být vedený pouze v profiles.
+  // Fallback je povolen výhradně pro ownera.
+  const profileResponse =
+    await supabase(
+      `/rest/v1/profiles?id=eq.${encodeURIComponent(
+        userId
+      )}&role=eq.owner&select=restaurant_id,role&limit=1`
+    );
+
+  if (!profileResponse.ok) {
+    const errorText =
+      await profileResponse
+        .text()
+        .catch(
+          () => ""
+        );
+
+    throw new Error(
+      errorText ||
+      "Nepodařilo se ověřit profil majitele."
+    );
+  }
+
+  const profiles =
+    await profileResponse.json();
+
+  const profile =
+    Array.isArray(
+      profiles
+    )
+      ? profiles[0]
+      : null;
+
+  if (
+    !profile?.restaurant_id
+  ) {
+    const error =
+      new Error(
+        "Pozvat zaměstnance může pouze majitel."
+      );
+
+    error.status = 403;
+
+    throw error;
+  }
+
+  return {
+    restaurantId:
+      Number(
+        profile.restaurant_id
+      ),
+
+    role:
+      "owner",
+
+    source:
+      "profiles"
+  };
+}
+
+
+function getInviteRedirectUrl(
+  req
+) {
+  // Nepoužíváme libovolný Origin poslaný klientem,
+  // aby pozvánku nešlo přesměrovat na cizí web.
+  const forwardedHost =
+    String(
+      req.headers[
+        "x-forwarded-host"
+      ] ||
+      req.headers.host ||
+      ""
+    )
+      .split(",")[0]
+      .trim();
+
+  if (!forwardedHost) {
+    throw new Error(
+      "Nepodařilo se určit adresu aplikace."
+    );
+  }
+
+  const protocolHeader =
+    String(
+      req.headers[
+        "x-forwarded-proto"
+      ] ||
+      "https"
+    )
+      .split(",")[0]
+      .trim()
+      .toLowerCase();
+
+  const protocol =
+    protocolHeader === "http"
+      ? "http"
+      : "https";
+
+  return `${protocol}://${forwardedHost}/invite.html`;
+}
+
+
+module.exports =
+  async function handler(
+    req,
+    res
+  ) {
+    if (
+      req.method !== "POST"
+    ) {
+      res.setHeader(
+        "Allow",
+        "POST"
+      );
+
+      return send(
+        res,
+        405,
+        {
+          error:
+            "Použij POST."
+        }
+      );
+    }
+
+    if (!SERVICE_ROLE_KEY) {
+      return send(
+        res,
+        500,
+        {
+          error:
+            "SUPABASE_SERVICE_ROLE_KEY není nastavený na Vercelu."
+        }
+      );
+    }
+
+    const fullName =
+      String(
+        req.body?.full_name ||
+        ""
+      )
+        .trim()
+        .slice(
+          0,
+          120
+        );
+
+    const email =
+      String(
+        req.body?.email ||
+        ""
+      )
+        .trim()
+        .toLowerCase()
+        .slice(
+          0,
+          320
+        );
+
+    const role =
+      String(
+        req.body?.role ||
+        "staff"
+      )
+        .toLowerCase()
+        .trim();
+
+    if (
+      !fullName ||
+      fullName.length < 2
+    ) {
+      return send(
+        res,
+        400,
+        {
+          error:
+            "Zadej jméno člena týmu."
+        }
+      );
+    }
+
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        email
+      )
+    ) {
+      return send(
+        res,
+        400,
+        {
+          error:
+            "Neplatný e-mail."
+        }
+      );
+    }
+
+    if (
+      ![
+        "manager",
+        "staff"
+      ].includes(role)
+    ) {
+      return send(
+        res,
+        400,
+        {
+          error:
+            "Neplatná role."
+        }
+      );
+    }
+
+    try {
+      const caller =
+        await getAuthenticatedUser(
+          req
+        );
+
+      const ownerContext =
+        await getOwnerContext(
+          caller.id
+        );
+
+      const restaurantId =
+        ownerContext.restaurantId;
+
+      const existingResponse =
+        await supabase(
+          `/rest/v1/restaurant_team?restaurant_id=eq.${restaurantId}&email=eq.${encodeURIComponent(
+            email
+          )}&select=id,user_id,active&limit=1`
+        );
+
+      if (
+        !existingResponse.ok
+      ) {
+        throw new Error(
+          await existingResponse
+            .text()
+            .catch(
+              () =>
+                "Nepodařilo se ověřit stávajícího člena týmu."
+            )
+        );
+      }
+
+      const existingRows =
+        await existingResponse.json();
+
+      const existing =
+        Array.isArray(
+          existingRows
+        )
+          ? existingRows[0]
+          : null;
+
+      if (
+        existing?.active
+      ) {
+        return send(
+          res,
+          409,
+          {
+            error:
+              "Tento e-mail už je v týmu."
+          }
+        );
+      }
+
+      const redirectTo =
+        getInviteRedirectUrl(
+          req
+        );
+
+      const inviteResponse =
+        await supabase(
+          `/auth/v1/invite?redirect_to=${encodeURIComponent(
+            redirectTo
+          )}`,
+          {
+            method:
+              "POST",
+
+            body:
+              JSON.stringify({
+                email,
+
+                data: {
+                  full_name:
+                    fullName,
+
+                  restaurant_id:
+                    restaurantId,
+
+                  role
+                }
+              })
+          }
+        );
+
+      const inviteData =
+        await inviteResponse
+          .json()
+          .catch(
+            () => ({})
+          );
+
+      if (
+        !inviteResponse.ok
+      ) {
+        const message =
+          String(
+            inviteData.msg ||
+            inviteData.message ||
+            inviteData.error_description ||
+            "Pozvánku se nepodařilo odeslat."
+          );
+
+        return send(
+          res,
+          inviteResponse.status,
+          {
+            error:
+              message
+          }
+        );
+      }
+
+      const userId =
+        inviteData.id ||
+        inviteData.user?.id ||
+        null;
+
+      const teamResponse =
+        await supabase(
+          `/rest/v1/restaurant_team?on_conflict=restaurant_id,email`,
+          {
+            method:
+              "POST",
+
+            headers: {
+              Prefer:
+                "resolution=merge-duplicates,return=representation"
+            },
+
+            body:
+              JSON.stringify({
+                restaurant_id:
+                  restaurantId,
+
+                user_id:
+                  userId,
+
+                email,
+
+                full_name:
+                  fullName,
+
+                role,
+
+                active:
+                  true,
+
+                invited_at:
+                  new Date()
+                    .toISOString(),
+
+                joined_at:
+                  null
+              })
+          }
+        );
+
+      if (
+        !teamResponse.ok
+      ) {
+        return send(
+          res,
+          500,
+          {
+            error:
+              `Pozvánka odešla, ale člen týmu se neuložil: ${await teamResponse.text()}`
+          }
+        );
+      }
+
+      // Profily používají i stávající RLS pravidla aplikace,
+      // proto profil připravíme hned, pokud Supabase vrátil user ID.
+      if (userId) {
+        const profileResponse =
+          await supabase(
+            `/rest/v1/profiles?on_conflict=id`,
+            {
+              method:
+                "POST",
+
+              headers: {
+                Prefer:
+                  "resolution=merge-duplicates"
+              },
+
+              body:
+                JSON.stringify({
+                  id:
+                    userId,
+
+                  restaurant_id:
+                    restaurantId,
+
+                  role
+                })
+            }
+          );
+
+        if (
+          !profileResponse.ok
+        ) {
+          console.error(
+            "Pozvánka a team row byly vytvořeny, ale profil se nepodařilo připravit:",
+            await profileResponse.text()
+          );
+        }
+      }
+
+      return send(
+        res,
+        200,
+        {
+          ok: true,
+
+          message:
+            `Pozvánka byla odeslána na ${email}.`
+        }
+      );
+    } catch (error) {
+      console.error(
+        "Chyba při pozvání člena týmu:",
+        error
+      );
+
+      const status =
+        Number(
+          error?.status
+        ) >= 400 &&
+        Number(
+          error?.status
+        ) < 600
+          ? Number(
+              error.status
+            )
+          : 500;
+
+      return send(
+        res,
+        status,
+        {
+          error:
+            error?.message ||
+            "Pozvánku se nepodařilo odeslat."
+        }
+      );
+    }
+  };
