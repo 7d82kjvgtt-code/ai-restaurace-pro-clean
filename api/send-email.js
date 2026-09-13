@@ -1055,11 +1055,12 @@ async function assertActiveRestaurantMember(
   userId,
   restaurantId
 ) {
+  const safeRestaurantId =
+    Number(restaurantId);
+
   const rows =
     await supabaseServiceJson(
-      `/rest/v1/restaurant_team?restaurant_id=eq.${Number(
-        restaurantId
-      )}&user_id=eq.${encodeURIComponent(
+      `/rest/v1/restaurant_team?restaurant_id=eq.${safeRestaurantId}&user_id=eq.${encodeURIComponent(
         userId
       )}&active=eq.true&select=user_id,role&limit=1`,
 
@@ -1073,18 +1074,45 @@ async function assertActiveRestaurantMember(
       ? rows[0]
       : null;
 
-  if (!membership?.user_id) {
-    const error =
-      new Error(
-        "Pro tuto restauraci nemáš aktivní oprávnění."
-      );
-
-    error.status = 403;
-
-    throw error;
+  if (membership?.user_id) {
+    return membership;
   }
 
-  return membership;
+  // Owner může být historicky vedený primárně v profiles.
+  // Fallback dovolujeme pouze ownerovi, aby manager/staff
+  // nemohli obejít deaktivaci v restaurant_team.
+  const profileRows =
+    await supabaseServiceJson(
+      `/rest/v1/profiles?id=eq.${encodeURIComponent(
+        userId
+      )}&restaurant_id=eq.${safeRestaurantId}&role=eq.owner&select=id,role&limit=1`,
+
+      {
+        method: "GET"
+      }
+    );
+
+  const ownerProfile =
+    Array.isArray(profileRows)
+      ? profileRows[0]
+      : null;
+
+  if (ownerProfile?.id) {
+    return {
+      user_id: ownerProfile.id,
+      role: "owner",
+      source: "profiles"
+    };
+  }
+
+  const error =
+    new Error(
+      "Pro tuto restauraci nemáš aktivní oprávnění."
+    );
+
+  error.status = 403;
+
+  throw error;
 }
 
 
@@ -2268,6 +2296,253 @@ async function createReservationOnServer(
 }
 
 
+async function updateReservationStatusOnServer(
+  req,
+  res
+) {
+  const reservationId =
+    Number(
+      req.body
+        ?.reservation_id
+    );
+
+  const status =
+    String(
+      req.body
+        ?.status || ""
+    ).trim();
+
+  if (
+    !Number.isInteger(
+      reservationId
+    ) ||
+    reservationId < 1
+  ) {
+    return res
+      .status(400)
+      .json({
+        error:
+          "Neplatné ID rezervace."
+      });
+  }
+
+  if (
+    ![
+      "Potvrzeno",
+      "Zrušeno"
+    ].includes(status)
+  ) {
+    return res
+      .status(400)
+      .json({
+        error:
+          "Neplatný stav rezervace."
+      });
+  }
+
+  try {
+    const user =
+      await getAuthenticatedUser(
+        req
+      );
+
+    const rows =
+      await supabaseServiceJson(
+        `/rest/v1/reservations?id=eq.${reservationId}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status&limit=1`,
+
+        {
+          method: "GET"
+        }
+      );
+
+    const reservation =
+      Array.isArray(rows)
+        ? rows[0]
+        : null;
+
+    if (
+      !reservation?.id
+    ) {
+      return res
+        .status(404)
+        .json({
+          error:
+            "Rezervace neexistuje."
+        });
+    }
+
+    await assertActiveRestaurantMember(
+      user.id,
+      reservation.restaurant_id
+    );
+
+    if (
+      String(
+        reservation.status
+      ) === status
+    ) {
+      return res
+        .status(200)
+        .json({
+          success: true,
+          changed: false,
+          already_set: true,
+          status,
+          reservation_id:
+            reservationId,
+          email_sent: false
+        });
+    }
+
+    const changedRows =
+      await supabaseServiceJson(
+        `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${Number(
+          reservation.restaurant_id
+        )}&status=neq.${encodeURIComponent(
+          status
+        )}`,
+
+        {
+          method: "PATCH",
+
+          headers: {
+            Prefer:
+              "return=representation"
+          },
+
+          body:
+            JSON.stringify({
+              status
+            })
+        }
+      );
+
+    const updatedReservation =
+      Array.isArray(
+        changedRows
+      )
+        ? changedRows[0]
+        : null;
+
+    if (
+      !updatedReservation?.id
+    ) {
+      return res
+        .status(200)
+        .json({
+          success: true,
+          changed: false,
+          already_set: true,
+          status,
+          reservation_id:
+            reservationId,
+          email_sent: false
+        });
+    }
+
+    let emailSent =
+      false;
+
+    let emailId =
+      null;
+
+    let emailError =
+      null;
+
+    if (
+      isValidEmail(
+        updatedReservation.email
+      )
+    ) {
+      try {
+        const [
+          restaurant,
+          placeName
+        ] =
+          await Promise.all([
+            getRestaurantById(
+              updatedReservation.restaurant_id
+            ),
+
+            getReservationPlaceName(
+              updatedReservation
+            )
+          ]);
+
+        const emailResult =
+          await sendReservationStatusEmail({
+            restaurant,
+            reservation:
+              updatedReservation,
+            placeName,
+            status
+          });
+
+        emailSent = true;
+
+        emailId =
+          emailResult?.id ||
+          null;
+      } catch (error) {
+        emailError =
+          error?.message ||
+          "E-mail se nepodařilo odeslat.";
+
+        console.error(
+          "Stav rezervace byl změněn, ale e-mail se nepodařilo odeslat:",
+          error
+        );
+      }
+    } else {
+      emailError =
+        "Rezervace nemá platný e-mail zákazníka.";
+    }
+
+    return res
+      .status(200)
+      .json({
+        success: true,
+        changed: true,
+        already_set: false,
+        status,
+        reservation_id:
+          reservationId,
+        email_sent:
+          emailSent,
+        email_id:
+          emailId,
+        email_error:
+          emailError
+      });
+  } catch (error) {
+    console.error(
+      "Chyba při bezpečné změně stavu rezervace:",
+      error
+    );
+
+    const statusCode =
+      Number(
+        error?.status
+      ) >= 400 &&
+      Number(
+        error?.status
+      ) < 600
+        ? Number(
+            error.status
+          )
+        : 500;
+
+    return res
+      .status(statusCode)
+      .json({
+        error:
+          error.message ||
+          "Stav rezervace se nepodařilo změnit."
+      });
+  }
+}
+
+
 async function sendReservationStatusEmailOnServer(
   req,
   res
@@ -2481,6 +2756,18 @@ export default async function handler(
     );
   }
 
+  if (
+    req.body?.action ===
+    "update-reservation-status"
+  ) {
+    return updateReservationStatusOnServer(
+      req,
+      res
+    );
+  }
+
+  // Dočasně ponecháno kvůli zpětné kompatibilitě.
+  // Dashboard převedeme na update-reservation-status v dalším kroku.
   if (
     req.body?.action ===
     "reservation-status-email"
