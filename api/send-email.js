@@ -2115,51 +2115,57 @@ async function createReservationOnServer(
     }
 
     const rpcResult =
-      await supabasePublicRpc(
-        "create_public_reservation_safe",
+      await supabaseServiceJson(
+        "/rest/v1/rpc/create_public_reservation_safe",
         {
-          p_slug:
-            cleanRestaurantSlug,
+          method: "POST",
+          headers: {
+            Prefer: "return=representation"
+          },
+          body: JSON.stringify({
+            p_slug:
+              cleanRestaurantSlug,
 
-          p_name:
-            cleanName,
+            p_name:
+              cleanName,
 
-          p_people:
-            peopleNumber,
+            p_people:
+              peopleNumber,
 
-          p_date:
-            date,
+            p_date:
+              date,
 
-          p_time:
-            cleanTime,
+            p_time:
+              cleanTime,
 
-          p_phone:
-            cleanPhone,
+            p_phone:
+              cleanPhone,
 
-          p_email:
-            cleanEmail,
+            p_email:
+              cleanEmail,
 
-          p_note:
-            cleanNote ||
-            null,
+            p_note:
+              cleanNote ||
+              null,
 
-          p_last_name:
-            cleanLastName ||
-            null,
+            p_last_name:
+              cleanLastName ||
+              null,
 
-          p_table_id:
-            selectedTable
-              ? Number(
-                  selectedTable.id
-                )
-              : null,
+            p_table_id:
+              selectedTable
+                ? Number(
+                    selectedTable.id
+                  )
+                : null,
 
-          p_table_group_id:
-            selectedGroup
-              ? Number(
-                  selectedGroup.id
-                )
-              : null
+            p_table_group_id:
+              selectedGroup
+                ? Number(
+                    selectedGroup.id
+                  )
+                : null
+          })
         }
       );
 
