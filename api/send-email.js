@@ -2308,6 +2308,130 @@ async function createReservationOnServer(
 }
 
 
+async function updateReservationStatusOnServer(
+  req,
+  res
+) {
+  const reservationId = Number(req.body?.reservation_id);
+  const status = String(req.body?.status || "").trim();
+
+  if (!Number.isInteger(reservationId) || reservationId < 1) {
+    return res.status(400).json({ error: "Neplatné ID rezervace." });
+  }
+
+  if (!["Potvrzeno", "Zrušeno"].includes(status)) {
+    return res.status(400).json({ error: "Neplatný stav rezervace." });
+  }
+
+  try {
+    const user = await getAuthenticatedUser(req);
+
+    // Nejdřív načteme rezervaci jen kvůli autorizaci restaurace.
+    const rows = await supabaseServiceJson(
+      `/rest/v1/reservations?id=eq.${reservationId}&select=id,restaurant_id,status&limit=1`,
+      { method: "GET" }
+    );
+
+    const existing = Array.isArray(rows) ? rows[0] : null;
+
+    if (!existing?.id) {
+      return res.status(404).json({ error: "Rezervace neexistuje." });
+    }
+
+    await assertActiveRestaurantMember(user.id, existing.restaurant_id);
+
+    if (String(existing.status) === status) {
+      return res.status(200).json({
+        success: true,
+        changed: false,
+        email_sent: false,
+        reservation_id: reservationId,
+        status
+      });
+    }
+
+    // Podmíněný PATCH je hlavní ochrana proti dvojkliku / dvěma requestům.
+    // Jen request, který opravdu změnil řádek, smí pokračovat k e-mailu.
+    const changedRows = await supabaseServiceJson(
+      `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${Number(existing.restaurant_id)}&status=neq.${encodeURIComponent(status)}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status`,
+      {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({ status })
+      }
+    );
+
+    const reservation = Array.isArray(changedRows) ? changedRows[0] : null;
+
+    if (!reservation?.id) {
+      return res.status(200).json({
+        success: true,
+        changed: false,
+        email_sent: false,
+        reservation_id: reservationId,
+        status
+      });
+    }
+
+    if (!isValidEmail(reservation.email)) {
+      return res.status(200).json({
+        success: true,
+        changed: true,
+        email_sent: false,
+        email_error: "Rezervace nemá platný e-mail zákazníka.",
+        reservation_id: reservationId,
+        status
+      });
+    }
+
+    const [restaurant, placeName] = await Promise.all([
+      getRestaurantById(reservation.restaurant_id),
+      getReservationPlaceName(reservation)
+    ]);
+
+    try {
+      const emailResult = await sendReservationStatusEmail({
+        restaurant,
+        reservation,
+        placeName,
+        status
+      });
+
+      return res.status(200).json({
+        success: true,
+        changed: true,
+        email_sent: true,
+        email_id: emailResult?.id || null,
+        reservation_id: reservationId,
+        status
+      });
+    } catch (emailError) {
+      console.error("Stav změněn, ale e-mail se nepodařilo odeslat:", emailError);
+
+      return res.status(200).json({
+        success: true,
+        changed: true,
+        email_sent: false,
+        email_error: emailError?.message || "E-mail se nepodařilo odeslat.",
+        reservation_id: reservationId,
+        status
+      });
+    }
+  } catch (error) {
+    console.error("Chyba při změně stavu rezervace:", error);
+
+    const statusCode =
+      Number(error?.status) >= 400 && Number(error?.status) < 600
+        ? Number(error.status)
+        : 500;
+
+    return res.status(statusCode).json({
+      error: error?.message || "Stav rezervace se nepodařilo změnit."
+    });
+  }
+}
+
+
 async function sendReservationStatusEmailOnServer(
   req,
   res
@@ -2516,6 +2640,16 @@ export default async function handler(
     "create-reservation"
   ) {
     return createReservationOnServer(
+      req,
+      res
+    );
+  }
+
+  if (
+    req.body?.action ===
+    "update-reservation-status"
+  ) {
+    return updateReservationStatusOnServer(
       req,
       res
     );
