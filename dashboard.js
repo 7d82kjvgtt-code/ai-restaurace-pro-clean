@@ -3106,7 +3106,7 @@ function openTableGroup(groupId) {
     .classList.add("show");
 }
 
-  async function unmergeTableGroup(groupId) {
+ async function unmergeTableGroup(groupId) {
   const confirmed = confirm(
     "Opravdu chcete tyto stoly rozpojit?"
   );
@@ -3115,11 +3115,14 @@ function openTableGroup(groupId) {
 
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/table_groups?id=eq.${groupId}&restaurant_id=eq.${currentRestaurantId}`,
+      `${SUPABASE_URL}/rest/v1/table_groups?id=eq.${groupId}&restaurant_id=eq.${currentRestaurantId}&active=eq.true`,
       {
-        method: "DELETE",
+        method: "PATCH",
         headers: getHeaders({
-          Prefer: "return=minimal"
+          Prefer: "return=representation"
+        }),
+        body: JSON.stringify({
+          active: false
         })
       }
     );
@@ -3128,12 +3131,19 @@ function openTableGroup(groupId) {
       throw new Error(await response.text());
     }
 
+    const updatedGroups = await response.json();
+
+    if (!Array.isArray(updatedGroups) || updatedGroups.length === 0) {
+      throw new Error("Skupina stolů nebyla nalezena nebo už je rozpojená.");
+    }
+
     closeTableModal();
+
     await loadTables();
 
     showDashboardNotice("Stoly byly úspěšně rozpojeny.");
   } catch (error) {
-    console.error(error);
+    console.error("Nepodařilo se rozpojit stoly:", error);
     showDashboardNotice("Stoly se nepodařilo rozpojit.");
   }
 }
