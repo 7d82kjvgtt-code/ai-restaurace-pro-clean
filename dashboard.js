@@ -5428,7 +5428,7 @@ if (tableWasDragged) {
     } catch (error) {
         console.error("Nepodařilo se uložit pozici stolu:", error);
         showDashboardNotice("Pozici stolu se nepodařilo uložit.");
-        await loadRestaurantTables();
+        await loadTables();
     }
 });
 let floorMapZoom = 1;
