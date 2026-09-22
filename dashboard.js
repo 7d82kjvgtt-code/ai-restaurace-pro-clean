@@ -3114,12 +3114,91 @@ function openTableGroup(groupId) {
   if (!confirmed) return;
 
   try {
+    const group = tableGroups.find(
+      (item) => Number(item.id) === Number(groupId)
+    );
+
+    if (!group) {
+      throw new Error("Skupina stolů nebyla nalezena.");
+    }
+
+    const memberIds = Array.isArray(group.table_ids)
+      ? group.table_ids.map(Number)
+      : [];
+
+    if (memberIds.length === 0) {
+      throw new Error("Skupina neobsahuje žádné stoly.");
+    }
+
+    const members = restaurantTables.filter((table) =>
+      memberIds.includes(Number(table.id))
+    );
+
+    if (members.length === 0) {
+      throw new Error("Stoly ze skupiny nebyly nalezeny.");
+    }
+
+    // Střed skupiny podle současných pozic jejích stolů.
+    const centerX =
+      members.reduce(
+        (sum, table) => sum + Number(table.x || 100),
+        0
+      ) / members.length;
+
+    const centerY =
+      members.reduce(
+        (sum, table) => sum + Number(table.y || 100),
+        0
+      ) / members.length;
+
+    // Po rozpojení rozmístíme stoly kolem původního středu skupiny.
+    // Díky tomu se už nebudou překrývat.
+    const spacing = 150;
+
+    for (let index = 0; index < members.length; index += 1) {
+      const table = members[index];
+
+      const offset =
+        (index - (members.length - 1) / 2) * spacing;
+
+      const newX = Math.max(
+        20,
+        Math.round(centerX + offset)
+      );
+
+      const newY = Math.max(
+        20,
+        Math.round(centerY)
+      );
+
+      const tableResponse = await authorizedFetch(
+        `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${table.id}&restaurant_id=eq.${currentRestaurantId}`,
+        {
+          method: "PATCH",
+          headers: getHeaders({
+            Prefer: "return=minimal"
+          }),
+          body: JSON.stringify({
+            x: newX,
+            y: newY
+          })
+        }
+      );
+
+      if (!tableResponse.ok) {
+        throw new Error(await tableResponse.text());
+      }
+    }
+
+    // Skupinu nemažeme.
+    // Pouze ji deaktivujeme, aby zůstala zachována
+    // pro historické rezervace.
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/table_groups?id=eq.${groupId}&restaurant_id=eq.${currentRestaurantId}&active=eq.true`,
+      `${SUPABASE_URL}/rest/v1/table_groups?id=eq.${groupId}&restaurant_id=eq.${currentRestaurantId}`,
       {
         method: "PATCH",
         headers: getHeaders({
-          Prefer: "return=representation"
+          Prefer: "return=minimal"
         }),
         body: JSON.stringify({
           active: false
@@ -3131,20 +3210,19 @@ function openTableGroup(groupId) {
       throw new Error(await response.text());
     }
 
-    const updatedGroups = await response.json();
-
-    if (!Array.isArray(updatedGroups) || updatedGroups.length === 0) {
-      throw new Error("Skupina stolů nebyla nalezena nebo už je rozpojená.");
-    }
-
     closeTableModal();
 
     await loadTables();
 
-    showDashboardNotice("Stoly byly úspěšně rozpojeny.");
+    showDashboardNotice(
+      "Stoly byly úspěšně rozpojeny."
+    );
   } catch (error) {
-    console.error("Nepodařilo se rozpojit stoly:", error);
-    showDashboardNotice("Stoly se nepodařilo rozpojit.");
+    console.error(error);
+
+    showDashboardNotice(
+      "Stoly se nepodařilo rozpojit."
+    );
   }
 }
 function openTable(tableId) {
