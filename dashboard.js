@@ -2919,17 +2919,27 @@ function renderFloorMap() {
 
       if (members.length === 0) return null;
 
-      const x =
+      const fallbackX =
         members.reduce(
-          (sum, table) => sum + Number(table.x || 100),
+          (sum, table) => sum + Number(table.x ?? 100),
           0
         ) / members.length;
 
-      const y =
+      const fallbackY =
         members.reduce(
-          (sum, table) => sum + Number(table.y || 100),
+          (sum, table) => sum + Number(table.y ?? 100),
           0
         ) / members.length;
+
+      const x =
+        group.x !== null && group.x !== undefined
+          ? Number(group.x)
+          : fallbackX;
+
+      const y =
+        group.y !== null && group.y !== undefined
+          ? Number(group.y)
+          : fallbackY;
 
       const statuses = members.map((table) =>
         getTableStatus(table.id)
@@ -5477,10 +5487,12 @@ if (tableWasDragged) {
     tableElement.classList.remove("dragging");
 
     const tableId = tableElement.dataset.tableId;
-  
-  if (!tableId) {
-  return;
-}
+    const groupId = tableElement.dataset.groupId;
+
+    if (!tableId && !groupId) {
+        return;
+    }
+
     const x = Math.round(
       parseFloat(tableElement.style.left) || 0
     );
@@ -5488,9 +5500,13 @@ if (tableWasDragged) {
       parseFloat(tableElement.style.top) || 0
     );
 
+    const isGroup = Boolean(groupId);
+    const resource = isGroup ? "table_groups" : "restaurant_tables";
+    const itemId = isGroup ? groupId : tableId;
+
     try {
         const response = await authorizedFetch(
-            `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${tableId}&restaurant_id=eq.${currentRestaurantId}`,
+            `${SUPABASE_URL}/rest/v1/${resource}?id=eq.${itemId}&restaurant_id=eq.${currentRestaurantId}`,
             {
                 method: "PATCH",
                 headers: {
@@ -5505,17 +5521,37 @@ if (tableWasDragged) {
             throw new Error(await response.text());
         }
 
-        const table = restaurantTables.find(
-            item => Number(item.id) === Number(tableId)
-        );
+        if (isGroup) {
+            const group = tableGroups.find(
+                item => Number(item.id) === Number(groupId)
+            );
 
-        if (table) {
-            table.x = x;
-            table.y = y;
+            if (group) {
+                group.x = x;
+                group.y = y;
+            }
+        } else {
+            const table = restaurantTables.find(
+                item => Number(item.id) === Number(tableId)
+            );
+
+            if (table) {
+                table.x = x;
+                table.y = y;
+            }
         }
     } catch (error) {
-        console.error("Nepodařilo se uložit pozici stolu:", error);
-        showDashboardNotice("Pozici stolu se nepodařilo uložit.");
+        console.error(
+            isGroup
+                ? "Nepodařilo se uložit pozici spojených stolů:"
+                : "Nepodařilo se uložit pozici stolu:",
+            error
+        );
+        showDashboardNotice(
+            isGroup
+                ? "Pozici spojených stolů se nepodařilo uložit."
+                : "Pozici stolu se nepodařilo uložit."
+        );
         await loadTables();
     }
 });
