@@ -2801,7 +2801,7 @@ async function loadTables() {
       `${SUPABASE_URL}/rest/v1/restaurant_tables?restaurant_id=eq.${currentRestaurantId}&select=*&order=name.asc`
     );
 const groupsResponse = await authorizedFetch(
-  `${SUPABASE_URL}/rest/v1/table_groups?restaurant_id=eq.${currentRestaurantId}&select=*&order=id.asc`
+  `${SUPABASE_URL}/rest/v1/table_groups?restaurant_id=eq.${currentRestaurantId}&active=eq.true&select=*&order=id.asc`
 );
     const data = await response.json();
 const groupsData = await groupsResponse.json();
