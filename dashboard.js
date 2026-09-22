@@ -5429,131 +5429,167 @@ let draggedTable = null;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 let tableWasDragged = false;
+let dragStartX = 0;
+let dragStartY = 0;
+
+const TABLE_DRAG_THRESHOLD = 6;
+
 document.addEventListener("mousedown", event => {
-    const tableElement = event.target.closest(".table");
+  const tableElement = event.target.closest(".table");
 
-    if (!tableElement) return;
+  if (!tableElement) return;
 
-    const floorMap = tableElement.closest(".floor-map");
+  const floorMap = tableElement.closest(".floor-map");
+  if (!floorMap) return;
 
-    if (!floorMap) return;
+  // Při spojování stolů nechceme vůbec spouštět drag.
+  // Jeden klik tak vždy slouží pouze k výběru stolu.
+  if (mergeModeActive) {
+    return;
+  }
 
-    draggedTable = tableElement;
-    tableWasDragged = false;
-    const tableRect = tableElement.getBoundingClientRect();
+  draggedTable = tableElement;
+  tableWasDragged = false;
 
-    dragOffsetX = event.clientX - tableRect.left;
-    dragOffsetY = event.clientY - tableRect.top;
+  dragStartX = event.clientX;
+  dragStartY = event.clientY;
 
-    tableElement.classList.add("dragging");
+  const tableRect = tableElement.getBoundingClientRect();
 
-    event.preventDefault();
+  dragOffsetX = event.clientX - tableRect.left;
+  dragOffsetY = event.clientY - tableRect.top;
+
+  event.preventDefault();
 });
 
 document.addEventListener("mousemove", event => {
-    if (!draggedTable) return;
+  if (!draggedTable) return;
 
-    const floorMap = draggedTable.closest(".floor-map");
+  const floorMap = draggedTable.closest(".floor-map");
+  if (!floorMap) return;
 
-    if (!floorMap) return;
+  const movedX = Math.abs(event.clientX - dragStartX);
+  const movedY = Math.abs(event.clientY - dragStartY);
 
-    const mapRect = floorMap.getBoundingClientRect();
+  // Malý pohyb myši je pořád normální kliknutí.
+  if (
+    !tableWasDragged &&
+    movedX < TABLE_DRAG_THRESHOLD &&
+    movedY < TABLE_DRAG_THRESHOLD
+  ) {
+    return;
+  }
 
-    let x = event.clientX - mapRect.left - dragOffsetX;
-    let y = event.clientY - mapRect.top - dragOffsetY;
-
-    const maxX = floorMap.clientWidth - draggedTable.offsetWidth;
-    const maxY = floorMap.clientHeight - draggedTable.offsetHeight;
-
-    x = Math.max(0, Math.min(x, maxX));
-    y = Math.max(0, Math.min(y, maxY));
+  if (!tableWasDragged) {
     tableWasDragged = true;
-  
-    draggedTable.style.left = `${Math.round(x)}px`;
-    draggedTable.style.top = `${Math.round(y)}px`;
+    draggedTable.classList.add("dragging");
+  }
+
+  const mapRect = floorMap.getBoundingClientRect();
+
+  let x = event.clientX - mapRect.left - dragOffsetX;
+  let y = event.clientY - mapRect.top - dragOffsetY;
+
+  const maxX = floorMap.clientWidth - draggedTable.offsetWidth;
+  const maxY = floorMap.clientHeight - draggedTable.offsetHeight;
+
+  x = Math.max(0, Math.min(x, maxX));
+  y = Math.max(0, Math.min(y, maxY));
+
+  draggedTable.style.left = `${Math.round(x)}px`;
+  draggedTable.style.top = `${Math.round(y)}px`;
 });
 
 document.addEventListener("mouseup", async () => {
-    if (!draggedTable) return;
+  if (!draggedTable) return;
 
-    const tableElement = draggedTable;
-    draggedTable = null;
-  
-if (tableWasDragged) {
+  const tableElement = draggedTable;
+  draggedTable = null;
+
+  tableElement.classList.remove("dragging");
+
+  // Pokud nedošlo ke skutečnému přesunu, nic neukládáme.
+  // Následný click se tak normálně zpracuje.
+  if (!tableWasDragged) {
+    return;
+  }
+
+  // Necháme click handler poznat, že před klikem proběhl drag.
   setTimeout(() => {
     tableWasDragged = false;
   }, 0);
-}
-    tableElement.classList.remove("dragging");
 
-    const tableId = tableElement.dataset.tableId;
-    const groupId = tableElement.dataset.groupId;
+  const tableId = tableElement.dataset.tableId;
+  const groupId = tableElement.dataset.groupId;
 
-    if (!tableId && !groupId) {
-        return;
+  if (!tableId && !groupId) {
+    return;
+  }
+
+  const x = Math.round(
+    parseFloat(tableElement.style.left) || 0
+  );
+
+  const y = Math.round(
+    parseFloat(tableElement.style.top) || 0
+  );
+
+  const isGroup = Boolean(groupId);
+  const resource = isGroup ? "table_groups" : "restaurant_tables";
+  const itemId = isGroup ? groupId : tableId;
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/${resource}?id=eq.${itemId}&restaurant_id=eq.${currentRestaurantId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Prefer: "return=minimal"
+        },
+        body: JSON.stringify({ x, y })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
     }
 
-    const x = Math.round(
-      parseFloat(tableElement.style.left) || 0
-    );
-    const y = Math.round(
-      parseFloat(tableElement.style.top) || 0
-    );
+    if (isGroup) {
+      const group = tableGroups.find(
+        item => Number(item.id) === Number(groupId)
+      );
 
-    const isGroup = Boolean(groupId);
-    const resource = isGroup ? "table_groups" : "restaurant_tables";
-    const itemId = isGroup ? groupId : tableId;
+      if (group) {
+        group.x = x;
+        group.y = y;
+      }
+    } else {
+      const table = restaurantTables.find(
+        item => Number(item.id) === Number(tableId)
+      );
 
-    try {
-        const response = await authorizedFetch(
-            `${SUPABASE_URL}/rest/v1/${resource}?id=eq.${itemId}&restaurant_id=eq.${currentRestaurantId}`,
-            {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                    Prefer: "return=minimal"
-                },
-                body: JSON.stringify({ x, y })
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
-
-        if (isGroup) {
-            const group = tableGroups.find(
-                item => Number(item.id) === Number(groupId)
-            );
-
-            if (group) {
-                group.x = x;
-                group.y = y;
-            }
-        } else {
-            const table = restaurantTables.find(
-                item => Number(item.id) === Number(tableId)
-            );
-
-            if (table) {
-                table.x = x;
-                table.y = y;
-            }
-        }
-    } catch (error) {
-        console.error(
-            isGroup
-                ? "Nepodařilo se uložit pozici spojených stolů:"
-                : "Nepodařilo se uložit pozici stolu:",
-            error
-        );
-        showDashboardNotice(
-            isGroup
-                ? "Pozici spojených stolů se nepodařilo uložit."
-                : "Pozici stolu se nepodařilo uložit."
-        );
-        await loadTables();
+      if (table) {
+        table.x = x;
+        table.y = y;
+      }
     }
+  } catch (error) {
+    console.error(
+      isGroup
+        ? "Nepodařilo se uložit pozici spojených stolů:"
+        : "Nepodařilo se uložit pozici stolu:",
+      error
+    );
+
+    showDashboardNotice(
+      isGroup
+        ? "Pozici spojených stolů se nepodařilo uložit."
+        : "Pozici stolu se nepodařilo uložit."
+    );
+
+    await loadTables();
+  }
 });
 let floorMapZoom = 1;
 
