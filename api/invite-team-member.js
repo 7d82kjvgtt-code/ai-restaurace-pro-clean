@@ -252,47 +252,47 @@ async function getOwnerContext(
 }
 
 
-function getInviteRedirectUrl(
-  req
-) {
-  // Nepoužíváme libovolný Origin poslaný klientem,
-  // aby pozvánku nešlo přesměrovat na cizí web.
-  const forwardedHost =
-    String(
-      req.headers[
-        "x-forwarded-host"
-      ] ||
-      req.headers.host ||
-      ""
-    )
-      .split(",")[0]
-      .trim();
+function getInviteRedirectUrl(req) {
+  // Redirect nesmí být odvozený z Host / X-Forwarded-Host hlaviček,
+  // protože ty nejsou vhodným bezpečnostním základem pro odkaz v e-mailu.
+  // Produkce má používat explicitní APP_URL; Vercel URL je bezpečný fallback.
+  const configuredBaseUrl =
+    String(process.env.APP_URL || "").trim() ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${String(process.env.VERCEL_PROJECT_PRODUCTION_URL).trim()}`
+      : "") ||
+    (process.env.VERCEL_URL
+      ? `https://${String(process.env.VERCEL_URL).trim()}`
+      : "");
 
-  if (!forwardedHost) {
+  if (!configuredBaseUrl) {
     throw new Error(
-      "Nepodařilo se určit adresu aplikace."
+      "Chybí APP_URL nebo Vercel deployment URL pro pozvánky."
     );
   }
 
-  const protocolHeader =
-    String(
-      req.headers[
-        "x-forwarded-proto"
-      ] ||
-      "https"
-    )
-      .split(",")[0]
-      .trim()
-      .toLowerCase();
+  let baseUrl;
 
-  const protocol =
-    protocolHeader === "http"
-      ? "http"
-      : "https";
+  try {
+    baseUrl = new URL(configuredBaseUrl);
+  } catch (_) {
+    throw new Error(
+      "APP_URL / Vercel deployment URL nemá platný formát."
+    );
+  }
 
-  return `${protocol}://${forwardedHost}/invite.html`;
+  if (baseUrl.protocol !== "https:" && baseUrl.hostname !== "localhost") {
+    throw new Error(
+      "Adresa aplikace pro pozvánky musí používat HTTPS."
+    );
+  }
+
+  baseUrl.pathname = "/invite.html";
+  baseUrl.search = "";
+  baseUrl.hash = "";
+
+  return baseUrl.toString();
 }
-
 
 module.exports =
   async function handler(
