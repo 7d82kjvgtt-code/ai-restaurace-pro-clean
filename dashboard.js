@@ -2419,18 +2419,35 @@ function updateEditReservationTableOptions(preferredTableId = undefined) {
     emptyOption.textContent = "Bez stolu";
     tableSelect.appendChild(emptyOption);
 
+    const groupedTableIds =
+        getActiveGroupedTableIds();
+
     restaurantTables
-        .filter(table => table.active || String(table.id) === previousValue)
+        .filter(
+            table =>
+                (
+                    table.active &&
+                    !groupedTableIds.has(
+                        Number(table.id)
+                    )
+                ) ||
+                String(table.id) === previousValue
+        )
         .sort((a, b) => Number(a.capacity) - Number(b.capacity))
         .forEach(table => {
+            const inActiveGroup =
+                groupedTableIds.has(
+                    Number(table.id)
+                );
             const tooSmall = people > Number(table.capacity || 0);
             const occupied = proposedReservation.status !== "Zrušeno" &&
                 proposedReservation.date && proposedReservation.time &&
                 hasTableConflict(table.id, proposedReservation, reservationId);
-            const unavailable = !table.active || tooSmall || occupied;
+            const unavailable = !table.active || inActiveGroup || tooSmall || occupied;
 
             let label = `${table.name} (${table.capacity} míst)`;
             if (!table.active) label += " — neaktivní";
+            else if (inActiveGroup) label += " — součást spojených stolů";
             else if (tooSmall) label += " — malá kapacita";
             else if (occupied) label += " — obsazený";
             else label += " — volný";
@@ -2581,6 +2598,20 @@ async function saveReservationChanges() {
 
     if (!selectedTable) {
       showDashboardNotice("Vybraný stůl nebyl nalezen.");
+      return;
+    }
+
+    if (
+      isTableInActiveGroup(
+        tableId
+      ) &&
+      Number(
+        currentReservation.table_id
+      ) !== tableId
+    ) {
+      showDashboardNotice(
+        `${selectedTable.name} je součástí spojených stolů. Vyber jiný stůl.`
+      );
       return;
     }
 
@@ -3422,6 +3453,42 @@ function openTableGroup(groupId) {
       throw new Error("Stoly ze skupiny nebyly nalezeny.");
     }
 
+    const groupReservationsResponse =
+      await authorizedFetch(
+        `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${currentRestaurantId}&table_group_id=eq.${Number(groupId)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,status`,
+        {
+          headers:
+            getHeaders({
+              "Cache-Control":
+                "no-cache"
+            })
+        }
+      );
+
+    if (!groupReservationsResponse.ok) {
+      throw new Error(
+        await groupReservationsResponse.text()
+      );
+    }
+
+    const groupReservations =
+      await groupReservationsResponse.json();
+
+    if (
+      Array.isArray(groupReservations) &&
+      groupReservations.some(
+        reservation =>
+          reservationHasNotEnded(
+            reservation
+          )
+      )
+    ) {
+      showDashboardNotice(
+        "Skupinu nelze rozpojit, protože na ní je aktuální nebo budoucí rezervace. Nejdřív rezervaci přesuň nebo zruš."
+      );
+      return;
+    }
+
     // Střed skupiny podle současných pozic jejích stolů.
     const centerX =
       members.reduce(
@@ -3652,8 +3719,17 @@ function fillNewTableOptions(preferredValue = "auto") {
   const tableSelect = document.getElementById("newTable");
   if (!tableSelect) return;
 
+  const groupedTableIds =
+    getActiveGroupedTableIds();
+
   const activeTables = restaurantTables
-    .filter(table => table.active)
+    .filter(
+      table =>
+        table.active &&
+        !groupedTableIds.has(
+          Number(table.id)
+        )
+    )
     .sort((a, b) => Number(a.capacity) - Number(b.capacity));
 
   tableSelect.replaceChildren(
@@ -3813,6 +3889,17 @@ async function saveNewReservation() {
     }
 
     const tableId = Number(selectedTable.id);
+
+    if (
+        isTableInActiveGroup(
+            tableId
+        )
+    ) {
+        showDashboardNotice(
+            `${selectedTable.name} je součástí spojených stolů. Vyber jiný stůl.`
+        );
+        return;
+    }
 
     if (people > Number(selectedTable.capacity)) {
         showDashboardNotice(
@@ -4241,24 +4328,36 @@ function renderTableSelect(reservation) {
       ? ""
       : String(reservation.table_id);
 
+  const groupedTableIds =
+    getActiveGroupedTableIds();
+
   const availableTables =
     restaurantTables.filter(table => {
       return (
-        table.active ||
+        (
+          table.active &&
+          !groupedTableIds.has(
+            Number(table.id)
+          )
+        ) ||
         String(table.id) === assignedId
       );
     });
 
   const options = availableTables
     .map(table => {
-      const inactiveText =
-        table.active
-          ? ""
-          : " – neaktivní";
+      const unavailableText =
+        !table.active
+          ? " – neaktivní"
+          : groupedTableIds.has(
+              Number(table.id)
+            )
+            ? " – součást spojených stolů"
+            : "";
 
       return createTableOption({
         value: Number(table.id),
-        label: `${String(table.name || "")} (${Number(table.capacity)} míst)${inactiveText}`,
+        label: `${String(table.name || "")} (${Number(table.capacity)} míst)${unavailableText}`,
         selected: String(table.id) === assignedId
       }).outerHTML;
     })
@@ -4325,11 +4424,107 @@ function reservationsOverlap(first, second) {
   );
 }
 
+function getActiveGroupedTableIds() {
+  const groupedIds =
+    new Set();
+
+  tableGroups.forEach(group => {
+    if (
+      group?.active === false ||
+      !Array.isArray(group?.table_ids)
+    ) {
+      return;
+    }
+
+    group.table_ids.forEach(id => {
+      const numericId =
+        Number(id);
+
+      if (
+        Number.isInteger(numericId) &&
+        numericId > 0
+      ) {
+        groupedIds.add(numericId);
+      }
+    });
+  });
+
+  return groupedIds;
+}
+
+function isTableInActiveGroup(tableId) {
+  return getActiveGroupedTableIds()
+    .has(Number(tableId));
+}
+
+function reservationHasNotEnded(
+  reservation,
+  now = new Date()
+) {
+  if (
+    !reservation ||
+    (reservation.status || "Čeká") === "Zrušeno"
+  ) {
+    return false;
+  }
+
+  const start =
+    new Date(
+      `${reservation.date}T${String(
+        reservation.time || ""
+      ).slice(0, 5)}`
+    );
+
+  if (
+    Number.isNaN(start.getTime())
+  ) {
+    return false;
+  }
+
+  const durationMinutes =
+    Math.max(
+      30,
+      Number(
+        reservation.duration_minutes || 120
+      ) || 120
+    );
+
+  return (
+    start.getTime() +
+      durationMinutes * 60000 >
+    now.getTime()
+  );
+}
+
 function hasTableConflict(
   tableId,
   reservation,
   ignoredReservationId = null
 ) {
+  const numericTableId =
+    Number(tableId);
+
+  const groupIdsForTable =
+    new Set(
+      tableGroups
+        .filter(
+          group =>
+            group?.active !== false &&
+            Array.isArray(
+              group?.table_ids
+            ) &&
+            group.table_ids
+              .map(Number)
+              .includes(
+                numericTableId
+              )
+        )
+        .map(
+          group =>
+            Number(group.id)
+        )
+    );
+
   return reservations.some(item => {
     if (
       ignoredReservationId !== null &&
@@ -4339,9 +4534,22 @@ function hasTableConflict(
       return false;
     }
 
+    const usesSameTable =
+      Number(item.table_id) ===
+      numericTableId;
+
+    const usesGroupContainingTable =
+      item.table_group_id !== null &&
+      item.table_group_id !== undefined &&
+      groupIdsForTable.has(
+        Number(
+          item.table_group_id
+        )
+      );
+
     if (
-      Number(item.table_id) !==
-      Number(tableId)
+      !usesSameTable &&
+      !usesGroupContainingTable
     ) {
       return false;
     }
@@ -4366,6 +4574,9 @@ function findBestAvailableTable(reservation) {
       .filter(table => {
         return (
           table.active &&
+          !isTableInActiveGroup(
+            table.id
+          ) &&
           Number(table.capacity) >=
             Number(reservation.people) &&
           !hasTableConflict(
@@ -4467,6 +4678,28 @@ async function assignTable(
         Number(tableId)
       );
     });
+
+  if (
+    selectedTable &&
+    isTableInActiveGroup(
+      selectedTable.id
+    ) &&
+    Number(
+      reservation.table_id
+    ) !== Number(
+      selectedTable.id
+    )
+  ) {
+    showDashboardNotice(
+      `${selectedTable.name} je součástí spojených stolů.`
+    );
+
+    renderReservations(
+      getFilteredReservations()
+    );
+
+    return;
+  }
 
   if (
     selectedTable &&
