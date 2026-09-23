@@ -3320,11 +3320,29 @@ function openTable(tableId) {
                     : "Volný";
 
     if (reservation) {
-        document.getElementById("tableModalCapacity").innerHTML =
-            `👤 ${getReservationGuestName(reservation)}<br>
-             👥 ${reservation.people || "-"} osoby<br>
-             🕒 ${reservation.time || "-"}<br>
-             📞 ${reservation.phone || "-"}`;
+        const tableModalCapacity =
+            document.getElementById("tableModalCapacity");
+
+        if (tableModalCapacity) {
+            tableModalCapacity.replaceChildren();
+
+            [
+                `👤 ${getReservationGuestName(reservation)}`,
+                `👥 ${reservation.people || "-"} osoby`,
+                `🕒 ${reservation.time || "-"}`,
+                `📞 ${reservation.phone || "-"}`
+            ].forEach((line, index) => {
+                if (index > 0) {
+                    tableModalCapacity.appendChild(
+                        document.createElement("br")
+                    );
+                }
+
+                tableModalCapacity.appendChild(
+                    document.createTextNode(String(line))
+                );
+            });
+        }
 
         document.getElementById("tableModalStatus").textContent =
             reservation.status || "Čeká";
