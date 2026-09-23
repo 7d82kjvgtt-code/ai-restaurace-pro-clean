@@ -77,7 +77,7 @@
 
       <div>
         <h1>Vítejte zpět 👋</h1>
-        <p>Přehled provozu restaurace</p>
+        <p id="currentRestaurantNameLabel">Přehled provozu restaurace</p>
         <span class="current-role-badge" id="currentUserRoleBadge"></span>
       </div>
 
@@ -115,8 +115,13 @@
           </div>
         </div>
 
-        <a class="secondaryButton" href="index.html">
-          ⬅️ Zpět na web
+        <a
+          class="secondaryButton"
+          id="publicRestaurantLink"
+          href="#"
+          hidden
+        >
+          ↗️ Veřejný web
         </a>
 
         <button
