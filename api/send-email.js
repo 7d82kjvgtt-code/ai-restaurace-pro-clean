@@ -233,7 +233,7 @@ async function getRestaurantById(
   const rows = await supabaseServiceJson(
     `/rest/v1/restaurants?id=eq.${Number(
       restaurantId
-    )}&select=id,name,slug&limit=1`,
+    )}&select=id,name,slug,is_published&limit=1`,
     {
       method: "GET"
     }
@@ -1228,7 +1228,10 @@ async function getDashboardRestaurantInfoOnServer(
             String(
               restaurant.slug ||
               ""
-            )
+            ),
+          is_published:
+            restaurant.is_published ===
+            true
         }
       });
   } catch (error) {
