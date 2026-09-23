@@ -2356,14 +2356,10 @@ if (durationSelect) {
     document.getElementById("editReservationStatus").value =
         reservation.status || "Čeká";
 
-    updateEditReservationTableOptions(reservation.table_id);
-
-    const tableSelect = document.getElementById("editReservationTable");
-    tableSelect.value =
-        reservation.table_id === null ||
-        reservation.table_id === undefined
-            ? ""
-            : String(reservation.table_id);
+    updateEditReservationTableOptions(
+        reservation.table_id,
+        reservation.table_group_id
+    );
 
     [
         "editReservationPeople",
@@ -2385,88 +2381,309 @@ if (durationSelect) {
 }
 
 
-function updateEditReservationTableOptions(preferredTableId = undefined) {
-    const tableSelect = document.getElementById("editReservationTable");
-    const idInput = document.getElementById("editReservationId");
-    const peopleInput = document.getElementById("editReservationPeople");
-    const dateInput = document.getElementById("editReservationDate");
-    const timeInput = document.getElementById("editReservationTime");
-    const durationInput = document.getElementById("editReservationDuration");
-    const statusInput = document.getElementById("editReservationStatus");
+function updateEditReservationTableOptions(
+  preferredTableId = undefined,
+  preferredGroupId = undefined
+) {
+  const tableSelect =
+    document.getElementById(
+      "editReservationTable"
+    );
 
-    if (!tableSelect || !idInput || !peopleInput || !dateInput || !timeInput || !durationInput || !statusInput) {
-        return;
-    }
+  const idInput =
+    document.getElementById(
+      "editReservationId"
+    );
 
-    const previousValue = preferredTableId !== undefined
-        ? (preferredTableId === null ? "" : String(preferredTableId))
-        : tableSelect.value;
+  const peopleInput =
+    document.getElementById(
+      "editReservationPeople"
+    );
 
-    const reservationId = Number(idInput.value || 0);
-    const people = Number(peopleInput.value || 0);
-    const proposedReservation = {
-        id: reservationId,
-        people,
-        date: dateInput.value,
-        time: timeInput.value,
-        duration_minutes: Number(durationInput.value || 120),
-        status: statusInput.value || "Čeká"
-    };
+  const dateInput =
+    document.getElementById(
+      "editReservationDate"
+    );
 
-    tableSelect.replaceChildren();
+  const timeInput =
+    document.getElementById(
+      "editReservationTime"
+    );
 
-    const emptyOption = document.createElement("option");
-    emptyOption.value = "";
-    emptyOption.textContent = "Bez stolu";
-    tableSelect.appendChild(emptyOption);
+  const durationInput =
+    document.getElementById(
+      "editReservationDuration"
+    );
 
-    const groupedTableIds =
-        getActiveGroupedTableIds();
+  const statusInput =
+    document.getElementById(
+      "editReservationStatus"
+    );
 
-    restaurantTables
-        .filter(
-            table =>
-                (
-                    table.active &&
-                    !groupedTableIds.has(
-                        Number(table.id)
-                    )
-                ) ||
-                String(table.id) === previousValue
+  if (
+    !tableSelect ||
+    !idInput ||
+    !peopleInput ||
+    !dateInput ||
+    !timeInput ||
+    !durationInput ||
+    !statusInput
+  ) {
+    return;
+  }
+
+  let previousValue =
+    tableSelect.value;
+
+  if (
+    preferredGroupId !==
+      undefined &&
+    preferredGroupId !==
+      null
+  ) {
+    previousValue =
+      `group:${Number(
+        preferredGroupId
+      )}`;
+  } else if (
+    preferredTableId !==
+      undefined
+  ) {
+    previousValue =
+      preferredTableId === null
+        ? ""
+        : String(
+            preferredTableId
+          );
+  }
+
+  const reservationId =
+    Number(
+      idInput.value || 0
+    );
+
+  const people =
+    Number(
+      peopleInput.value || 0
+    );
+
+  const proposedReservation = {
+    id:
+      reservationId,
+    people,
+    date:
+      dateInput.value,
+    time:
+      timeInput.value,
+    duration_minutes:
+      Number(
+        durationInput.value ||
+        120
+      ),
+    status:
+      statusInput.value ||
+      "Čeká"
+  };
+
+  tableSelect.replaceChildren(
+    createTableOption({
+      value: "",
+      label:
+        "Bez stolu"
+    })
+  );
+
+  const groupedTableIds =
+    getActiveGroupedTableIds();
+
+  restaurantTables
+    .filter(
+      table =>
+        (
+          table.active &&
+          !groupedTableIds.has(
+            Number(table.id)
+          )
+        ) ||
+        String(table.id) ===
+          previousValue
+    )
+    .sort(
+      (a, b) =>
+        Number(a.capacity) -
+        Number(b.capacity)
+    )
+    .forEach(table => {
+      const inActiveGroup =
+        groupedTableIds.has(
+          Number(table.id)
+        );
+
+      const tooSmall =
+        people >
+        Number(
+          table.capacity || 0
+        );
+
+      const occupied =
+        proposedReservation.status !==
+          "Zrušeno" &&
+        proposedReservation.date &&
+        proposedReservation.time &&
+        hasTableConflict(
+          table.id,
+          proposedReservation,
+          reservationId
+        );
+
+      const unavailable =
+        !table.active ||
+        inActiveGroup ||
+        tooSmall ||
+        occupied;
+
+      let label =
+        `${table.name} (${table.capacity} míst)`;
+
+      if (!table.active) {
+        label +=
+          " — neaktivní";
+      } else if (
+        inActiveGroup
+      ) {
+        label +=
+          " — součást spojených stolů";
+      } else if (
+        tooSmall
+      ) {
+        label +=
+          " — malá kapacita";
+      } else if (
+        occupied
+      ) {
+        label +=
+          " — obsazený";
+      } else {
+        label +=
+          " — volný";
+      }
+
+      tableSelect.appendChild(
+        createTableOption({
+          value:
+            Number(table.id),
+          label,
+          disabled:
+            unavailable
+        })
+      );
+    });
+
+  tableGroups
+    .filter(
+      group =>
+        isUsableTableGroup(
+          group
+        ) ||
+        `group:${Number(
+          group.id
+        )}` ===
+          previousValue
+    )
+    .sort(
+      (a, b) =>
+        Number(
+          a.total_capacity || 0
+        ) -
+        Number(
+          b.total_capacity || 0
         )
-        .sort((a, b) => Number(a.capacity) - Number(b.capacity))
-        .forEach(table => {
-            const inActiveGroup =
-                groupedTableIds.has(
-                    Number(table.id)
-                );
-            const tooSmall = people > Number(table.capacity || 0);
-            const occupied = proposedReservation.status !== "Zrušeno" &&
-                proposedReservation.date && proposedReservation.time &&
-                hasTableConflict(table.id, proposedReservation, reservationId);
-            const unavailable = !table.active || inActiveGroup || tooSmall || occupied;
+    )
+    .forEach(group => {
+      const usable =
+        isUsableTableGroup(
+          group
+        );
 
-            let label = `${table.name} (${table.capacity} míst)`;
-            if (!table.active) label += " — neaktivní";
-            else if (inActiveGroup) label += " — součást spojených stolů";
-            else if (tooSmall) label += " — malá kapacita";
-            else if (occupied) label += " — obsazený";
-            else label += " — volný";
+      const capacity =
+        Number(
+          group.total_capacity ||
+          0
+        );
 
-            const option = document.createElement("option");
-            option.value = String(Number(table.id));
-            option.disabled = unavailable;
-            option.textContent = label;
-            tableSelect.appendChild(option);
-        });
+      const tooSmall =
+        people >
+        capacity;
 
-    const preferredOption = [...tableSelect.options].find(option => option.value === previousValue);
-    if (preferredOption) {
-        preferredOption.disabled = false;
-        tableSelect.value = previousValue;
-    } else {
-        tableSelect.value = "";
-    }
+      const occupied =
+        proposedReservation.status !==
+          "Zrušeno" &&
+        proposedReservation.date &&
+        proposedReservation.time &&
+        hasTableGroupConflict(
+          group.id,
+          proposedReservation,
+          reservationId
+        );
+
+      const unavailable =
+        !usable ||
+        tooSmall ||
+        occupied;
+
+      let label =
+        `🔗 ${group.name || "Spojené stoly"} (${capacity} míst)`;
+
+      if (!usable) {
+        label +=
+          " — neaktivní";
+      } else if (
+        tooSmall
+      ) {
+        label +=
+          " — malá kapacita";
+      } else if (
+        occupied
+      ) {
+        label +=
+          " — obsazená";
+      } else {
+        label +=
+          " — volná";
+      }
+
+      tableSelect.appendChild(
+        createTableOption({
+          value:
+            `group:${Number(
+              group.id
+            )}`,
+          label,
+          disabled:
+            unavailable
+        })
+      );
+    });
+
+  const preferredOption =
+    [
+      ...tableSelect.options
+    ].find(
+      option =>
+        option.value ===
+        previousValue
+    );
+
+  if (preferredOption) {
+    preferredOption.disabled =
+      false;
+
+    tableSelect.value =
+      previousValue;
+  } else {
+    tableSelect.value =
+      "";
+  }
 }
 
 function closeReservationModal() {
@@ -2476,56 +2693,97 @@ function closeReservationModal() {
 }
 
 async function saveReservationChanges() {
-  const id = Number(
-    document.getElementById("editReservationId").value
-  );
+  const id =
+    Number(
+      document.getElementById(
+        "editReservationId"
+      ).value
+    );
 
   const name =
     document
-      .getElementById("editReservationName")
+      .getElementById(
+        "editReservationName"
+      )
       .value
       .trim();
 
-  const people = Number(
-    document.getElementById("editReservationPeople").value
-  );
+  const people =
+    Number(
+      document.getElementById(
+        "editReservationPeople"
+      ).value
+    );
 
   const date =
-    document.getElementById("editReservationDate").value;
+    document.getElementById(
+      "editReservationDate"
+    ).value;
 
   const time =
-    document.getElementById("editReservationTime").value;
+    document.getElementById(
+      "editReservationTime"
+    ).value;
 
-  const durationMinutes = Number(
-    document.getElementById("editReservationDuration").value
-  );
+  const durationMinutes =
+    Number(
+      document.getElementById(
+        "editReservationDuration"
+      ).value
+    );
 
-  const tableValue =
-    document.getElementById("editReservationTable").value;
+  const resourceValue =
+    String(
+      document.getElementById(
+        "editReservationTable"
+      ).value || ""
+    );
+
+  const tableGroupId =
+    resourceValue.startsWith(
+      "group:"
+    )
+      ? Number(
+          resourceValue.slice(6)
+        )
+      : null;
 
   const tableId =
-    tableValue ? Number(tableValue) : null;
+    resourceValue &&
+    tableGroupId === null
+      ? Number(
+          resourceValue
+        )
+      : null;
 
   const status =
     String(
-      document.getElementById("editReservationStatus").value || ""
+      document.getElementById(
+        "editReservationStatus"
+      ).value || ""
     ).trim();
 
   const phone =
     document
-      .getElementById("editReservationPhone")
+      .getElementById(
+        "editReservationPhone"
+      )
       .value
       .trim();
 
   const email =
     document
-      .getElementById("editReservationEmail")
+      .getElementById(
+        "editReservationEmail"
+      )
       .value
       .trim();
 
   const note =
     document
-      .getElementById("editReservationNote")
+      .getElementById(
+        "editReservationNote"
+      )
       .value
       .trim();
 
@@ -2535,32 +2793,74 @@ async function saveReservationChanges() {
     !name ||
     !date ||
     !time ||
-    !Number.isInteger(people) ||
+    !Number.isInteger(
+      people
+    ) ||
     people < 1 ||
     people > 30 ||
-    !Number.isFinite(durationMinutes) ||
+    !Number.isFinite(
+      durationMinutes
+    ) ||
     durationMinutes < 30 ||
     durationMinutes > 360 ||
-    !["Čeká", "Potvrzeno", "Zrušeno"].includes(status)
+    ![
+      "Čeká",
+      "Potvrzeno",
+      "Zrušeno"
+    ].includes(status) ||
+    (
+      resourceValue.startsWith(
+        "group:"
+      ) &&
+      (
+        !Number.isInteger(
+          tableGroupId
+        ) ||
+        tableGroupId < 1
+      )
+    ) ||
+    (
+      resourceValue &&
+      !resourceValue.startsWith(
+        "group:"
+      ) &&
+      (
+        !Number.isInteger(
+          tableId
+        ) ||
+        tableId < 1
+      )
+    )
   ) {
     showDashboardNotice(
-      "Vyplň správně jméno, počet osob, datum, čas, délku a stav."
+      "Vyplň správně jméno, počet osob, datum, čas, délku, místo a stav."
     );
     return;
   }
 
-  if (!isValidOptionalEmail(email)) {
-    showDashboardNotice("Zadej platný e-mail, nebo pole nech prázdné.");
+  if (
+    !isValidOptionalEmail(
+      email
+    )
+  ) {
+    showDashboardNotice(
+      "Zadej platný e-mail, nebo pole nech prázdné."
+    );
     return;
   }
 
   const currentReservation =
     reservations.find(
-      reservation => Number(reservation.id) === id
+      reservation =>
+        Number(
+          reservation.id
+        ) === id
     );
 
   if (!currentReservation) {
-    showDashboardNotice("Rezervace nebyla nalezena.");
+    showDashboardNotice(
+      "Rezervace nebyla nalezena."
+    );
     return;
   }
 
@@ -2571,34 +2871,50 @@ async function saveReservationChanges() {
       durationMinutes
     });
 
-  if (!openingAvailability.ok && status !== "Zrušeno") {
-    showDashboardNotice(openingAvailability.message);
+  if (
+    !openingAvailability.ok &&
+    status !== "Zrušeno"
+  ) {
+    showDashboardNotice(
+      openingAvailability.message
+    );
     return;
   }
 
   const updatedReservation = {
     id,
     name,
-    last_name: null,
+    last_name:
+      null,
     people,
     date,
     time,
-    duration_minutes: durationMinutes,
-    table_id: tableId,
+    duration_minutes:
+      durationMinutes,
+    table_id:
+      tableId,
+    table_group_id:
+      tableGroupId,
     phone,
     email,
     note,
     status
   };
 
-  if (tableId !== null) {
+  if (
+    tableId !== null
+  ) {
     const selectedTable =
       restaurantTables.find(
-        table => Number(table.id) === tableId
+        table =>
+          Number(table.id) ===
+          tableId
       );
 
     if (!selectedTable) {
-      showDashboardNotice("Vybraný stůl nebyl nalezen.");
+      showDashboardNotice(
+        "Vybraný stůl nebyl nalezen."
+      );
       return;
     }
 
@@ -2611,15 +2927,19 @@ async function saveReservationChanges() {
       ) !== tableId
     ) {
       showDashboardNotice(
-        `${selectedTable.name} je součástí spojených stolů. Vyber jiný stůl.`
+        `${selectedTable.name} je součástí spojených stolů. Vyber skupinu nebo jiný stůl.`
       );
       return;
     }
 
-    if (people > Number(selectedTable.capacity)) {
+    if (
+      people >
+      Number(
+        selectedTable.capacity
+      )
+    ) {
       showDashboardNotice(
-        `${selectedTable.name} má jen ` +
-        `${selectedTable.capacity} míst.`
+        `${selectedTable.name} má jen ${selectedTable.capacity} míst.`
       );
       return;
     }
@@ -2633,50 +2953,133 @@ async function saveReservationChanges() {
       )
     ) {
       showDashboardNotice(
-        `${selectedTable.name} je v tomto čase obsazený.\n\n` +
-        "Vyber jiný stůl nebo jiný čas."
+        `${selectedTable.name} je v tomto čase obsazený.\n\nVyber jiné místo nebo jiný čas.`
+      );
+      return;
+    }
+  }
+
+  if (
+    tableGroupId !== null
+  ) {
+    const selectedGroup =
+      tableGroups.find(
+        group =>
+          Number(group.id) ===
+          tableGroupId
+      );
+
+    const preservingCurrentGroup =
+      Number(
+        currentReservation
+          .table_group_id
+      ) === tableGroupId;
+
+    if (
+      !selectedGroup ||
+      (
+        !preservingCurrentGroup &&
+        !isUsableTableGroup(
+          selectedGroup
+        )
+      )
+    ) {
+      showDashboardNotice(
+        "Vybraná skupina stolů není dostupná."
+      );
+      return;
+    }
+
+    const groupCapacity =
+      Number(
+        selectedGroup
+          .total_capacity ||
+        0
+      );
+
+    if (
+      people >
+      groupCapacity
+    ) {
+      showDashboardNotice(
+        `${selectedGroup.name || "Spojené stoly"} mají jen ${groupCapacity} míst.`
+      );
+      return;
+    }
+
+    if (
+      status !== "Zrušeno" &&
+      hasTableGroupConflict(
+        tableGroupId,
+        updatedReservation,
+        id
+      )
+    ) {
+      showDashboardNotice(
+        `${selectedGroup.name || "Spojené stoly"} jsou v tomto čase obsazené.\n\nVyber jiné místo nebo jiný čas.`
       );
       return;
     }
   }
 
   try {
-    // Nejdřív uložíme obsah rezervace BEZ statusu.
-    // Potvrzení/zrušení pak musí projít serverovým endpointem,
-    // aby se zachovala autorizace, ochrana proti duplicitě a status e-mail.
-    const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}&restaurant_id=eq.${currentRestaurantId}`,
-      {
-        method: "PATCH",
-        headers: getHeaders({
-          Prefer: "return=minimal"
-        }),
-        body: JSON.stringify({
-          name,
-          last_name: null,
-          people,
-          date,
-          time,
-          duration_minutes: durationMinutes,
-          table_id: tableId,
-          phone,
-          email,
-          note
-        })
-      }
-    );
+    const response =
+      await authorizedFetch(
+        `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}&restaurant_id=eq.${currentRestaurantId}`,
+        {
+          method:
+            "PATCH",
+          headers:
+            getHeaders({
+              Prefer:
+                "return=minimal"
+            }),
+          body:
+            JSON.stringify({
+              name,
+              last_name:
+                null,
+              people,
+              date,
+              time,
+              duration_minutes:
+                durationMinutes,
+              table_id:
+                tableId,
+              table_group_id:
+                tableGroupId,
+              phone,
+              email,
+              note
+            })
+        }
+      );
 
     if (!response.ok) {
-      throw new Error(await response.text());
+      throw new Error(
+        await response.text()
+      );
     }
 
     const previousStatus =
-      String(currentReservation.status || "Čeká");
+      String(
+        currentReservation.status ||
+        "Čeká"
+      );
 
-    let statusResult = null;
+    let statusResult =
+      null;
 
-    if (status !== previousStatus) {
-      if (["Potvrzeno", "Zrušeno"].includes(status)) {
+    if (
+      status !==
+      previousStatus
+    ) {
+      if (
+        [
+          "Potvrzeno",
+          "Zrušeno"
+        ].includes(status)
+      ) {
         statusResult =
           await updateReservationStatusRequest(
             id,
@@ -2687,17 +3090,24 @@ async function saveReservationChanges() {
           await authorizedFetch(
             `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}&restaurant_id=eq.${currentRestaurantId}`,
             {
-              method: "PATCH",
-              headers: getHeaders({
-                Prefer: "return=minimal"
-              }),
-              body: JSON.stringify({
-                status: "Čeká"
-              })
+              method:
+                "PATCH",
+              headers:
+                getHeaders({
+                  Prefer:
+                    "return=minimal"
+                }),
+              body:
+                JSON.stringify({
+                  status:
+                    "Čeká"
+                })
             }
           );
 
-        if (!statusResponse.ok) {
+        if (
+          !statusResponse.ok
+        ) {
           throw new Error(
             await statusResponse.text()
           );
@@ -2740,7 +3150,10 @@ async function saveReservationChanges() {
       );
     }
   } catch (error) {
-    console.error(error);
+    console.error(
+      error
+    );
+
     showDashboardNotice(
       "Rezervaci se nepodařilo kompletně upravit."
     );
@@ -3711,77 +4124,207 @@ function getNewReservationDraft() {
   };
 }
 
-function createTableOption({ value, label, selected = false }) {
-  const option = document.createElement("option");
-  option.value = String(value);
-  option.textContent = String(label);
-  option.selected = Boolean(selected);
+function createTableOption({
+  value,
+  label,
+  selected = false,
+  disabled = false
+}) {
+  const option =
+    document.createElement("option");
+
+  option.value =
+    String(value);
+
+  option.textContent =
+    String(label);
+
+  option.selected =
+    Boolean(selected);
+
+  option.disabled =
+    Boolean(disabled);
+
   return option;
 }
 
-function fillNewTableOptions(preferredValue = "auto") {
-  const tableSelect = document.getElementById("newTable");
-  if (!tableSelect) return;
+function fillNewTableOptions(
+  preferredValue = "auto"
+) {
+  const tableSelect =
+    document.getElementById(
+      "newTable"
+    );
+
+  if (!tableSelect) {
+    return;
+  }
 
   const groupedTableIds =
     getActiveGroupedTableIds();
 
-  const activeTables = restaurantTables
-    .filter(
-      table =>
-        table.active &&
-        !groupedTableIds.has(
-          Number(table.id)
-        )
-    )
-    .sort((a, b) => Number(a.capacity) - Number(b.capacity));
+  const activeTables =
+    restaurantTables
+      .filter(
+        table =>
+          table.active &&
+          !groupedTableIds.has(
+            Number(table.id)
+          )
+      )
+      .sort(
+        (a, b) =>
+          Number(a.capacity) -
+          Number(b.capacity)
+      );
+
+  const activeGroups =
+    tableGroups
+      .filter(
+        group =>
+          isUsableTableGroup(
+            group
+          )
+      )
+      .sort(
+        (a, b) =>
+          Number(
+            a.total_capacity || 0
+          ) -
+          Number(
+            b.total_capacity || 0
+          )
+      );
 
   tableSelect.replaceChildren(
     createTableOption({
       value: "auto",
-      label: "🪄 Automaticky vybrat nejlepší stůl"
+      label:
+        "🪄 Automaticky vybrat nejlepší stůl / skupinu"
     }),
-    ...activeTables.map(table =>
-      createTableOption({
-        value: Number(table.id),
-        label: `${String(table.name || "")} (${Number(table.capacity)} míst)`
-      })
+    ...activeTables.map(
+      table =>
+        createTableOption({
+          value:
+            Number(table.id),
+          label:
+            `${String(
+              table.name || ""
+            )} (${Number(
+              table.capacity
+            )} míst)`
+        })
+    ),
+    ...activeGroups.map(
+      group =>
+        createTableOption({
+          value:
+            `group:${Number(
+              group.id
+            )}`,
+          label:
+            `🔗 ${String(
+              group.name ||
+              "Spojené stoly"
+            )} (${Number(
+              group.total_capacity || 0
+            )} míst)`
+        })
     )
   );
 
-  const optionExists = Array.from(tableSelect.options)
-    .some(option => option.value === String(preferredValue));
-  tableSelect.value = optionExists ? String(preferredValue) : "auto";
+  const optionExists =
+    Array.from(
+      tableSelect.options
+    ).some(
+      option =>
+        option.value ===
+        String(
+          preferredValue
+        )
+    );
+
+  tableSelect.value =
+    optionExists
+      ? String(
+          preferredValue
+        )
+      : "auto";
 }
 
 function updateNewTableRecommendation() {
-  const box = document.getElementById("tableRecommendation");
-  const tableSelect = document.getElementById("newTable");
-  if (!box || !tableSelect) return;
+  const box =
+    document.getElementById(
+      "tableRecommendation"
+    );
 
-  const draft = getNewReservationDraft();
+  const tableSelect =
+    document.getElementById(
+      "newTable"
+    );
 
-  if (!draft.people || !draft.date || !draft.time) {
-    box.className = "tableRecommendation";
-    box.textContent =
-      "Zadej počet osob, datum a čas. Systém potom doporučí nejlepší volný stůl.";
+  if (
+    !box ||
+    !tableSelect
+  ) {
     return;
   }
 
-  const bestTable = findBestAvailableTable(draft);
+  const draft =
+    getNewReservationDraft();
 
-  if (!bestTable) {
-    box.className = "tableRecommendation unavailable";
+  if (
+    !draft.people ||
+    !draft.date ||
+    !draft.time
+  ) {
+    box.className =
+      "tableRecommendation";
+
     box.textContent =
-      `Pro ${draft.people} osob v ${draft.time} není volný vhodný stůl.`;
+      "Zadej počet osob, datum a čas. Systém potom doporučí nejlepší volný stůl nebo skupinu.";
+
     return;
   }
 
-  box.className = "tableRecommendation available";
-  box.innerHTML = `
-    <strong>🪄 Doporučení: ${escapeHtml(bestTable.name)}</strong>
-    <span>${Number(bestTable.capacity)} míst · volný po celou dobu rezervace</span>
-  `;
+  const bestResource =
+    findBestAvailableResource(
+      draft
+    );
+
+  if (!bestResource) {
+    box.className =
+      "tableRecommendation unavailable";
+
+    box.textContent =
+      `Pro ${draft.people} osob v ${draft.time} není volný vhodný stůl ani skupina.`;
+
+    return;
+  }
+
+  box.className =
+    "tableRecommendation available";
+
+  const strong =
+    document.createElement(
+      "strong"
+    );
+
+  strong.textContent =
+    `🪄 Doporučení: ${bestResource.type === "group" ? "🔗 " : ""}${bestResource.name}`;
+
+  const detail =
+    document.createElement(
+      "span"
+    );
+
+  detail.textContent =
+    `${bestResource.capacity} míst · volné po celou dobu rezervace`;
+
+  box.replaceChildren(
+    strong,
+    detail
+  );
 }
 
 function setupAutomaticTableRecommendation() {
@@ -3816,168 +4359,369 @@ function createReservationFromTable() {
     });
 }
 async function saveNewReservation() {
-    const name = document.getElementById("newName").value.trim();
-    const people = Number(document.getElementById("newPeople").value);
-    const date = document.getElementById("newDate").value;
-    const time = document.getElementById("newTime").value;
-    const durationMinutes = Number(
-        document.getElementById("newDuration")?.value || 120
+  const name =
+    document
+      .getElementById(
+        "newName"
+      )
+      .value
+      .trim();
+
+  const people =
+    Number(
+      document.getElementById(
+        "newPeople"
+      ).value
     );
-    const tableValue = document.getElementById("newTable").value;
-    const phone = document.getElementById("newPhone").value.trim();
-    const email = document.getElementById("newEmail").value.trim();
-    const note = document.getElementById("newNote").value.trim();
 
-    if (
-        !name ||
-        !date ||
-        !time ||
-        !Number.isInteger(people) ||
-        people < 1 ||
-        people > 30 ||
-        !Number.isFinite(durationMinutes) ||
-        durationMinutes < 30 ||
-        durationMinutes > 360
-    ) {
-        showDashboardNotice("Vyplň správně jméno, počet osob, datum, čas a délku.");
-        return;
-    }
+  const date =
+    document.getElementById(
+      "newDate"
+    ).value;
 
-    if (!isValidOptionalEmail(email)) {
-        showDashboardNotice("Zadej platný e-mail, nebo pole nech prázdné.");
-        return;
-    }
+  const time =
+    document.getElementById(
+      "newTime"
+    ).value;
 
-    const openingAvailability = await checkDashboardOpeningAvailability({
-        date,
-        time,
-        durationMinutes
+  const durationMinutes =
+    Number(
+      document.getElementById(
+        "newDuration"
+      )?.value || 120
+    );
+
+  const tableValue =
+    String(
+      document.getElementById(
+        "newTable"
+      ).value || ""
+    );
+
+  const phone =
+    document
+      .getElementById(
+        "newPhone"
+      )
+      .value
+      .trim();
+
+  const email =
+    document
+      .getElementById(
+        "newEmail"
+      )
+      .value
+      .trim();
+
+  const note =
+    document
+      .getElementById(
+        "newNote"
+      )
+      .value
+      .trim();
+
+  if (
+    !name ||
+    !date ||
+    !time ||
+    !Number.isInteger(
+      people
+    ) ||
+    people < 1 ||
+    people > 30 ||
+    !Number.isFinite(
+      durationMinutes
+    ) ||
+    durationMinutes < 30 ||
+    durationMinutes > 360
+  ) {
+    showDashboardNotice(
+      "Vyplň správně jméno, počet osob, datum, čas a délku."
+    );
+    return;
+  }
+
+  if (
+    !isValidOptionalEmail(
+      email
+    )
+  ) {
+    showDashboardNotice(
+      "Zadej platný e-mail, nebo pole nech prázdné."
+    );
+    return;
+  }
+
+  const openingAvailability =
+    await checkDashboardOpeningAvailability({
+      date,
+      time,
+      durationMinutes
     });
 
-    if (!openingAvailability.ok) {
-        showDashboardNotice(openingAvailability.message);
-        return;
+  if (
+    !openingAvailability.ok
+  ) {
+    showDashboardNotice(
+      openingAvailability.message
+    );
+    return;
+  }
+
+  const reservationDraft = {
+    people,
+    date,
+    time,
+    duration_minutes:
+      durationMinutes,
+    status:
+      "Čeká"
+  };
+
+  let selectedTable =
+    null;
+
+  let selectedGroup =
+    null;
+
+  if (
+    tableValue === "auto" ||
+    tableValue === ""
+  ) {
+    const bestResource =
+      findBestAvailableResource(
+        reservationDraft
+      );
+
+    if (!bestResource) {
+      showDashboardNotice(
+        `Pro ${people} osob v ${time} není volný vhodný stůl ani skupina.\n\n` +
+        "Zvol jiný čas, kratší délku nebo uprav rozložení stolů."
+      );
+      return;
     }
 
-    const reservationDraft = {
-        people,
-        date,
-        time,
-        duration_minutes: durationMinutes,
-        status: "Čeká"
-    };
+    selectedTable =
+      bestResource.table;
 
-    let selectedTable = null;
+    selectedGroup =
+      bestResource.group;
+  } else if (
+    tableValue.startsWith(
+      "group:"
+    )
+  ) {
+    const groupId =
+      Number(
+        tableValue.slice(6)
+      );
 
-    if (tableValue === "auto" || tableValue === "") {
-        selectedTable = findBestAvailableTable(reservationDraft);
+    selectedGroup =
+      tableGroups.find(
+        group =>
+          Number(group.id) ===
+            groupId &&
+          isUsableTableGroup(
+            group
+          )
+      ) || null;
+  } else {
+    const tableId =
+      Number(tableValue);
 
-        if (!selectedTable) {
-            showDashboardNotice(
-                `Pro ${people} osob v ${time} není volný vhodný stůl.
+    selectedTable =
+      restaurantTables.find(
+        table =>
+          Number(table.id) ===
+          tableId
+      ) || null;
+  }
 
-` +
-                "Zvol jiný čas, kratší délku nebo vytvoř větší stůl."
-            );
-            return;
-        }
-    } else {
-        selectedTable = restaurantTables.find(
-            table => Number(table.id) === Number(tableValue)
-        );
-    }
+  if (
+    !selectedTable &&
+    !selectedGroup
+  ) {
+    showDashboardNotice(
+      "Vyber platný stůl nebo skupinu."
+    );
+    return;
+  }
 
-    if (!selectedTable) {
-        showDashboardNotice("Vyber platný stůl.");
-        return;
-    }
+  const resourceName =
+    selectedTable?.name ||
+    selectedGroup?.name ||
+    "Vybrané místo";
 
-    const tableId = Number(selectedTable.id);
-
-    if (
-        isTableInActiveGroup(
-            tableId
+  const resourceCapacity =
+    selectedTable
+      ? Number(
+          selectedTable.capacity ||
+          0
         )
-    ) {
-        showDashboardNotice(
-            `${selectedTable.name} je součástí spojených stolů. Vyber jiný stůl.`
-        );
-        return;
-    }
-
-    if (people > Number(selectedTable.capacity)) {
-        showDashboardNotice(
-            `${selectedTable.name} má pouze ${selectedTable.capacity} míst.`
-        );
-        return;
-    }
-
-    const newReservation = {
-        name,
-        last_name: null,
-        people,
-        date,
-        time,
-        duration_minutes: durationMinutes,
-        table_id: tableId,
-        phone,
-        email,
-        note,
-        status: "Čeká",
-        restaurant_id: currentRestaurantId
-    };
-
-    if (hasTableConflict(tableId, newReservation)) {
-        showDashboardNotice(
-            `${selectedTable.name} je v tomto čase obsazený.\n\n` +
-            "Vyber jiný stůl nebo jiný čas."
-        );
-        return;
-    }
-
-    try {
-        const response = await authorizedFetch(
-            `${SUPABASE_URL}/rest/v1/reservations`,
-            {
-                method: "POST",
-                headers: getHeaders({
-                    Prefer: "return=minimal"
-                }),
-                body: JSON.stringify(newReservation)
-            }
+      : Number(
+          selectedGroup
+            ?.total_capacity ||
+          0
         );
 
-        if (!response.ok) {
-            throw new Error(await response.text());
+  if (
+    people >
+    resourceCapacity
+  ) {
+    showDashboardNotice(
+      `${resourceName} má pouze ${resourceCapacity} míst.`
+    );
+    return;
+  }
+
+  if (
+    selectedTable &&
+    isTableInActiveGroup(
+      selectedTable.id
+    )
+  ) {
+    showDashboardNotice(
+      `${resourceName} je součástí spojených stolů. Vyber skupinu nebo jiný stůl.`
+    );
+    return;
+  }
+
+  const newReservation = {
+    name,
+    last_name:
+      null,
+    people,
+    date,
+    time,
+    duration_minutes:
+      durationMinutes,
+    table_id:
+      selectedTable
+        ? Number(
+            selectedTable.id
+          )
+        : null,
+    table_group_id:
+      selectedGroup
+        ? Number(
+            selectedGroup.id
+          )
+        : null,
+    phone,
+    email,
+    note,
+    status:
+      "Čeká",
+    restaurant_id:
+      currentRestaurantId
+  };
+
+  if (
+    selectedTable &&
+    hasTableConflict(
+      selectedTable.id,
+      newReservation
+    )
+  ) {
+    showDashboardNotice(
+      `${resourceName} je v tomto čase obsazený.\n\nVyber jiné místo nebo jiný čas.`
+    );
+    return;
+  }
+
+  if (
+    selectedGroup &&
+    hasTableGroupConflict(
+      selectedGroup.id,
+      newReservation
+    )
+  ) {
+    showDashboardNotice(
+      `${resourceName} je v tomto čase obsazená.\n\nVyber jiné místo nebo jiný čas.`
+    );
+    return;
+  }
+
+  try {
+    const response =
+      await authorizedFetch(
+        `${SUPABASE_URL}/rest/v1/reservations`,
+        {
+          method:
+            "POST",
+          headers:
+            getHeaders({
+              Prefer:
+                "return=minimal"
+            }),
+          body:
+            JSON.stringify(
+              newReservation
+            )
         }
+      );
 
-        document.getElementById("novaRezervace").style.display = "none";
-
-        [
-            "newName",
-            "newPeople",
-            "newDate",
-            "newTime",
-            "newPhone",
-            "newEmail",
-            "newNote"
-        ].forEach(id => {
-            document.getElementById(id).value = "";
-        });
-
-        const newDuration = document.getElementById("newDuration");
-        if (newDuration) newDuration.value = "120";
-
-        selectedTableId = null;
-
-        await loadReservations();
-
-        showDashboardNotice("Rezervace byla úspěšně uložena.");
-    } catch (error) {
-        console.error(error);
-        showDashboardNotice("Rezervaci se nepodařilo uložit.");
+    if (!response.ok) {
+      throw new Error(
+        await response.text()
+      );
     }
+
+    document
+      .getElementById(
+        "novaRezervace"
+      )
+      .style.display =
+        "none";
+
+    [
+      "newName",
+      "newPeople",
+      "newDate",
+      "newTime",
+      "newPhone",
+      "newEmail",
+      "newNote"
+    ].forEach(id => {
+      document
+        .getElementById(
+          id
+        )
+        .value = "";
+    });
+
+    const newDuration =
+      document.getElementById(
+        "newDuration"
+      );
+
+    if (newDuration) {
+      newDuration.value =
+        "120";
+    }
+
+    selectedTableId =
+      null;
+
+    await loadReservations();
+
+    showDashboardNotice(
+      "Rezervace byla úspěšně uložena.",
+      "success"
+    );
+  } catch (error) {
+    console.error(
+      error
+    );
+
+    showDashboardNotice(
+      "Rezervaci se nepodařilo uložit."
+    );
+  }
 }
+
 function renderTables() {
   const list =
     document.getElementById("tableList");
@@ -4313,74 +5057,157 @@ function getTableName(tableId) {
   return table?.name || "";
 }
 
-function renderTableSelect(reservation) {
-  if (reservation?.table_group_id) {
-    const label = getReservationTableLabel(reservation);
-    return `
-      <div
-        class="tableSelect tableGroupAssigned"
-        title="Tato rezervace používá spojenou skupinu stolů"
-      >
-        🔗 ${escapeHtml(label)}
-      </div>
-    `;
-  }
-
-  const assignedId =
-    reservation.table_id === null ||
-    reservation.table_id === undefined
-      ? ""
-      : String(reservation.table_id);
+function renderTableSelect(
+  reservation
+) {
+  const assignedValue =
+    reservation
+      ?.table_group_id
+      ? `group:${Number(
+          reservation
+            .table_group_id
+        )}`
+      : (
+          reservation
+            ?.table_id ===
+              null ||
+          reservation
+            ?.table_id ===
+              undefined
+        )
+        ? ""
+        : String(
+            reservation
+              .table_id
+          );
 
   const groupedTableIds =
     getActiveGroupedTableIds();
 
-  const availableTables =
-    restaurantTables.filter(table => {
-      return (
+  const options = [
+    createTableOption({
+      value: "",
+      label:
+        "Bez stolu",
+      selected:
+        assignedValue === ""
+    })
+  ];
+
+  restaurantTables
+    .filter(
+      table =>
         (
           table.active &&
           !groupedTableIds.has(
             Number(table.id)
           )
         ) ||
-        String(table.id) === assignedId
-      );
-    });
+        String(table.id) ===
+          assignedValue
+    )
+    .sort(
+      (a, b) =>
+        Number(a.capacity) -
+        Number(b.capacity)
+    )
+    .forEach(table => {
+      const inActiveGroup =
+        groupedTableIds.has(
+          Number(table.id)
+        );
 
-  const options = availableTables
-    .map(table => {
-      const unavailableText =
+      const suffix =
         !table.active
           ? " – neaktivní"
-          : groupedTableIds.has(
-              Number(table.id)
-            )
+          : inActiveGroup
             ? " – součást spojených stolů"
             : "";
 
-      return createTableOption({
-        value: Number(table.id),
-        label: `${String(table.name || "")} (${Number(table.capacity)} míst)${unavailableText}`,
-        selected: String(table.id) === assignedId
-      }).outerHTML;
-    })
-    .join("");
+      options.push(
+        createTableOption({
+          value:
+            Number(table.id),
+          label:
+            `${String(
+              table.name || ""
+            )} (${Number(
+              table.capacity || 0
+            )} míst)${suffix}`,
+          selected:
+            String(table.id) ===
+            assignedValue
+        })
+      );
+    });
+
+  tableGroups
+    .filter(
+      group =>
+        isUsableTableGroup(
+          group
+        ) ||
+        `group:${Number(
+          group.id
+        )}` ===
+          assignedValue
+    )
+    .sort(
+      (a, b) =>
+        Number(
+          a.total_capacity || 0
+        ) -
+        Number(
+          b.total_capacity || 0
+        )
+    )
+    .forEach(group => {
+      const suffix =
+        isUsableTableGroup(
+          group
+        )
+          ? ""
+          : " – neaktivní";
+
+      options.push(
+        createTableOption({
+          value:
+            `group:${Number(
+              group.id
+            )}`,
+          label:
+            `🔗 ${String(
+              group.name ||
+              "Spojené stoly"
+            )} (${Number(
+              group.total_capacity || 0
+            )} míst)${suffix}`,
+          selected:
+            `group:${Number(
+              group.id
+            )}` ===
+              assignedValue
+        })
+      );
+    });
 
   return `
     <select
       class="tableSelect"
-      aria-label="Přiřadit stůl"
+      aria-label="Přiřadit stůl nebo skupinu"
       onchange="assignTable(
-        ${Number(reservation.id)},
+        ${Number(
+          reservation.id
+        )},
         this.value
       )"
     >
-      <option value="">
-        Bez stolu
-      </option>
-
-      ${options}
+      ${options
+        .map(
+          option =>
+            option.outerHTML
+        )
+        .join("")}
     </select>
   `;
 }
@@ -4842,51 +5669,57 @@ function findBestAvailableTable(reservation) {
   );
 }
 
-async function autoAssignTable(reservationId) {
+async function autoAssignTable(
+  reservationId
+) {
   const reservation =
-    reservations.find(item => {
-      return (
+    reservations.find(
+      item =>
         Number(item.id) ===
-        Number(reservationId)
-      );
-    });
+        Number(
+          reservationId
+        )
+    );
 
   if (!reservation) {
-    showDashboardNotice("Rezervace nebyla nalezena.");
+    showDashboardNotice(
+      "Rezervace nebyla nalezena."
+    );
     return;
   }
 
   if (
-    (reservation.status || "Čeká") ===
+    (reservation.status ||
+      "Čeká") ===
     "Zrušeno"
   ) {
     showDashboardNotice(
       "Zrušené rezervaci nelze přiřadit stůl."
     );
-
     return;
   }
 
-  const bestTable =
-    findBestAvailableTable(reservation);
+  const bestResource =
+    findBestAvailableResource(
+      reservation
+    );
 
-  if (!bestTable) {
+  if (!bestResource) {
     showDashboardNotice(
       `Pro rezervaci na ${formatDate(
         reservation.date
-      )} v ${reservation.time || "-"} není volný vhodný stůl.\n\n` +
-      "Kontrola používá skutečnou délku rezervace."
+      )} v ${reservation.time || "-"} není volný vhodný stůl ani skupina.\n\nKontrola používá skutečnou délku rezervace.`
     );
-
     return;
   }
 
-  const confirmed = confirm(
-    `Doporučený stůl: ${bestTable.name}\n` +
-    `Kapacita: ${bestTable.capacity} míst\n` +
-    `Rezervace: ${reservation.people} osob\n\n` +
-    "Přiřadit tento stůl?"
-  );
+  const confirmed =
+    confirm(
+      `Doporučení: ${bestResource.type === "group" ? "🔗 " : ""}${bestResource.name}\n` +
+      `Kapacita: ${bestResource.capacity} míst\n` +
+      `Rezervace: ${reservation.people} osob\n\n` +
+      "Přiřadit toto místo?"
+    );
 
   if (!confirmed) {
     return;
@@ -4894,7 +5727,7 @@ async function autoAssignTable(reservationId) {
 
   await assignTable(
     reservationId,
-    bestTable.id
+    bestResource.value
   );
 }
 
@@ -4902,29 +5735,76 @@ async function assignTable(
   reservationId,
   value
 ) {
+  const resourceValue =
+    String(
+      value || ""
+    );
+
+  const tableGroupId =
+    resourceValue.startsWith(
+      "group:"
+    )
+      ? Number(
+          resourceValue.slice(6)
+        )
+      : null;
+
   const tableId =
-    value ? Number(value) : null;
+    resourceValue &&
+    tableGroupId === null
+      ? Number(
+          resourceValue
+        )
+      : null;
 
   const reservation =
-    reservations.find(item => {
-      return (
+    reservations.find(
+      item =>
         Number(item.id) ===
-        Number(reservationId)
-      );
-    });
+        Number(
+          reservationId
+        )
+    );
 
   if (!reservation) {
-    showDashboardNotice("Rezervace nebyla nalezena.");
+    showDashboardNotice(
+      "Rezervace nebyla nalezena."
+    );
     return;
   }
 
   const selectedTable =
-    restaurantTables.find(item => {
-      return (
-        Number(item.id) ===
-        Number(tableId)
-      );
-    });
+    tableId !== null
+      ? restaurantTables.find(
+          item =>
+            Number(item.id) ===
+            tableId
+        ) || null
+      : null;
+
+  const selectedGroup =
+    tableGroupId !== null
+      ? tableGroups.find(
+          item =>
+            Number(item.id) ===
+            tableGroupId
+        ) || null
+      : null;
+
+  if (
+    resourceValue &&
+    !selectedTable &&
+    !selectedGroup
+  ) {
+    showDashboardNotice(
+      "Vybrané místo nebylo nalezeno."
+    );
+
+    renderReservations(
+      getFilteredReservations()
+    );
+    return;
+  }
 
   if (
     selectedTable &&
@@ -4933,9 +5813,10 @@ async function assignTable(
     ) &&
     Number(
       reservation.table_id
-    ) !== Number(
-      selectedTable.id
-    )
+    ) !==
+      Number(
+        selectedTable.id
+      )
   ) {
     showDashboardNotice(
       `${selectedTable.name} je součástí spojených stolů.`
@@ -4944,13 +5825,13 @@ async function assignTable(
     renderReservations(
       getFilteredReservations()
     );
-
     return;
   }
 
   if (
     selectedTable &&
-    selectedTable.active === false
+    selectedTable.active ===
+      false
   ) {
     showDashboardNotice(
       `${selectedTable.name} je neaktivní.`
@@ -4959,25 +5840,25 @@ async function assignTable(
     renderReservations(
       getFilteredReservations()
     );
-
     return;
   }
 
   if (
     selectedTable &&
-    Number(reservation.people) >
-      Number(selectedTable.capacity)
+    Number(
+      reservation.people
+    ) >
+      Number(
+        selectedTable.capacity
+      )
   ) {
     showDashboardNotice(
-      `${selectedTable.name} má pouze ` +
-      `${selectedTable.capacity} míst, ale ` +
-      `rezervace je pro ${reservation.people} osob.`
+      `${selectedTable.name} má pouze ${selectedTable.capacity} míst, ale rezervace je pro ${reservation.people} osob.`
     );
 
     renderReservations(
       getFilteredReservations()
     );
-
     return;
   }
 
@@ -4990,27 +5871,110 @@ async function assignTable(
     )
   ) {
     showDashboardNotice(
-      `${selectedTable.name} je v tomto čase obsazený.\n\n` +
-      "Vyber jiný stůl nebo jiný čas."
+      `${selectedTable.name} je v tomto čase obsazený.\n\nVyber jiné místo nebo jiný čas.`
     );
 
     renderReservations(
       getFilteredReservations()
     );
-
     return;
+  }
+
+  if (
+    selectedGroup
+  ) {
+    const preservingCurrentGroup =
+      Number(
+        reservation
+          .table_group_id
+      ) ===
+      Number(
+        selectedGroup.id
+      );
+
+    if (
+      !preservingCurrentGroup &&
+      !isUsableTableGroup(
+        selectedGroup
+      )
+    ) {
+      showDashboardNotice(
+        "Vybraná skupina stolů není dostupná."
+      );
+
+      renderReservations(
+        getFilteredReservations()
+      );
+      return;
+    }
+
+    const groupCapacity =
+      Number(
+        selectedGroup
+          .total_capacity ||
+        0
+      );
+
+    if (
+      Number(
+        reservation.people
+      ) >
+      groupCapacity
+    ) {
+      showDashboardNotice(
+        `${selectedGroup.name || "Spojené stoly"} mají pouze ${groupCapacity} míst, ale rezervace je pro ${reservation.people} osob.`
+      );
+
+      renderReservations(
+        getFilteredReservations()
+      );
+      return;
+    }
+
+    if (
+      hasTableGroupConflict(
+        selectedGroup.id,
+        reservation,
+        reservation.id
+      )
+    ) {
+      showDashboardNotice(
+        `${selectedGroup.name || "Spojené stoly"} jsou v tomto čase obsazené.\n\nVyber jiné místo nebo jiný čas.`
+      );
+
+      renderReservations(
+        getFilteredReservations()
+      );
+      return;
+    }
   }
 
   try {
     const response =
       await authorizedFetch(
-        `${SUPABASE_URL}/rest/v1/reservations?id=eq.${Number(reservationId)}&restaurant_id=eq.${currentRestaurantId}`,
+        `${SUPABASE_URL}/rest/v1/reservations?id=eq.${Number(
+          reservationId
+        )}&restaurant_id=eq.${currentRestaurantId}`,
         {
-          method: "PATCH",
-          headers: getHeaders(),
-          body: JSON.stringify({
-            table_id: tableId
-          })
+          method:
+            "PATCH",
+          headers:
+            getHeaders(),
+          body:
+            JSON.stringify({
+              table_id:
+                selectedTable
+                  ? Number(
+                      selectedTable.id
+                    )
+                  : null,
+              table_group_id:
+                selectedGroup
+                  ? Number(
+                      selectedGroup.id
+                    )
+                  : null
+            })
         }
       );
 
@@ -5023,10 +5987,12 @@ async function assignTable(
     await loadReservations();
     await loadReservationHistory();
   } catch (error) {
-    console.error(error);
+    console.error(
+      error
+    );
 
     showDashboardNotice(
-      "Nepodařilo se přiřadit stůl."
+      "Nepodařilo se přiřadit stůl nebo skupinu."
     );
 
     renderReservations(
@@ -5034,17 +6000,6 @@ async function assignTable(
     );
   }
 }
-
-/* =========================================================
-   MENU
-========================================================= */
-
-const FOOD_IMAGE_TYPES = new Map([
-  ["image/jpeg", "jpg"],
-  ["image/png", "png"],
-  ["image/webp", "webp"]
-]);
-const MAX_FOOD_IMAGE_BYTES = 5 * 1024 * 1024;
 
 function getSafeHttpImageUrl(value) {
   const raw = String(value || "").trim();
