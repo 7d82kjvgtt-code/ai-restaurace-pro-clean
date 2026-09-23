@@ -3036,9 +3036,13 @@ function renderFloorMap() {
       const capacity =
         item.capacity || item.seats || 0;
 
+      const safeItemId = Number(item.id);
+      const safeX = Number.isFinite(Number(item.x)) ? Number(item.x) : 0;
+      const safeY = Number.isFinite(Number(item.y)) ? Number(item.y) : 0;
+
       const clickAction = item.isGroup
-  ? `onclick="openTableGroup(${item.id})"`
-  : `onclick="handleTableClick(event, ${item.id})"`;
+        ? `onclick="openTableGroup(${safeItemId})"`
+        : `onclick="handleTableClick(event, ${safeItemId})"`;
       const groupClass = item.isGroup
         ? " table-group"
         : "";
@@ -3048,10 +3052,10 @@ function renderFloorMap() {
           class="table ${statusClass}${groupClass}"
           ${
             item.isGroup
-              ? `data-group-id="${item.id}"`
-              : `data-table-id="${item.id}"`
+              ? `data-group-id="${safeItemId}"`
+              : `data-table-id="${safeItemId}"`
           }
-          style="left:${item.x}px; top:${item.y}px;"
+          style="left:${safeX}px; top:${safeY}px;"
           title="${escapeHtml(item.name || `Stůl ${item.id}`)} • ${Number(capacity) || 0} míst • ${escapeHtml(statusLabel)}"
           ${clickAction}
         >
@@ -5103,9 +5107,11 @@ function renderCalendar() {
   const eventsHtml = buildCalendarLayout(dayReservations)
     .map(event => {
       const r = event.reservation;
-      const widthPercent = 100 / event.columnCount;
-      const leftPercent = event.column * widthPercent;
-      const height = Math.max(30, event.duration - 2);
+      const widthPercent = 100 / Math.max(1, Number(event.columnCount) || 1);
+      const leftPercent = (Number(event.column) || 0) * widthPercent;
+      const height = Math.max(30, (Number(event.duration) || 0) - 2);
+      const startPosition = Math.max(0, Number(event.start) || 0);
+      const reservationId = Number(r.id);
       const statusClass = getCalendarStatusClass(r.status);
       const statusLabel = getCalendarStatusLabel(r.status);
       const tableName = r.table_name
@@ -5116,10 +5122,10 @@ function renderCalendar() {
         <button
           type="button"
           class="calendar-reservation ${statusClass}"
-          style="top:${event.start}px;height:${height}px;left:calc(${leftPercent}% + 3px);width:calc(${widthPercent}% - 6px);"
-          data-reservation-id="${escapeHtml(r.id)}"
-          data-duration="${event.duration}"
-          onclick="handleCalendarReservationClick(event, '${r.id}')"
+          style="top:${startPosition}px;height:${height}px;left:calc(${leftPercent}% + 3px);width:calc(${widthPercent}% - 6px);"
+          data-reservation-id="${reservationId}"
+          data-duration="${Math.max(0, Number(event.duration) || 0)}"
+          onclick="handleCalendarReservationClick(event, '${reservationId}')"
           aria-label="Upravit rezervaci ${escapeHtml(r.name || "")}" 
         >
           <span class="calendar-time">${escapeHtml(r.time || "")}</span>
