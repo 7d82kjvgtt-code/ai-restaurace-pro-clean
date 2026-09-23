@@ -1810,6 +1810,7 @@ function historyFieldLabel(field) {
     time: "Čas",
     duration_minutes: "Délka",
     table_id: "Stůl",
+    table_group_id: "Skupina stolů",
     status: "Stav",
     phone: "Telefon",
     email: "E-mail",
@@ -1833,7 +1834,7 @@ function getHistoryChanges(entry) {
 
   const before = entry.before_data || {};
   const after = entry.after_data || {};
-  const tracked = ["name", "people", "date", "time", "duration_minutes", "table_id", "status", "phone", "email", "note"];
+  const tracked = ["name", "people", "date", "time", "duration_minutes", "table_id", "table_group_id", "status", "phone", "email", "note"];
 
   return tracked
     .filter(field => String(before[field] ?? "") !== String(after[field] ?? ""))
@@ -3005,7 +3006,7 @@ async function loadTables() {
       `${SUPABASE_URL}/rest/v1/restaurant_tables?restaurant_id=eq.${currentRestaurantId}&select=*&order=name.asc`
     );
 const groupsResponse = await authorizedFetch(
-  `${SUPABASE_URL}/rest/v1/table_groups?restaurant_id=eq.${currentRestaurantId}&active=eq.true&select=*&order=id.asc`
+  `${SUPABASE_URL}/rest/v1/table_groups?restaurant_id=eq.${currentRestaurantId}&select=*&order=id.asc`
 );
     const data = await response.json();
 const groupsData = await groupsResponse.json();
@@ -3192,7 +3193,10 @@ function renderFloorMap() {
 
   const activeGroups = tableGroups.filter((group) => {
     const groupRoom = group.room || "Hlavní sál";
-    return groupRoom === selectedRoom;
+    return (
+      group.active !== false &&
+      groupRoom === selectedRoom
+    );
   });
 
   const groupedTableIds = new Set(
@@ -4509,7 +4513,6 @@ function hasTableConflict(
       tableGroups
         .filter(
           group =>
-            group?.active !== false &&
             Array.isArray(
               group?.table_ids
             ) &&
@@ -4566,6 +4569,250 @@ function hasTableConflict(
       item
     );
   });
+}
+
+function getTableGroupMemberIds(group) {
+  return Array.isArray(
+    group?.table_ids
+  )
+    ? group.table_ids
+        .map(Number)
+        .filter(
+          id =>
+            Number.isInteger(id) &&
+            id > 0
+        )
+    : [];
+}
+
+function isUsableTableGroup(group) {
+  if (
+    !group ||
+    group.active === false
+  ) {
+    return false;
+  }
+
+  const memberIds =
+    getTableGroupMemberIds(
+      group
+    );
+
+  if (memberIds.length < 2) {
+    return false;
+  }
+
+  const activeTableIds =
+    new Set(
+      restaurantTables
+        .filter(
+          table =>
+            table.active !== false
+        )
+        .map(
+          table =>
+            Number(table.id)
+        )
+    );
+
+  return memberIds.every(
+    id =>
+      activeTableIds.has(id)
+  );
+}
+
+function hasTableGroupConflict(
+  groupId,
+  reservation,
+  ignoredReservationId = null
+) {
+  const numericGroupId =
+    Number(groupId);
+
+  const group =
+    tableGroups.find(
+      item =>
+        Number(item.id) ===
+        numericGroupId
+    );
+
+  if (!group) {
+    return true;
+  }
+
+  const memberIds =
+    new Set(
+      getTableGroupMemberIds(
+        group
+      )
+    );
+
+  return reservations.some(
+    item => {
+      if (
+        ignoredReservationId !== null &&
+        Number(item.id) ===
+          Number(
+            ignoredReservationId
+          )
+      ) {
+        return false;
+      }
+
+      if (
+        (item.status || "Čeká") ===
+        "Zrušeno"
+      ) {
+        return false;
+      }
+
+      let usesOverlappingResource =
+        memberIds.has(
+          Number(item.table_id)
+        );
+
+      if (
+        !usesOverlappingResource &&
+        item.table_group_id !== null &&
+        item.table_group_id !== undefined
+      ) {
+        const existingGroup =
+          tableGroups.find(
+            candidate =>
+              Number(
+                candidate.id
+              ) ===
+              Number(
+                item.table_group_id
+              )
+          );
+
+        if (
+          Number(
+            item.table_group_id
+          ) === numericGroupId
+        ) {
+          usesOverlappingResource =
+            true;
+        } else if (
+          existingGroup
+        ) {
+          usesOverlappingResource =
+            getTableGroupMemberIds(
+              existingGroup
+            ).some(
+              id =>
+                memberIds.has(
+                  id
+                )
+            );
+        }
+      }
+
+      if (
+        !usesOverlappingResource
+      ) {
+        return false;
+      }
+
+      return reservationsOverlap(
+        reservation,
+        item
+      );
+    }
+  );
+}
+
+function findBestAvailableGroup(
+  reservation
+) {
+  return (
+    tableGroups
+      .filter(
+        group =>
+          isUsableTableGroup(
+            group
+          ) &&
+          Number(
+            group.total_capacity || 0
+          ) >=
+            Number(
+              reservation.people
+            ) &&
+          !hasTableGroupConflict(
+            group.id,
+            reservation,
+            reservation.id
+          )
+      )
+      .sort(
+        (first, second) =>
+          Number(
+            first.total_capacity || 0
+          ) -
+          Number(
+            second.total_capacity || 0
+          )
+      )[0] || null
+  );
+}
+
+function findBestAvailableResource(
+  reservation
+) {
+  const table =
+    findBestAvailableTable(
+      reservation
+    );
+
+  if (table) {
+    return {
+      type: "table",
+      value:
+        String(
+          Number(table.id)
+        ),
+      id:
+        Number(table.id),
+      name:
+        table.name ||
+        `Stůl ${table.id}`,
+      capacity:
+        Number(
+          table.capacity || 0
+        ),
+      table,
+      group: null
+    };
+  }
+
+  const group =
+    findBestAvailableGroup(
+      reservation
+    );
+
+  if (!group) {
+    return null;
+  }
+
+  return {
+    type: "group",
+    value:
+      `group:${Number(
+        group.id
+      )}`,
+    id:
+      Number(group.id),
+    name:
+      group.name ||
+      "Spojené stoly",
+    capacity:
+      Number(
+        group.total_capacity || 0
+      ),
+    table: null,
+    group
+  };
 }
 
 function findBestAvailableTable(reservation) {
