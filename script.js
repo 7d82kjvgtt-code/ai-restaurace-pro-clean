@@ -709,7 +709,7 @@ async function ulozitRezervaci() {
   const phone = document.getElementById("telefon").value.trim();
   const email = document.getElementById("email").value.trim();
   const note = document.getElementById("poznamka").value.trim();
-  const namePattern = /^[A-Za-zÁ-Žá-ž\s'-]{2,50}$/;
+  const namePattern = /^[\p{L}\p{M}][\p{L}\p{M}\s.'’\-]{1,79}$/u;
 
   if (!namePattern.test(name)) {
     showPublicReservationNotice("Zadej platné jméno alespoň o 2 písmenech.");
@@ -730,6 +730,11 @@ async function ulozitRezervaci() {
 
   if (!date) {
     showPublicReservationNotice("Zadej platné datum rezervace.");
+    return;
+  }
+
+  if (!time) {
+    showPublicReservationNotice("Vyber volný čas rezervace.");
     return;
   }
 
@@ -821,10 +826,8 @@ async function ulozitRezervaci() {
       return;
     }
 
-    const automaticallySelectedTable = createData.table || {};
-
     showPublicReservationNotice(
-      `✅ Rezervace uložena. Automaticky byl vybrán ${automaticallySelectedTable.name}.`,
+      "✅ Rezervace byla úspěšně vytvořena. Potvrzení jsme poslali na zadaný e-mail.",
       "success"
     );
 
