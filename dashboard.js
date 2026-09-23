@@ -2308,10 +2308,9 @@ function editReservation(id) {
         reservation.id;
 
     document.getElementById("editReservationName").value =
-        reservation.name || "";
-
-    document.getElementById("editReservationLastName").value =
-        reservation.last_name || "";
+        getReservationGuestName(reservation) === "-"
+            ? ""
+            : getReservationGuestName(reservation);
 
     document.getElementById("editReservationPeople").value =
         reservation.people || "";
@@ -2455,12 +2454,6 @@ async function saveReservationChanges() {
       .value
       .trim();
 
-  const lastName =
-    document
-      .getElementById("editReservationLastName")
-      .value
-      .trim();
-
   const people = Number(
     document.getElementById("editReservationPeople").value
   );
@@ -2554,7 +2547,7 @@ async function saveReservationChanges() {
   const updatedReservation = {
     id,
     name,
-    last_name: lastName || null,
+    last_name: null,
     people,
     date,
     time,
@@ -2614,7 +2607,7 @@ async function saveReservationChanges() {
         }),
         body: JSON.stringify({
           name,
-          last_name: lastName || null,
+          last_name: null,
           people,
           date,
           time,
@@ -3641,7 +3634,6 @@ function createReservationFromTable() {
 }
 async function saveNewReservation() {
     const name = document.getElementById("newName").value.trim();
-    const lastName = document.getElementById("newLastName").value.trim();
     const people = Number(document.getElementById("newPeople").value);
     const date = document.getElementById("newDate").value;
     const time = document.getElementById("newTime").value;
@@ -3728,7 +3720,7 @@ async function saveNewReservation() {
 
     const newReservation = {
         name,
-        last_name: lastName || null,
+        last_name: null,
         people,
         date,
         time,
@@ -3769,7 +3761,6 @@ async function saveNewReservation() {
 
         [
             "newName",
-            "newLastName",
             "newPeople",
             "newDate",
             "newTime",
