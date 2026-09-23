@@ -125,7 +125,7 @@ async function getOwnerContext(
     await supabase(
       `/rest/v1/restaurant_team?user_id=eq.${encodeURIComponent(
         userId
-      )}&active=eq.true&select=restaurant_id,role&limit=1`
+      )}&active=eq.true&select=restaurant_id,role&order=id.asc&limit=2`
     );
 
   if (!membershipResponse.ok) {
@@ -144,6 +144,23 @@ async function getOwnerContext(
 
   const memberships =
     await membershipResponse.json();
+
+  if (
+    Array.isArray(
+      memberships
+    ) &&
+    memberships.length > 1
+  ) {
+    const error =
+      new Error(
+        "Účet má více aktivních restaurací. Přepínač restaurací zatím není ve V1 podporovaný."
+      );
+
+    error.status =
+      409;
+
+    throw error;
+  }
 
   const membership =
     Array.isArray(
