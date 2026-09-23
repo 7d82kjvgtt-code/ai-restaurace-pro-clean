@@ -1259,7 +1259,7 @@ async function getAvailableTimesOnServer(
         ),
 
         supabaseServiceJson(
-          `/rest/v1/table_groups?restaurant_id=eq.${restaurantId}&select=id,name,table_ids,total_capacity,room&order=total_capacity.asc,id.asc`,
+          `/rest/v1/table_groups?restaurant_id=eq.${restaurantId}&active=eq.true&select=id,name,table_ids,total_capacity,room,active&order=total_capacity.asc,id.asc`,
           {
             method: "GET"
           }
@@ -1426,6 +1426,18 @@ async function getAvailableTimesOnServer(
           peopleNumber
       );
 
+    const activeTableIds =
+      new Set(
+        (
+          Array.isArray(tables)
+            ? tables
+            : []
+        ).map(
+          table =>
+            Number(table.id)
+        )
+      );
+
     const groupCandidates =
       (
         Array.isArray(
@@ -1435,6 +1447,7 @@ async function getAvailableTimesOnServer(
           : []
       ).filter(
         group =>
+          group.active !== false &&
           Number(
             group
               .total_capacity
@@ -1444,7 +1457,15 @@ async function getAvailableTimesOnServer(
             group.table_ids
           ) &&
           group.table_ids
-            .length >= 2
+            .length >= 2 &&
+          group.table_ids
+            .map(Number)
+            .every(
+              id =>
+                activeTableIds.has(
+                  id
+                )
+            )
       );
 
     if (
@@ -1880,7 +1901,7 @@ async function createReservationOnServer(
         ),
 
         supabaseServiceJson(
-          `/rest/v1/table_groups?restaurant_id=eq.${restaurantId}&select=id,name,table_ids,total_capacity,room&order=total_capacity.asc,id.asc`,
+          `/rest/v1/table_groups?restaurant_id=eq.${restaurantId}&active=eq.true&select=id,name,table_ids,total_capacity,room,active&order=total_capacity.asc,id.asc`,
           {
             method: "GET"
           }
@@ -1957,6 +1978,18 @@ async function createReservationOnServer(
           peopleNumber
       );
 
+    const activeTableIds =
+      new Set(
+        (
+          Array.isArray(tables)
+            ? tables
+            : []
+        ).map(
+          table =>
+            Number(table.id)
+        )
+      );
+
     const groupCandidates =
       (
         Array.isArray(
@@ -1966,6 +1999,7 @@ async function createReservationOnServer(
           : []
       ).filter(
         group =>
+          group.active !== false &&
           Number(
             group
               .total_capacity
@@ -1975,7 +2009,15 @@ async function createReservationOnServer(
             group.table_ids
           ) &&
           group.table_ids
-            .length >= 2
+            .length >= 2 &&
+          group.table_ids
+            .map(Number)
+            .every(
+              id =>
+                activeTableIds.has(
+                  id
+                )
+            )
       );
 
     if (
