@@ -1170,6 +1170,79 @@ async function getReservationPlaceName(
 }
 
 
+async function getPublicRestaurantInfoOnServer(
+  req,
+  res
+) {
+  const cleanRestaurantSlug =
+    cleanSlug(
+      req.body?.slug || ""
+    );
+
+  if (
+    !cleanRestaurantSlug ||
+    cleanRestaurantSlug.length >
+      120
+  ) {
+    return res
+      .status(400)
+      .json({
+        error:
+          "Chybí platná restaurace."
+      });
+  }
+
+  try {
+    const restaurant =
+      await getPublishedRestaurantBySlug(
+        cleanRestaurantSlug
+      );
+
+    return res
+      .status(200)
+      .json({
+        success:
+          true,
+        restaurant: {
+          id:
+            Number(
+              restaurant.id
+            ),
+          name:
+            String(
+              restaurant.name ||
+              "Restaurace"
+            ),
+          slug:
+            String(
+              restaurant.slug ||
+              cleanRestaurantSlug
+            )
+        }
+      });
+  } catch (error) {
+    console.error(
+      "Chyba při načítání veřejných údajů restaurace:",
+      error
+    );
+
+    return res
+      .status(
+        mapReservationError(
+          error
+        )
+      )
+      .json({
+        error:
+          publicErrorMessage(
+            error,
+            "Restauraci se nepodařilo načíst."
+          )
+      });
+  }
+}
+
+
 async function getAvailableTimesOnServer(
   req,
   res
@@ -2635,6 +2708,16 @@ export default async function handler(
         error:
           "Povolena je pouze metoda POST."
       });
+  }
+
+  if (
+    req.body?.action ===
+    "restaurant-info"
+  ) {
+    return getPublicRestaurantInfoOnServer(
+      req,
+      res
+    );
   }
 
   if (
