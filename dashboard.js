@@ -2729,6 +2729,7 @@ async function updateReservation(id, data) {
     }
 
     await loadReservations();
+    return true;
   } catch (error) {
     console.error(error);
 
@@ -5200,6 +5201,28 @@ function attachCalendarDragHandlers() {
           ...draggedReservation,
           time: newTime
         };
+
+        if (
+          (proposedReservation.status || "Čeká") !== "Zrušeno"
+        ) {
+          const openingAvailability =
+            await checkDashboardOpeningAvailability({
+              date: proposedReservation.date,
+              time: newTime,
+              durationMinutes:
+                Number(
+                  proposedReservation.duration_minutes || 120
+                )
+            });
+
+          if (!openingAvailability.ok) {
+            showDashboardNotice(
+              openingAvailability.message
+            );
+            renderCalendar();
+            return;
+          }
+        }
 
         if (
           proposedReservation.table_id !== null &&
