@@ -3983,6 +3983,12 @@ function handleTableClick(event, tableId) {
   openTable(tableId);
 }
 function openTableGroup(groupId) {
+  selectedTableId =
+    null;
+
+  selectedTableReservationId =
+    null;
+
   const group = tableGroups.find(
     (item) => Number(item.id) === Number(groupId)
   );
@@ -4176,98 +4182,162 @@ function openTableGroup(groupId) {
   }
 }
 function openTable(tableId) {
-    const table = restaurantTables.find(
-        t => Number(t.id) === Number(tableId)
+  const table =
+    restaurantTables.find(
+      item =>
+        Number(item.id) ===
+        Number(tableId)
     );
 
-    if (!table) return;
+  if (!table) {
+    return;
+  }
 
-    selectedTableId = tableId;
+  selectedTableId =
+    Number(tableId);
 
-    const tableStatus = getTableStatus(tableId);
+  const tableStatus =
+    getTableStatus(
+      tableId
+    );
 
-    const reservation = reservations.find(r => {
-        if (Number(r.table_id) !== Number(tableId)) {
-            return false;
+  const reservation =
+    reservations.find(
+      item => {
+        if (
+          Number(item.table_id) !==
+          Number(tableId)
+        ) {
+          return false;
         }
 
-        if ((r.status || "Čeká") === "Zrušeno") {
-            return false;
-        }
-
-        const start = new Date(`${r.date}T${r.time}`);
-        const end = new Date(start);
-        end.setHours(end.getHours() + 2);
-
-        const now = new Date();
-        const minutesUntilStart =
-            (start.getTime() - now.getTime()) / 60000;
+        const liveStatus =
+          getReservationLiveStatus(
+            item
+          );
 
         return (
-            (now >= start && now <= end) ||
-            (minutesUntilStart > 0 && minutesUntilStart <= 30)
+          liveStatus === "occupied" ||
+          liveStatus === "busy"
         );
-    });
+      }
+    ) || null;
 
-    selectedTableReservationId = reservation
-        ? Number(reservation.id)
-        : null;
+  selectedTableReservationId =
+    reservation
+      ? Number(reservation.id)
+      : null;
 
-    const primaryButton =
-        document.getElementById("tableModalPrimaryButton");
+  const primaryButton =
+    document.getElementById(
+      "tableModalPrimaryButton"
+    );
 
-    primaryButton.textContent = reservation
+  const deleteButton =
+    document.getElementById(
+      "deleteTableButton"
+    );
+
+  if (primaryButton) {
+    primaryButton.textContent =
+      reservation
         ? "✏️ Upravit rezervaci"
         : "+ Nová rezervace";
 
-    document.getElementById("tableModalTitle").textContent =
-        table.name;
+    primaryButton.onclick =
+      handleTableModalPrimaryAction;
+  }
 
-    document.getElementById("tableModalCapacity").textContent =
-        table.capacity;
+  if (deleteButton) {
+    deleteButton.style.display =
+      "";
+  }
 
-    document.getElementById("tableModalStatus").textContent =
-        !table.active
-            ? "Neaktivní"
-            : tableStatus === "occupied"
-                ? "Obsazený"
-                : tableStatus === "busy"
-                    ? "Brzy obsazený"
-                    : "Volný";
+  document
+    .getElementById(
+      "tableModalTitle"
+    )
+    .textContent =
+      table.name;
 
-    if (reservation) {
-        const tableModalCapacity =
-            document.getElementById("tableModalCapacity");
+  document
+    .getElementById(
+      "tableModalCapacity"
+    )
+    .textContent =
+      table.capacity;
 
-        if (tableModalCapacity) {
-            tableModalCapacity.replaceChildren();
+  document
+    .getElementById(
+      "tableModalStatus"
+    )
+    .textContent =
+      !table.active
+        ? "Neaktivní"
+        : tableStatus === "occupied"
+          ? "Obsazený"
+          : tableStatus === "busy"
+            ? "Brzy obsazený"
+            : "Volný";
 
-            [
-                `👤 ${getReservationGuestName(reservation)}`,
-                `👥 ${reservation.people || "-"} osoby`,
-                `🕒 ${reservation.time || "-"}`,
-                `📞 ${reservation.phone || "-"}`
-            ].forEach((line, index) => {
-                if (index > 0) {
-                    tableModalCapacity.appendChild(
-                        document.createElement("br")
-                    );
-                }
+  if (reservation) {
+    const tableModalCapacity =
+      document.getElementById(
+        "tableModalCapacity"
+      );
 
-                tableModalCapacity.appendChild(
-                    document.createTextNode(String(line))
-                );
-            });
+    if (tableModalCapacity) {
+      tableModalCapacity
+        .replaceChildren();
+
+      [
+        `👤 ${getReservationGuestName(
+          reservation
+        )}`,
+        `👥 ${reservation.people || "-"} osoby`,
+        `🕒 ${String(
+          reservation.time || "-"
+        ).slice(0, 5)}`,
+        `📞 ${reservation.phone || "-"}`
+      ].forEach(
+        (line, index) => {
+          if (index > 0) {
+            tableModalCapacity
+              .appendChild(
+                document.createElement(
+                  "br"
+                )
+              );
+          }
+
+          tableModalCapacity
+            .appendChild(
+              document.createTextNode(
+                String(line)
+              )
+            );
         }
-
-        document.getElementById("tableModalStatus").textContent =
-            reservation.status || "Čeká";
+      );
     }
 
     document
-        .getElementById("tableModal")
-        .classList.add("show");
+      .getElementById(
+        "tableModalStatus"
+      )
+      .textContent =
+        reservation.status ||
+        "Čeká";
+  }
+
+  document
+    .getElementById(
+      "tableModal"
+    )
+    .classList.add(
+      "show"
+    );
 }
+
 function closeTableModal() {
     document
         .getElementById("tableModal")
