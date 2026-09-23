@@ -1824,7 +1824,30 @@ function formatHistoryValue(field, value) {
   if (field === "date") return formatDate(value);
   if (field === "time") return String(value).slice(0, 5);
   if (field === "duration_minutes") return `${value} min`;
-  if (field === "table_id") return value ? (getTableName(value) || `Stůl ${value}`) : "Bez stolu";
+  if (field === "table_id") {
+    return value
+      ? (getTableName(value) || `Stůl ${value}`)
+      : "Bez stolu";
+  }
+
+  if (field === "table_group_id") {
+    if (!value) {
+      return "Bez skupiny";
+    }
+
+    const group =
+      tableGroups.find(
+        item =>
+          Number(item.id) ===
+          Number(value)
+      );
+
+    return (
+      group?.name ||
+      `Spojené stoly #${value}`
+    );
+  }
+
   return String(value);
 }
 
@@ -1896,7 +1919,7 @@ async function loadReservationHistory() {
   } catch (error) {
     console.error("Historii rezervací se nepodařilo načíst:", error);
     if (list) {
-      list.innerHTML = `<div class="history-empty">Historie zatím není připravená. Spusť SQL soubor pro historii v Supabase.</div>`;
+      list.innerHTML = `<div class="history-empty">Historii rezervací se teď nepodařilo načíst. Zkus stránku obnovit.</div>`;
     }
   }
 }
@@ -7145,7 +7168,7 @@ async function loadTeamMembers() {
   } catch (error) {
     console.error('Tým se nepodařilo načíst:', error);
     teamMembers = [];
-    if (list) list.innerHTML = `<div class="history-empty">Tým zatím není připravený. Spusť SQL soubor supabase-team-roles.sql.</div>`;
+    if (list) list.innerHTML = `<div class="history-empty">Tým se teď nepodařilo načíst. Zkus stránku obnovit.</div>`;
   }
 }
 
@@ -7754,7 +7777,7 @@ async function loadOpeningHours() {
     renderOpeningHours();
   } catch (error) {
     console.error(error);
-    showDashboardNotice("Nejdřív spusť soubor supabase-opening-hours.sql v Supabase SQL Editoru.");
+    showDashboardNotice("Provozní dobu se teď nepodařilo načíst. Zkus stránku obnovit.");
   }
 }
 
@@ -7968,7 +7991,7 @@ async function loadReservationSettings() {
     console.error("Nastavení rezervací se nepodařilo načíst:", error);
     reservationSettings = { ...DEFAULT_RESERVATION_SETTINGS };
     renderReservationSettings();
-    showDashboardNotice("Pro nastavení rezervací spusť v Supabase nový SQL soubor z projektu.", "info");
+    showDashboardNotice("Nastavení rezervací se teď nepodařilo načíst. Zkus stránku obnovit.", "info");
   }
 }
 
