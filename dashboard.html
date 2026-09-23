@@ -348,7 +348,7 @@
     </div>
 
     <div class="form-grid">
-        <input id="newName" type="text" placeholder="Celé jméno">
+        <input id="newName" type="text" maxlength="120" placeholder="Celé jméno">
 
         <input id="newPeople" type="number" placeholder="Počet osob">
 
@@ -373,11 +373,11 @@
             Zadej počet osob, datum a čas. Systém potom doporučí nejlepší volný stůl.
         </div>
 
-        <input id="newPhone" type="text" placeholder="Telefon">
+        <input id="newPhone" type="text" maxlength="40" placeholder="Telefon">
 
-        <input id="newEmail" type="email" placeholder="E-mail">
+        <input id="newEmail" type="email" maxlength="320" placeholder="E-mail">
 
-        <textarea id="newNote" placeholder="Poznámka"></textarea>
+        <textarea id="newNote" maxlength="1000" placeholder="Poznámka"></textarea>
 
         <button onclick="saveNewReservation()" class="successButton">
             Uložit rezervaci
@@ -424,11 +424,11 @@
         <div class="team-invite-grid">
           <label>
             Jméno
-            <input id="teamInviteName" type="text" placeholder="Např. Petra Nováková">
+            <input id="teamInviteName" type="text" maxlength="120" placeholder="Např. Petra Nováková">
           </label>
           <label>
             E-mail
-            <input id="teamInviteEmail" type="email" placeholder="zamestnanec@restaurace.cz" required>
+            <input id="teamInviteEmail" type="email" maxlength="320" placeholder="zamestnanec@restaurace.cz" required>
           </label>
           <label>
             Role
@@ -519,7 +519,7 @@
     <input id="blockDate" type="date">
     <input id="blockStart" type="time">
     <input id="blockEnd" type="time">
-    <input id="blockReason" type="text" placeholder="Důvod, například soukromá akce">
+    <input id="blockReason" type="text" maxlength="300" placeholder="Důvod, například soukromá akce">
     <button type="button" class="dangerButton" onclick="addBlockedTime()">Přidat blokaci</button>
   </div>
   <div id="blockedTimesList" class="blocked-times-list"></div>
@@ -787,6 +787,7 @@
           <input
             id="foodName"
             type="text"
+            maxlength="120"
             placeholder="Název jídla"
           >
 
@@ -801,6 +802,7 @@
           <input
             id="foodEmoji"
             type="text"
+            maxlength="16"
             placeholder="Emoji např. 🍕"
           >
 
@@ -819,12 +821,14 @@
         <textarea
           id="foodDescription"
           rows="3"
+          maxlength="1000"
           placeholder="Popis jídla"
         ></textarea>
 
         <textarea
           id="foodIngredients"
           rows="3"
+          maxlength="2000"
           placeholder="Ingredience"
         ></textarea>
 
@@ -833,12 +837,14 @@
           <input
             id="foodAllergens"
             type="text"
+            maxlength="200"
             placeholder="Alergeny např. 1, 3, 7"
           >
 
           <input
             id="foodWeight"
             type="text"
+            maxlength="80"
             placeholder="Gramáž / objem"
           >
 
@@ -941,7 +947,7 @@
 
             <label>
                 Celé jméno
-                <input id="editReservationName" type="text">
+                <input id="editReservationName" type="text" maxlength="120">
             </label>
 
             <label>
@@ -988,17 +994,17 @@
 
             <label>
                 Telefon
-                <input id="editReservationPhone" type="tel">
+                <input id="editReservationPhone" type="tel" maxlength="40">
             </label>
 
             <label>
                 E-mail
-                <input id="editReservationEmail" type="email">
+                <input id="editReservationEmail" type="email" maxlength="320">
             </label>
 
             <label class="reservation-modal-full">
                 Poznámka
-                <textarea id="editReservationNote"></textarea>
+                <textarea id="editReservationNote" maxlength="1000"></textarea>
             </label>
 
         </div>
