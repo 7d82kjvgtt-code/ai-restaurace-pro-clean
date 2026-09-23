@@ -2384,10 +2384,17 @@ function updateEditReservationTableOptions(preferredTableId = undefined) {
         status: statusInput.value || "Čeká"
     };
 
-    const options = restaurantTables
+    tableSelect.replaceChildren();
+
+    const emptyOption = document.createElement("option");
+    emptyOption.value = "";
+    emptyOption.textContent = "Bez stolu";
+    tableSelect.appendChild(emptyOption);
+
+    restaurantTables
         .filter(table => table.active || String(table.id) === previousValue)
         .sort((a, b) => Number(a.capacity) - Number(b.capacity))
-        .map(table => {
+        .forEach(table => {
             const tooSmall = people > Number(table.capacity || 0);
             const occupied = proposedReservation.status !== "Zrušeno" &&
                 proposedReservation.date && proposedReservation.time &&
@@ -2400,11 +2407,12 @@ function updateEditReservationTableOptions(preferredTableId = undefined) {
             else if (occupied) label += " — obsazený";
             else label += " — volný";
 
-            return `<option value="${table.id}" ${unavailable ? "disabled" : ""}>${label}</option>`;
-        })
-        .join("");
-
-    tableSelect.innerHTML = `<option value="">Bez stolu</option>${options}`;
+            const option = document.createElement("option");
+            option.value = String(Number(table.id));
+            option.disabled = unavailable;
+            option.textContent = label;
+            tableSelect.appendChild(option);
+        });
 
     const preferredOption = [...tableSelect.options].find(option => option.value === previousValue);
     if (preferredOption) {
