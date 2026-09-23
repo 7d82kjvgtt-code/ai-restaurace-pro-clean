@@ -1964,6 +1964,7 @@ function historyActionLabel(action) {
 function historyFieldLabel(field) {
   const labels = {
     name: "Jméno",
+    last_name: "Příjmení",
     people: "Počet osob",
     date: "Datum",
     time: "Čas",
@@ -2016,7 +2017,7 @@ function getHistoryChanges(entry) {
 
   const before = entry.before_data || {};
   const after = entry.after_data || {};
-  const tracked = ["name", "people", "date", "time", "duration_minutes", "table_id", "table_group_id", "status", "phone", "email", "note"];
+  const tracked = ["name", "last_name", "people", "date", "time", "duration_minutes", "table_id", "table_group_id", "status", "phone", "email", "note"];
 
   return tracked
     .filter(field => String(before[field] ?? "") !== String(after[field] ?? ""))
@@ -2037,7 +2038,23 @@ function renderReservationHistory() {
 
   list.innerHTML = data.map(entry => {
     const changes = getHistoryChanges(entry);
-    const name = entry.reservation_name || entry.after_data?.name || entry.before_data?.name || "Rezervace";
+    const name =
+      entry.reservation_name ||
+      (
+        entry.after_data
+          ? getReservationGuestName(
+              entry.after_data
+            )
+          : ""
+      ) ||
+      (
+        entry.before_data
+          ? getReservationGuestName(
+              entry.before_data
+            )
+          : ""
+      ) ||
+      "Rezervace";
     const actor = entry.actor_email || (entry.action === "created" ? "Veřejný formulář / systém" : "Systém");
     const when = entry.created_at ? new Date(entry.created_at).toLocaleString("cs-CZ", { dateStyle: "short", timeStyle: "short" }) : "—";
 
@@ -3374,14 +3391,31 @@ async function updateReservation(id, data) {
   }
 }
 
+function sanitizeCsvCell(value) {
+  const text =
+    String(
+      value ?? ""
+    );
+
+  if (
+    /^[=+\-@]/.test(
+      text.trimStart()
+    )
+  ) {
+    return `'${text}`;
+  }
+
+  return text;
+}
+
 function exportReservations() {
-  const data = getFilteredReservations();
+  const data =
+    getFilteredReservations();
 
   if (!data.length) {
     showDashboardNotice(
       "Nejsou žádné rezervace ke stažení."
     );
-
     return;
   }
 
@@ -3390,58 +3424,95 @@ function exportReservations() {
     "Počet osob",
     "Datum",
     "Čas",
-    "Stůl",
+    "Stůl / skupina",
     "Telefon",
     "E-mail",
     "Poznámka",
     "Stav"
   ];
 
-  const rows = data.map(reservation => [
-    getReservationGuestName(reservation) === "-" ? "" : getReservationGuestName(reservation),
-    reservation.people || "",
-    reservation.date || "",
-    reservation.time || "",
-    getTableName(reservation.table_id),
-    reservation.phone || "",
-    reservation.email || "",
-    reservation.note || "",
-    reservation.status || "Čeká"
-  ]);
+  const rows =
+    data.map(
+      reservation => [
+        getReservationGuestName(
+          reservation
+        ) === "-"
+          ? ""
+          : getReservationGuestName(
+              reservation
+            ),
+        reservation.people || "",
+        reservation.date || "",
+        reservation.time || "",
+        getReservationTableLabel(
+          reservation
+        ),
+        reservation.phone || "",
+        reservation.email || "",
+        reservation.note || "",
+        reservation.status || "Čeká"
+      ]
+    );
 
   const quote = value => {
-    return `"${String(value).replace(
+    const safe =
+      sanitizeCsvCell(
+        value
+      );
+
+    return `"${safe.replace(
       /"/g,
       '""'
     )}"`;
   };
 
   const csv = [
-    columns.map(quote).join(";"),
-    ...rows.map(row =>
-      row.map(quote).join(";")
+    columns
+      .map(quote)
+      .join(";"),
+    ...rows.map(
+      row =>
+        row
+          .map(quote)
+          .join(";")
     )
   ].join("\n");
 
-  const blob = new Blob(
-    ["\uFEFF" + csv],
-    {
-      type: "text/csv;charset=utf-8;"
-    }
-  );
+  const blob =
+    new Blob(
+      ["\uFEFF" + csv],
+      {
+        type:
+          "text/csv;charset=utf-8;"
+      }
+    );
 
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
+  const url =
+    URL.createObjectURL(
+      blob
+    );
 
-  link.href = url;
+  const link =
+    document.createElement(
+      "a"
+    );
+
+  link.href =
+    url;
+
   link.download =
     `rezervace-${getLocalDateString()}.csv`;
 
-  document.body.appendChild(link);
+  document.body.appendChild(
+    link
+  );
+
   link.click();
   link.remove();
 
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(
+    url
+  );
 }
 
 /* =========================================================
