@@ -1980,10 +1980,13 @@ function buildCustomers() {
     const key = getCustomerKey(reservation);
     if (!key || key === "name:") return;
 
+    const guestName =
+      getReservationGuestName(reservation);
+
     if (!groups.has(key)) {
       groups.set(key, {
         key,
-        name: reservation.name || "Host",
+        name: guestName === "-" ? "Host" : guestName,
         phone: reservation.phone || "",
         email: reservation.email || "",
         reservations: [],
@@ -1996,7 +1999,7 @@ function buildCustomers() {
     customer.totalPeople += Number(reservation.people || 0);
     if (!customer.phone && reservation.phone) customer.phone = reservation.phone;
     if (!customer.email && reservation.email) customer.email = reservation.email;
-    if (reservation.name) customer.name = reservation.name;
+    if (guestName !== "-") customer.name = guestName;
   });
 
   return [...groups.values()].map(customer => {
@@ -5307,6 +5310,10 @@ function renderCalendar() {
       const height = Math.max(30, (Number(event.duration) || 0) - 2);
       const startPosition = Math.max(0, Number(event.start) || 0);
       const reservationId = Number(r.id);
+      const guestName =
+        getReservationGuestName(r) === "-"
+          ? "Bez jména"
+          : getReservationGuestName(r);
       const statusClass = getCalendarStatusClass(r.status);
       const statusLabel = getCalendarStatusLabel(r.status);
       const tableName = r.table_name
@@ -5321,12 +5328,12 @@ function renderCalendar() {
           data-reservation-id="${reservationId}"
           data-duration="${Math.max(0, Number(event.duration) || 0)}"
           onclick="handleCalendarReservationClick(event, '${reservationId}')"
-          aria-label="Upravit rezervaci ${escapeHtml(r.name || "")}" 
+          aria-label="Upravit rezervaci ${escapeHtml(guestName)}" 
         >
           <span class="calendar-time">${escapeHtml(r.time || "")}</span>
 
           <span class="calendar-info">
-            <strong>${escapeHtml(r.name || "Bez jména")}</strong>
+            <strong>${escapeHtml(guestName)}</strong>
             <small>👥 ${escapeHtml(r.people || 0)} osob${tableName}</small>
           </span>
 
@@ -6153,9 +6160,9 @@ function renderOpeningHours() {
     return `<div class="opening-day" data-day="${day}">
       <strong>${name}</strong>
       <label><input class="day-open" type="checkbox" ${row.is_open ? "checked" : ""}> Otevřeno</label>
-      <input class="day-from" type="time" value="${String(row.open_time).slice(0,5)}">
+      <input class="day-from" type="time" value="${escapeHtml(String(row.open_time || "").slice(0,5))}">
       <span>–</span>
-      <input class="day-to" type="time" value="${String(row.close_time).slice(0,5)}">
+      <input class="day-to" type="time" value="${escapeHtml(String(row.close_time || "").slice(0,5))}">
     </div>`;
   }).join("");
 }
@@ -6210,7 +6217,7 @@ function renderBlockedTimes() {
     return;
   }
   container.innerHTML = blockedTimes.map(block => `<div class="blocked-time-item">
-    <div><strong>${block.date}</strong> · ${String(block.start_time).slice(0,5)}–${String(block.end_time).slice(0,5)}<br><span>${escapeHtml(block.reason || "Bez důvodu")}</span></div>
+    <div><strong>${escapeHtml(String(block.date || ""))}</strong> · ${escapeHtml(String(block.start_time || "").slice(0,5))}–${escapeHtml(String(block.end_time || "").slice(0,5))}<br><span>${escapeHtml(block.reason || "Bez důvodu")}</span></div>
     <button type="button" class="dangerButton" onclick="deleteBlockedTime(${Number(block.id)})">Smazat</button>
   </div>`).join("");
 }
