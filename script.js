@@ -524,7 +524,7 @@ async function loadAvailableReservationTimes() {
 
     slots.forEach(slot => {
       const safeSlot = String(slot || "");
-      if (!/^\\d{2}:\\d{2}$/.test(safeSlot)) return;
+      if (!/^\d{2}:\d{2}$/.test(safeSlot)) return;
       const option = document.createElement("option");
       option.value = safeSlot;
       option.textContent = safeSlot;
