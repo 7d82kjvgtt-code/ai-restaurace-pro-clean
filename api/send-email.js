@@ -42,6 +42,31 @@ function cleanSlug(value) {
 }
 
 
+function isValidDateString(value) {
+  const raw = String(value || "").trim();
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return false;
+  }
+
+  const parsed = new Date(`${raw}T12:00:00Z`);
+
+  return (
+    !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === raw
+  );
+}
+
+
+function publicErrorMessage(error, fallback) {
+  const status = mapReservationError(error);
+
+  return status >= 500
+    ? fallback
+    : String(error?.message || fallback);
+}
+
+
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
     String(value || "").trim()
@@ -1163,7 +1188,8 @@ async function getAvailableTimesOnServer(
 
   if (
     !cleanRestaurantSlug ||
-    !date ||
+    cleanRestaurantSlug.length > 120 ||
+    !isValidDateString(date) ||
     !Number.isInteger(
       peopleNumber
     ) ||
@@ -1689,8 +1715,10 @@ async function getAvailableTimesOnServer(
       )
       .json({
         error:
-          error.message ||
-          "Volné časy se nepodařilo načíst."
+          publicErrorMessage(
+            error,
+            "Volné časy se nepodařilo načíst."
+          )
       });
   }
 }
@@ -1755,12 +1783,18 @@ async function createReservationOnServer(
 
   if (
     !cleanRestaurantSlug ||
+    cleanRestaurantSlug.length > 120 ||
     !cleanName ||
+    cleanName.length > 120 ||
     !cleanLastName ||
+    cleanLastName.length > 120 ||
     !date ||
     !cleanTime ||
     !cleanPhone ||
+    cleanPhone.length > 40 ||
     !cleanEmail ||
+    cleanEmail.length > 320 ||
+    cleanNote.length > 1000 ||
     !Number.isInteger(
       peopleNumber
     ) ||
@@ -1775,7 +1809,7 @@ async function createReservationOnServer(
   }
 
   if (
-    !/^\d{4}-\d{2}-\d{2}$/.test(
+    !isValidDateString(
       date
     )
   ) {
@@ -2355,8 +2389,10 @@ const ipRateKey =
       )
       .json({
         error:
-          error.message ||
-          "Rezervaci se nepodařilo uložit."
+          publicErrorMessage(
+            error,
+            "Rezervaci se nepodařilo uložit."
+          )
       });
   }
 }
@@ -2480,7 +2516,10 @@ async function updateReservationStatusOnServer(
         : 500;
 
     return res.status(statusCode).json({
-      error: error?.message || "Stav rezervace se nepodařilo změnit."
+      error:
+        statusCode >= 500
+          ? "Stav rezervace se nepodařilo změnit."
+          : error?.message || "Stav rezervace se nepodařilo změnit."
     });
   }
 }
