@@ -1170,6 +1170,93 @@ async function getReservationPlaceName(
 }
 
 
+async function getDashboardRestaurantInfoOnServer(
+  req,
+  res
+) {
+  const restaurantId =
+    Number(
+      req.body?.restaurant_id
+    );
+
+  if (
+    !Number.isInteger(
+      restaurantId
+    ) ||
+    restaurantId < 1
+  ) {
+    return res
+      .status(400)
+      .json({
+        error:
+          "Neplatná restaurace."
+      });
+  }
+
+  try {
+    const user =
+      await getAuthenticatedUser(
+        req
+      );
+
+    await assertActiveRestaurantMember(
+      user.id,
+      restaurantId
+    );
+
+    const restaurant =
+      await getRestaurantById(
+        restaurantId
+      );
+
+    return res
+      .status(200)
+      .json({
+        success:
+          true,
+        restaurant: {
+          id:
+            Number(
+              restaurant.id
+            ),
+          name:
+            String(
+              restaurant.name ||
+              "Restaurace"
+            ),
+          slug:
+            String(
+              restaurant.slug ||
+              ""
+            )
+        }
+      });
+  } catch (error) {
+    console.error(
+      "Chyba při načítání údajů restaurace pro dashboard:",
+      error
+    );
+
+    const status =
+      Number(
+        error?.status || 500
+      );
+
+    return res
+      .status(status)
+      .json({
+        error:
+          status >= 500
+            ? "Údaje restaurace se nepodařilo načíst."
+            : String(
+                error?.message ||
+                "Nemáš přístup k této restauraci."
+              )
+      });
+  }
+}
+
+
 async function getPublicRestaurantInfoOnServer(
   req,
   res
@@ -2708,6 +2795,16 @@ export default async function handler(
         error:
           "Povolena je pouze metoda POST."
       });
+  }
+
+  if (
+    req.body?.action ===
+    "dashboard-restaurant-info"
+  ) {
+    return getDashboardRestaurantInfoOnServer(
+      req,
+      res
+    );
   }
 
   if (
