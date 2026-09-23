@@ -2996,11 +2996,19 @@ function renderFloorMap() {
   ];
 
   if (renderItems.length === 0) {
-    floorMap.innerHTML = `
-      <div class="emptyState">
-        V místnosti <strong>${selectedRoom}</strong> zatím nejsou žádné stoly.
-      </div>
-    `;
+    floorMap.replaceChildren();
+
+    const emptyState = document.createElement("div");
+    emptyState.className = "emptyState";
+    emptyState.append(
+      document.createTextNode("V místnosti "),
+      Object.assign(document.createElement("strong"), {
+        textContent: String(selectedRoom || "")
+      }),
+      document.createTextNode(" zatím nejsou žádné stoly.")
+    );
+
+    floorMap.appendChild(emptyState);
     return;
   }
 
@@ -3036,15 +3044,15 @@ function renderFloorMap() {
               : `data-table-id="${item.id}"`
           }
           style="left:${item.x}px; top:${item.y}px;"
-          title="${item.name || `Stůl ${item.id}`} • ${capacity} míst • ${statusLabel}"
+          title="${escapeHtml(item.name || `Stůl ${item.id}`)} • ${Number(capacity) || 0} míst • ${escapeHtml(statusLabel)}"
           ${clickAction}
         >
           <span class="table-map-name">
-            ${item.name || `Stůl ${item.id}`}
+            ${escapeHtml(item.name || `Stůl ${item.id}`)}
           </span>
 
           <span class="table-map-capacity">
-            👥 ${capacity}
+            👥 ${Number(capacity) || 0}
           </span>
 
           <span class="table-map-status">
