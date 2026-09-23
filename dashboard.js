@@ -3934,7 +3934,7 @@ async function deleteTable(id) {
 
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${id}`,
+      `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${Number(id)}&restaurant_id=eq.${currentRestaurantId}`,
       {
         method: "DELETE",
         headers: getHeaders()
@@ -4309,6 +4309,27 @@ async function assignTable(
    MENU
 ========================================================= */
 
+const FOOD_IMAGE_TYPES = new Map([
+  ["image/jpeg", "jpg"],
+  ["image/png", "png"],
+  ["image/webp", "webp"]
+]);
+const MAX_FOOD_IMAGE_BYTES = 5 * 1024 * 1024;
+
+function getSafeHttpImageUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  try {
+    const url = new URL(raw);
+    return ["http:", "https:"].includes(url.protocol)
+      ? url.href
+      : "";
+  } catch {
+    return "";
+  }
+}
+
 async function loadFoods() {
   try {
     const response = await authorizedFetch(
@@ -4405,10 +4426,17 @@ async function saveFood() {
 
   try {
     if (imageFile) {
-      const extension =
-        imageFile.name
-          .split(".")
-          .pop();
+      const extension = FOOD_IMAGE_TYPES.get(imageFile.type);
+
+      if (!extension) {
+        showDashboardNotice("Fotografie musí být JPG, PNG nebo WebP.");
+        return;
+      }
+
+      if (imageFile.size <= 0 || imageFile.size > MAX_FOOD_IMAGE_BYTES) {
+        showDashboardNotice("Fotografie může mít maximálně 5 MB.");
+        return;
+      }
 
       const fileName =
         `${Date.now()}-` +
@@ -4418,26 +4446,26 @@ async function saveFood() {
         extension;
       const objectPath = `${currentRestaurantId}/${fileName}`;
 
-const upload = await authorizedFetch(
-  `${SUPABASE_URL}/storage/v1/object/food-images/${objectPath}`,
-  {
-    method: "POST",
-    headers: getHeaders({
-      "Content-Type": imageFile.type,
-      "x-upsert": "true"
-    }),
-    body: imageFile
-  }
-);
+      const upload = await authorizedFetch(
+        `${SUPABASE_URL}/storage/v1/object/food-images/${objectPath}`,
+        {
+          method: "POST",
+          headers: getHeaders({
+            "Content-Type": imageFile.type,
+            "x-upsert": "false"
+          }),
+          body: imageFile
+        }
+      );
 
-if (!upload.ok) {
-  throw new Error(
-    await upload.text()
-  );
-}
+      if (!upload.ok) {
+        throw new Error(
+          await upload.text()
+        );
+      }
 
-imageUrl =
-  `${SUPABASE_URL}/storage/v1/object/public/food-images/${objectPath}`;
+      imageUrl =
+        `${SUPABASE_URL}/storage/v1/object/public/food-images/${objectPath}`;
     }
 
     const foodData = {
@@ -4457,7 +4485,7 @@ imageUrl =
       editingFoodId !== null;
 
     const url = editing
-      ? `${SUPABASE_URL}/rest/v1/menu?id=eq.${editingFoodId}`
+      ? `${SUPABASE_URL}/rest/v1/menu?id=eq.${Number(editingFoodId)}&restaurant_id=eq.${currentRestaurantId}`
       : `${SUPABASE_URL}/rest/v1/menu`;
 
     const response = await authorizedFetch(
@@ -4504,10 +4532,11 @@ function renderFoods() {
 
   list.innerHTML = foods
     .map(food => {
-      const photo = food.image_url
+      const safeImageUrl = getSafeHttpImageUrl(food.image_url);
+      const photo = safeImageUrl
         ? `
           <img
-            src="${escapeHtml(food.image_url)}"
+            src="${escapeHtml(safeImageUrl)}"
             class="foodPhoto"
             alt="${escapeHtml(
               food.name || "Jídlo"
@@ -4693,7 +4722,7 @@ async function deleteFood(id) {
 
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/menu?id=eq.${id}`,
+      `${SUPABASE_URL}/rest/v1/menu?id=eq.${Number(id)}&restaurant_id=eq.${currentRestaurantId}`,
       {
         method: "DELETE",
         headers: getHeaders()
