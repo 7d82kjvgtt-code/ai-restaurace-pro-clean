@@ -1102,49 +1102,79 @@ function isValidOptionalEmail(value) {
    REZERVACE
 ========================================================= */
 
-async function loadReservations() {
-  const table =
-    document.getElementById("reservationTable");
+async function fetchReservationsSnapshot() {
+  const response =
+    await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${currentRestaurantId}&select=*&order=id.desc`,
+      {
+        headers:
+          getHeaders({
+            "Cache-Control":
+              "no-cache"
+          })
+      }
+    );
 
-  try {
-    const response = await authorizedFetch(
-  `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${currentRestaurantId}&select=*&order=id.desc`
-);
-    const data = await response.json();
+  const data =
+    await response
+      .json()
+      .catch(() => []);
 
-    if (!response.ok) {
-      throw new Error(JSON.stringify(data));
-    }
-
-    reservations =
-      Array.isArray(data) ? data : [];
-
-   updateStatistics();
-renderReservations(reservations);
-refreshReservationNotifications();
-renderCalendar();
-renderCharts();
-renderFloorMap();
-renderUpcomingReservations();
-startUpcomingReservationTimer();
-renderCustomers();
-  } catch (error) {
-    console.error(error);
-
-    table.innerHTML = `
-      <tr>
-        <td colspan="10">
-          Nepodařilo se načíst rezervace.
-        </td>
-      </tr>
-    `;
+  if (!response.ok) {
+    throw new Error(
+      JSON.stringify(
+        data
+      )
+    );
   }
+
+  const snapshot =
+    Array.isArray(data)
+      ? data
+      : [];
+
+  reservations =
+    snapshot;
+
+  return snapshot;
 }
 
+async function loadReservations() {
+  const table =
+    document.getElementById(
+      "reservationTable"
+    );
 
-/* =========================================================
-   UPOZORNĚNÍ NA NOVÉ REZERVACE
-========================================================= */
+  try {
+    await fetchReservationsSnapshot();
+
+    updateStatistics();
+    renderReservations(
+      reservations
+    );
+    refreshReservationNotifications();
+    renderCalendar();
+    renderCharts();
+    renderFloorMap();
+    renderUpcomingReservations();
+    startUpcomingReservationTimer();
+    renderCustomers();
+  } catch (error) {
+    console.error(
+      error
+    );
+
+    if (table) {
+      table.innerHTML = `
+        <tr>
+          <td colspan="10">
+            Nepodařilo se načíst rezervace.
+          </td>
+        </tr>
+      `;
+    }
+  }
+}
 
 function reservationNotificationStorageKey() {
   return `reservationNotificationsReadThrough:${currentRestaurantId || "default"}`;
@@ -3048,6 +3078,20 @@ async function saveReservationChanges() {
     return;
   }
 
+  try {
+    await fetchReservationsSnapshot();
+  } catch (error) {
+    console.error(
+      "Čerstvý stav rezervací se nepodařilo načíst:",
+      error
+    );
+
+    showDashboardNotice(
+      "Rezervaci teď nelze bezpečně upravit. Obnov stránku a zkus to znovu."
+    );
+    return;
+  }
+
   const currentReservation =
     reservations.find(
       reservation =>
@@ -4876,6 +4920,20 @@ async function saveNewReservation() {
     return;
   }
 
+  try {
+    await fetchReservationsSnapshot();
+  } catch (error) {
+    console.error(
+      "Čerstvý stav rezervací se nepodařilo načíst:",
+      error
+    );
+
+    showDashboardNotice(
+      "Rezervaci teď nelze bezpečně uložit. Obnov stránku a zkus to znovu."
+    );
+    return;
+  }
+
   const reservationDraft = {
     people,
     date,
@@ -6347,6 +6405,24 @@ async function assignTable(
           resourceValue
         )
       : null;
+
+  try {
+    await fetchReservationsSnapshot();
+  } catch (error) {
+    console.error(
+      "Čerstvý stav rezervací se nepodařilo načíst:",
+      error
+    );
+
+    showDashboardNotice(
+      "Přiřazení teď nelze bezpečně změnit. Obnov stránku a zkus to znovu."
+    );
+
+    renderReservations(
+      getFilteredReservations()
+    );
+    return;
+  }
 
   const reservation =
     reservations.find(
