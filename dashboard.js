@@ -2062,7 +2062,7 @@ function renderCustomers() {
             </div>
           </div>
           <label class="regular-toggle">
-            <input type="checkbox" ${customer.isRegular ? "checked" : ""} onchange="saveCustomerProfile('${escapeHtml(customer.key)}', { is_regular: this.checked })">
+            <input type="checkbox" ${customer.isRegular ? "checked" : ""} class="customer-regular-input" data-customer-key="${escapeHtml(encodeURIComponent(customer.key))}">
             <span>Stálý host</span>
           </label>
         </div>
@@ -2073,13 +2073,37 @@ function renderCustomers() {
         </div>
         <div class="customer-note-row">
           <textarea id="customerNote-${index}" placeholder="Interní poznámka k hostovi…">${escapeHtml(customer.note)}</textarea>
-          <button type="button" class="primary-btn" onclick="saveCustomerNote('${escapeHtml(customer.key)}', 'customerNote-${index}')">Uložit poznámku</button>
+          <button type="button" class="primary-btn customer-note-save" data-customer-key="${escapeHtml(encodeURIComponent(customer.key))}" data-note-id="customerNote-${index}">Uložit poznámku</button>
         </div>
         <button type="button" class="customer-history-toggle" onclick="toggleCustomerHistory('customerHistory-${index}', this)">Zobrazit historii rezervací (${customer.reservationCount})</button>
         <div id="customerHistory-${index}" class="customer-reservation-history" hidden>${history}</div>
       </article>
     `;
   }).join("");
+
+  list.querySelectorAll(".customer-regular-input").forEach(input => {
+    input.addEventListener("change", () => {
+      let customerKey = "";
+      try {
+        customerKey = decodeURIComponent(input.dataset.customerKey || "");
+      } catch (_) {
+        return;
+      }
+      saveCustomerProfile(customerKey, { is_regular: input.checked });
+    });
+  });
+
+  list.querySelectorAll(".customer-note-save").forEach(button => {
+    button.addEventListener("click", () => {
+      let customerKey = "";
+      try {
+        customerKey = decodeURIComponent(button.dataset.customerKey || "");
+      } catch (_) {
+        return;
+      }
+      saveCustomerNote(customerKey, button.dataset.noteId || "");
+    });
+  });
 }
 
 
