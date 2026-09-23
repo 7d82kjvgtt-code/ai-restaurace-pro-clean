@@ -4478,7 +4478,14 @@ function getSafeHttpImageUrl(value) {
 
   try {
     const url = new URL(raw);
-    return ["http:", "https:"].includes(url.protocol)
+    const isSafeProtocol =
+      url.protocol === "https:" ||
+      (
+        url.protocol === "http:" &&
+        ["localhost", "127.0.0.1"].includes(url.hostname)
+      );
+
+    return isSafeProtocol
       ? url.href
       : "";
   } catch {
@@ -4590,7 +4597,7 @@ async function saveFood() {
   }
 
   let imageUrl =
-    editingImageUrl || "";
+    getSafeHttpImageUrl(editingImageUrl);
 
   try {
     if (imageFile) {
