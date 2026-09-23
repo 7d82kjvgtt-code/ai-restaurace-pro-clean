@@ -3017,41 +3017,137 @@ tableGroups =
     }
   }
 }
-function getTableStatus(tableId) {
-    const now = new Date();
-
-    const relevantReservations = reservations.filter(reservation => {
-        return (
-            Number(reservation.table_id) === Number(tableId) &&
-            (reservation.status || "Čeká") !== "Zrušeno"
-        );
-    });
-
-    for (const reservation of relevantReservations) {
-        const start = new Date(
-            `${reservation.date}T${reservation.time}`
-        );
-
-        const end = new Date(start);
-        end.setHours(end.getHours() + 2);
-
-        const minutesUntilStart =
-            (start.getTime() - now.getTime()) / 60000;
-
-        if (now >= start && now <= end) {
-            return "occupied";
-        }
-
-        if (
-            minutesUntilStart > 0 &&
-            minutesUntilStart <= 30
-        ) {
-            return "busy";
-        }
-    }
-
+function getReservationLiveStatus(
+  reservation,
+  now = new Date()
+) {
+  if (
+    !reservation ||
+    (reservation.status || "Čeká") === "Zrušeno"
+  ) {
     return "free";
+  }
+
+  const start =
+    new Date(
+      `${reservation.date}T${String(
+        reservation.time || ""
+      ).slice(0, 5)}`
+    );
+
+  if (
+    Number.isNaN(
+      start.getTime()
+    )
+  ) {
+    return "free";
+  }
+
+  const durationMinutes =
+    Math.max(
+      30,
+      Number(
+        reservation.duration_minutes || 120
+      ) || 120
+    );
+
+  const end =
+    new Date(
+      start.getTime() +
+      durationMinutes * 60000
+    );
+
+  const minutesUntilStart =
+    (start.getTime() - now.getTime()) /
+    60000;
+
+  if (
+    now >= start &&
+    now < end
+  ) {
+    return "occupied";
+  }
+
+  if (
+    minutesUntilStart > 0 &&
+    minutesUntilStart <= 30
+  ) {
+    return "busy";
+  }
+
+  return "free";
 }
+
+function combineLiveStatuses(statuses) {
+  if (statuses.includes("occupied")) {
+    return "occupied";
+  }
+
+  if (statuses.includes("busy")) {
+    return "busy";
+  }
+
+  return "free";
+}
+
+function getTableStatus(tableId) {
+  const relevantReservations =
+    reservations.filter(
+      reservation =>
+        Number(reservation.table_id) ===
+          Number(tableId) &&
+        (reservation.status || "Čeká") !==
+          "Zrušeno"
+    );
+
+  return combineLiveStatuses(
+    relevantReservations.map(
+      reservation =>
+        getReservationLiveStatus(
+          reservation
+        )
+    )
+  );
+}
+
+function getTableGroupStatus(group) {
+  const groupId =
+    Number(group?.id);
+
+  const memberIds =
+    new Set(
+      Array.isArray(group?.table_ids)
+        ? group.table_ids.map(Number)
+        : []
+    );
+
+  const relevantReservations =
+    reservations.filter(
+      reservation =>
+        (
+          Number(
+            reservation.table_group_id
+          ) === groupId ||
+          memberIds.has(
+            Number(
+              reservation.table_id
+            )
+          )
+        ) &&
+        (reservation.status || "Čeká") !==
+          "Zrušeno"
+    );
+
+  return combineLiveStatuses(
+    relevantReservations.map(
+      reservation =>
+        getReservationLiveStatus(
+          reservation
+        )
+    )
+  );
+}
+
 function renderFloorMap() {
   const floorMap = document.getElementById("floorMap");
 
@@ -3114,15 +3210,8 @@ function renderFloorMap() {
           ? Number(group.y)
           : fallbackY;
 
-      const statuses = members.map((table) =>
-        getTableStatus(table.id)
-      );
-
-      const statusClass = statuses.includes("occupied")
-        ? "occupied"
-        : statuses.includes("busy")
-          ? "busy"
-          : "free";
+      const statusClass =
+        getTableGroupStatus(group);
 
       return {
         id: group.id,
