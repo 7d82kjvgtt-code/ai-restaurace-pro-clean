@@ -8,6 +8,8 @@ let tableGroups = [];
 let customerProfiles = [];
 
 let currentRestaurantId = null;
+let currentRestaurantName = "";
+let currentRestaurantSlug = "";
 let currentUserRole = null;
 let currentUserId = null;
 let teamMembers = [];
@@ -263,6 +265,142 @@ document.querySelectorAll(".room-switch").forEach((button) => {
   }
 });
 
+async function loadCurrentRestaurantInfo() {
+  const link =
+    document.getElementById(
+      "publicRestaurantLink"
+    );
+
+  const label =
+    document.getElementById(
+      "currentRestaurantNameLabel"
+    );
+
+  if (!currentRestaurantId) {
+    currentRestaurantName =
+      "";
+
+    currentRestaurantSlug =
+      "";
+
+    if (link) {
+      link.hidden =
+        true;
+    }
+
+    if (label) {
+      label.textContent =
+        "Přehled provozu restaurace";
+    }
+
+    return null;
+  }
+
+  try {
+    const response =
+      await authorizedFetch(
+        "/api/send-email",
+        {
+          method:
+            "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body:
+            JSON.stringify({
+              action:
+                "dashboard-restaurant-info",
+              restaurant_id:
+                Number(
+                  currentRestaurantId
+                )
+            })
+        }
+      );
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+    if (
+      !response.ok ||
+      !data?.restaurant
+    ) {
+      throw new Error(
+        data?.error ||
+        "Údaje restaurace se nepodařilo načíst."
+      );
+    }
+
+    currentRestaurantName =
+      String(
+        data.restaurant.name ||
+        ""
+      ).trim();
+
+    currentRestaurantSlug =
+      String(
+        data.restaurant.slug ||
+        ""
+      ).trim();
+
+    if (label) {
+      label.textContent =
+        currentRestaurantName ||
+        "Přehled provozu restaurace";
+    }
+
+    if (
+      link &&
+      currentRestaurantSlug
+    ) {
+      link.href =
+        `/r/${encodeURIComponent(
+          currentRestaurantSlug
+        )}`;
+
+      link.hidden =
+        false;
+
+      link.target =
+        "_blank";
+
+      link.rel =
+        "noopener";
+    } else if (link) {
+      link.hidden =
+        true;
+    }
+
+    return data.restaurant;
+  } catch (error) {
+    console.error(
+      "Údaje restaurace se nepodařilo načíst:",
+      error
+    );
+
+    currentRestaurantName =
+      "";
+
+    currentRestaurantSlug =
+      "";
+
+    if (link) {
+      link.hidden =
+        true;
+    }
+
+    if (label) {
+      label.textContent =
+        "Přehled provozu restaurace";
+    }
+
+    return null;
+  }
+}
+
 async function loadDashboardData() {
   // Role a navigace se aplikují HNED po načtení kontextu uživatele.
   // Zaměstnanec tak po aktivaci pozvánky neuvidí výchozí stav Majitele
@@ -272,6 +410,7 @@ async function loadDashboardData() {
   showDashboardSection(requestedSection, { notifyDenied: true });
 
   await Promise.all([
+    loadCurrentRestaurantInfo(),
     loadTables(),
     loadFoods(),
     loadOpeningHours(),
@@ -407,6 +546,21 @@ function clearSession() {
   sessionStorage.removeItem("supabaseAccessToken");
   sessionStorage.removeItem("supabaseRefreshToken");
   localStorage.removeItem("dashboardSessionHandoff");
+
+  currentRestaurantId =
+    null;
+
+  currentRestaurantName =
+    "";
+
+  currentRestaurantSlug =
+    "";
+
+  currentUserRole =
+    null;
+
+  currentUserId =
+    null;
 }
 
 
