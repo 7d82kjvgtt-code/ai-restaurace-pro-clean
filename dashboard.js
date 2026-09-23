@@ -96,6 +96,23 @@ function toggleMergeMode() {
     return;
   }
 
+  try {
+    await Promise.all([
+      fetchReservationsSnapshot(),
+      loadTables()
+    ]);
+  } catch (error) {
+    console.error(
+      "Čerstvý stav stolů a rezervací se nepodařilo načíst:",
+      error
+    );
+
+    showDashboardNotice(
+      "Stoly teď nelze bezpečně spojit. Obnov stránku a zkus to znovu."
+    );
+    return;
+  }
+
   const selectedTables = restaurantTables.filter((table) =>
     selectedTablesForMerge.includes(Number(table.id))
   );
