@@ -3406,6 +3406,14 @@ function getNewReservationDraft() {
   };
 }
 
+function createTableOption({ value, label, selected = false }) {
+  const option = document.createElement("option");
+  option.value = String(value);
+  option.textContent = String(label);
+  option.selected = Boolean(selected);
+  return option;
+}
+
 function fillNewTableOptions(preferredValue = "auto") {
   const tableSelect = document.getElementById("newTable");
   if (!tableSelect) return;
@@ -3414,14 +3422,18 @@ function fillNewTableOptions(preferredValue = "auto") {
     .filter(table => table.active)
     .sort((a, b) => Number(a.capacity) - Number(b.capacity));
 
-  tableSelect.innerHTML = `
-    <option value="auto">🪄 Automaticky vybrat nejlepší stůl</option>
-    ${activeTables.map(table => `
-      <option value="${Number(table.id)}">
-        ${escapeHtml(table.name)} (${Number(table.capacity)} míst)
-      </option>
-    `).join("")}
-  `;
+  tableSelect.replaceChildren(
+    createTableOption({
+      value: "auto",
+      label: "🪄 Automaticky vybrat nejlepší stůl"
+    }),
+    ...activeTables.map(table =>
+      createTableOption({
+        value: Number(table.id),
+        label: `${String(table.name || "")} (${Number(table.capacity)} míst)`
+      })
+    )
+  );
 
   const optionExists = Array.from(tableSelect.options)
     .some(option => option.value === String(preferredValue));
@@ -3989,26 +4001,16 @@ function renderTableSelect(reservation) {
 
   const options = availableTables
     .map(table => {
-      const selected =
-        String(table.id) === assignedId
-          ? "selected"
-          : "";
-
       const inactiveText =
         table.active
           ? ""
           : " – neaktivní";
 
-      return `
-        <option
-          value="${Number(table.id)}"
-          ${selected}
-        >
-          ${escapeHtml(table.name)}
-          (${escapeHtml(table.capacity)} míst)
-          ${inactiveText}
-        </option>
-      `;
+      return createTableOption({
+        value: Number(table.id),
+        label: `${String(table.name || "")} (${Number(table.capacity)} míst)${inactiveText}`,
+        selected: String(table.id) === assignedId
+      }).outerHTML;
     })
     .join("");
 
