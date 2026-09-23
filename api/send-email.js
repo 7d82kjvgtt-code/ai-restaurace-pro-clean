@@ -1113,6 +1113,74 @@ async function assertActiveRestaurantMember(
   return membership;
 }
 
+async function assertRestaurantAccess(
+  userId,
+  restaurantId
+) {
+  try {
+    return await assertActiveRestaurantMember(
+      userId,
+      restaurantId
+    );
+  } catch (error) {
+    if (
+      Number(
+        error?.status || 0
+      ) !== 403
+    ) {
+      throw error;
+    }
+  }
+
+  const ownerRows =
+    await supabaseServiceJson(
+      `/rest/v1/profiles?id=eq.${encodeURIComponent(
+        userId
+      )}&restaurant_id=eq.${Number(
+        restaurantId
+      )}&role=eq.owner&select=id,restaurant_id,role&limit=1`,
+      {
+        method:
+          "GET"
+      }
+    );
+
+  const ownerProfile =
+    Array.isArray(ownerRows)
+      ? ownerRows[0]
+      : null;
+
+  if (
+    ownerProfile?.id &&
+    Number(
+      ownerProfile.restaurant_id
+    ) === Number(
+      restaurantId
+    )
+  ) {
+    return {
+      user_id:
+        userId,
+      restaurant_id:
+        Number(
+          restaurantId
+        ),
+      role:
+        "owner"
+    };
+  }
+
+  const error =
+    new Error(
+      "Pro tuto restauraci nemáš aktivní oprávnění."
+    );
+
+  error.status =
+    403;
+
+  throw error;
+}
+
 
 async function getReservationPlaceName(
   reservation
@@ -1199,7 +1267,7 @@ async function getDashboardRestaurantInfoOnServer(
         req
       );
 
-    await assertActiveRestaurantMember(
+    await assertRestaurantAccess(
       user.id,
       restaurantId
     );
@@ -2690,7 +2758,7 @@ async function updateReservationStatusOnServer(
       return res.status(404).json({ error: "Rezervace neexistuje." });
     }
 
-    await assertActiveRestaurantMember(user.id, existing.restaurant_id);
+    await assertRestaurantAccess(user.id, existing.restaurant_id);
 
     if (String(existing.status) === status) {
       return res.status(200).json({
