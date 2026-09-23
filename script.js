@@ -30,6 +30,145 @@ function resolvePublicRestaurantSlug() {
 
 const PUBLIC_RESTAURANT_SLUG = resolvePublicRestaurantSlug();
 
+let publicRestaurantInfo = null;
+
+function applyPublicPageMode() {
+  const hasRestaurant =
+    Boolean(
+      PUBLIC_RESTAURANT_SLUG
+    );
+
+  document
+    .querySelectorAll(
+      "[data-saas-only]"
+    )
+    .forEach(element => {
+      element.hidden =
+        hasRestaurant;
+    });
+
+  document
+    .querySelectorAll(
+      "[data-restaurant-only]"
+    )
+    .forEach(element => {
+      element.hidden =
+        !hasRestaurant;
+    });
+
+  if (hasRestaurant) {
+    document.body.classList.add(
+      "restaurant-public-mode"
+    );
+  } else {
+    document.body.classList.remove(
+      "restaurant-public-mode"
+    );
+  }
+}
+
+async function loadPublicRestaurantInfo() {
+  const slug =
+    requirePublicRestaurantSlug();
+
+  const response =
+    await fetch(
+      "/api/send-email",
+      {
+        method:
+          "POST",
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+        body:
+          JSON.stringify({
+            action:
+              "restaurant-info",
+            slug
+          })
+      }
+    );
+
+  const data =
+    await response
+      .json()
+      .catch(() => ({}));
+
+  if (
+    !response.ok ||
+    !data?.restaurant
+  ) {
+    throw new Error(
+      data?.error ||
+      "Restauraci se nepodařilo načíst."
+    );
+  }
+
+  publicRestaurantInfo =
+    data.restaurant;
+
+  const name =
+    String(
+      data.restaurant.name ||
+      "Restaurace"
+    ).trim() ||
+    "Restaurace";
+
+  document.title =
+    `${name} | Rezervace a menu`;
+
+  const brand =
+    document.getElementById(
+      "publicRestaurantBrand"
+    );
+
+  if (brand) {
+    brand.textContent =
+      `🍽️ ${name}`;
+
+    brand.href =
+      `/r/${encodeURIComponent(
+        String(
+          data.restaurant.slug ||
+          slug
+        )
+      )}`;
+  }
+
+  const badge =
+    document.getElementById(
+      "publicRestaurantBadge"
+    );
+
+  if (badge) {
+    badge.textContent =
+      "Online rezervace a aktuální menu";
+  }
+
+  const title =
+    document.getElementById(
+      "publicRestaurantHeroTitle"
+    );
+
+  if (title) {
+    title.textContent =
+      name;
+  }
+
+  const subtitle =
+    document.getElementById(
+      "publicRestaurantHeroSubtitle"
+    );
+
+  if (subtitle) {
+    subtitle.textContent =
+      "Prohlédněte si aktuální menu a rezervujte si stůl online.";
+  }
+
+  return data.restaurant;
+}
+
 async function publicRpc(functionName, body = {}) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
     method: "POST",
@@ -705,31 +844,101 @@ async function ulozitRezervaci() {
 
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await loadPublicReservationSettings();
-  const dateInput = document.getElementById("datum");
-  const peopleInput = document.getElementById("osoby");
-  const timeSelect = document.getElementById("cas");
+  applyPublicPageMode();
+
+  if (
+    !PUBLIC_RESTAURANT_SLUG
+  ) {
+    return;
+  }
+
+  try {
+    await Promise.all([
+      loadPublicRestaurantInfo(),
+      loadPublicReservationSettings(),
+      loadMenu()
+    ]);
+  } catch (error) {
+    console.error(
+      "Veřejná stránka restaurace se nepodařila kompletně načíst:",
+      error
+    );
+  }
+
+  const dateInput =
+    document.getElementById(
+      "datum"
+    );
+
+  const peopleInput =
+    document.getElementById(
+      "osoby"
+    );
+
+  const timeSelect =
+    document.getElementById(
+      "cas"
+    );
 
   if (dateInput) {
-    const now = new Date();
-    const localToday = localDateString(now);
-    const localMax = localDateString(addLocalDays(now, publicReservationSettings.max_advance_days));
-    dateInput.min = localToday;
-    dateInput.max = localMax;
-    dateInput.addEventListener("change", loadAvailableReservationTimes);
+    const now =
+      new Date();
+
+    const localToday =
+      localDateString(
+        now
+      );
+
+    const localMax =
+      localDateString(
+        addLocalDays(
+          now,
+          publicReservationSettings.max_advance_days
+        )
+      );
+
+    dateInput.min =
+      localToday;
+
+    dateInput.max =
+      localMax;
+
+    dateInput.addEventListener(
+      "change",
+      loadAvailableReservationTimes
+    );
   }
 
   if (peopleInput) {
-    peopleInput.addEventListener("input", () => {
-      clearTimeout(peopleInput._availabilityTimer);
-      peopleInput._availabilityTimer = setTimeout(loadAvailableReservationTimes, 250);
-    });
+    peopleInput.addEventListener(
+      "input",
+      () => {
+        clearTimeout(
+          peopleInput
+            ._availabilityTimer
+        );
+
+        peopleInput
+          ._availabilityTimer =
+            setTimeout(
+              loadAvailableReservationTimes,
+              250
+            );
+      }
+    );
   }
 
   if (timeSelect) {
-    timeSelect.addEventListener("focus", () => {
-      if (timeSelect.disabled) loadAvailableReservationTimes();
-    });
+    timeSelect.addEventListener(
+      "focus",
+      () => {
+        if (
+          timeSelect.disabled
+        ) {
+          loadAvailableReservationTimes();
+        }
+      }
+    );
   }
 });
 
@@ -754,7 +963,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
-loadMenu();
 function openFoodDetail(id) {
   const item = menu.find(food => food.id === id);
 
