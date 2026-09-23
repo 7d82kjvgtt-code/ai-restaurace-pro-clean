@@ -250,84 +250,123 @@ function renderPublicMenu() {
   const container = document.getElementById("publicMenu");
   if (!container) return;
 
+  container.replaceChildren();
+
   if (!menu.length) {
-    container.innerHTML = "<p>Menu je prázdné.</p>";
+    const empty = document.createElement("p");
+    empty.textContent = "Menu je prázdné.";
+    container.appendChild(empty);
     return;
   }
 
   const categoryOrder = [
-  "Pizza",
-  "Předkrm",
-  "Hlavní jídlo",
-  "Těstoviny",
-  "Dezert",
-  "Sladká jídla",
-  "Nápoj"
-];
+    "Pizza",
+    "Předkrm",
+    "Hlavní jídlo",
+    "Těstoviny",
+    "Dezert",
+    "Sladká jídla",
+    "Nápoj"
+  ];
 
-const categoriesFromMenu = menu
-  .map(item => (item.category || "Hlavní jídlo").trim())
-  .filter(Boolean);
+  const categoriesFromMenu = menu
+    .map(item => String(item.category || "Hlavní jídlo").trim())
+    .filter(Boolean);
 
-const categories = [
-  ...categoryOrder,
-  ...categoriesFromMenu.filter(
-    category => !categoryOrder.includes(category)
-  )
-].filter(
-  (category, index, array) =>
-    array.indexOf(category) === index
-);
+  const categories = [
+    ...categoryOrder,
+    ...categoriesFromMenu.filter(category => !categoryOrder.includes(category))
+  ].filter((category, index, array) => array.indexOf(category) === index);
 
   container.className = "";
   container.style.display = "block";
 
-  container.innerHTML = categories.map(category => {
-    const items = menu.filter(item =>
-  (item.category || "Hlavní jídlo").trim() === category.trim()
-);
-    if (!items.length) return "";
+  categories.forEach(category => {
+    const items = menu.filter(
+      item => String(item.category || "Hlavní jídlo").trim() === category
+    );
+    if (!items.length) return;
 
-    return `
-      <section class="menu-category" style="width:100%;margin-bottom:70px;">
-        <h2 style="font-size:36px;color:#f59e0b;margin-bottom:25px;border-left:6px solid #f59e0b;padding-left:15px;text-transform:uppercase;">
-          ${category}
-        </h2>
+    const section = document.createElement("section");
+    section.className = "menu-category";
+    section.style.cssText = "width:100%;margin-bottom:70px;";
 
-       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,260px));justify-content:center;gap:30px;">
-          ${items.map(item => `
-            <div class="food-card" onclick="openFoodDetail(${item.id})">
-              ${
-                item.image_url
-                  ? `<img src="${item.image_url}" style="width:100%;height:180px;object-fit:cover;border-radius:18px;margin-bottom:18px;display:block;">`
-                  : `<div style="width:100%;height:180px;display:flex;align-items:center;justify-content:center;font-size:64px;border-radius:18px;margin-bottom:18px;background:#111827;">${item.emoji || "🍽️"}</div>`
-              }
+    const heading = document.createElement("h2");
+    heading.style.cssText = "font-size:36px;color:#f59e0b;margin-bottom:25px;border-left:6px solid #f59e0b;padding-left:15px;text-transform:uppercase;";
+    heading.textContent = category;
+    section.appendChild(heading);
 
-              <h3>${item.name}</h3>
-              <p>${item.price} Kč</p>
-            </div>
-          `).join("")}
-        </div>
-      </section>
-    `;
-  }).join("");
+    const grid = document.createElement("div");
+    grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,260px));justify-content:center;gap:30px;";
+
+    items.forEach(item => {
+      const card = document.createElement("div");
+      card.className = "food-card";
+      card.addEventListener("click", () => openFoodDetail(item.id));
+
+      if (item.image_url) {
+        try {
+          const imageUrl = new URL(String(item.image_url), window.location.origin);
+          if (imageUrl.protocol === "https:" || (imageUrl.protocol === "http:" && ["localhost", "127.0.0.1"].includes(imageUrl.hostname))) {
+            const img = document.createElement("img");
+            img.src = imageUrl.href;
+            img.alt = String(item.name || "Jídlo");
+            img.loading = "lazy";
+            img.style.cssText = "width:100%;height:180px;object-fit:cover;border-radius:18px;margin-bottom:18px;display:block;";
+            card.appendChild(img);
+          }
+        } catch (_) {
+          // Neplatnou URL obrázku bezpečně ignorujeme.
+        }
+      }
+
+      if (!card.querySelector("img")) {
+        const emoji = document.createElement("div");
+        emoji.style.cssText = "width:100%;height:180px;display:flex;align-items:center;justify-content:center;font-size:64px;border-radius:18px;margin-bottom:18px;background:#111827;";
+        emoji.textContent = String(item.emoji || "🍽️");
+        card.appendChild(emoji);
+      }
+
+      const name = document.createElement("h3");
+      name.textContent = String(item.name || "");
+      card.appendChild(name);
+
+      const price = document.createElement("p");
+      price.textContent = `${String(item.price ?? "")} Kč`;
+      card.appendChild(price);
+
+      grid.appendChild(card);
+    });
+
+    section.appendChild(grid);
+    container.appendChild(section);
+  });
 }
 
 function odpoved() {
-  const text = document.getElementById("dotaz").value.toLowerCase();
+  const input = document.getElementById("dotaz");
   const vysledek = document.getElementById("vysledek");
+  if (!input || !vysledek) return;
+
+  const text = input.value.toLowerCase();
 
   if (text.includes("menu")) {
-    vysledek.innerHTML = menu
-      .map(item => `${item.emoji || "🍽️"} ${item.name} - ${item.price} Kč`)
-      .join("<br>");
+    vysledek.replaceChildren();
+    menu.forEach((item, index) => {
+      if (index > 0) vysledek.appendChild(document.createElement("br"));
+      vysledek.appendChild(
+        document.createTextNode(
+          `${String(item.emoji || "🍽️")} ${String(item.name || "")} - ${String(item.price ?? "")} Kč`
+        )
+      );
+    });
   } else if (text.includes("otev")) {
-    vysledek.innerHTML = "🕒 Otevřeno každý den 10:00–22:00.";
+    vysledek.textContent = "🕒 Otevřeno každý den 10:00–22:00.";
   } else if (text.includes("rezerv")) {
-    document.getElementById("rezervace").scrollIntoView({ behavior: "smooth" });
-    vysledek.innerHTML = "📅 Formulář rezervace je níže.";
+    document.getElementById("rezervace")?.scrollIntoView({ behavior: "smooth" });
+    vysledek.textContent = "📅 Formulář rezervace je níže.";
   } else {
-    vysledek.innerHTML = "Zkus napsat: <b>menu</b>, <b>otevřeno</b> nebo <b>rezervace</b>.";
+    vysledek.textContent = "Zkus napsat: menu, otevřeno nebo rezervace.";
   }
 }
 
@@ -363,19 +402,31 @@ function showPublicReservationNotice(message, type = null) {
   }
 
   const text = String(message || "").trim();
-  const resolvedType = type || (text.startsWith("✅") ? "success" : "error");
+  const resolvedType = type === "success" || (!type && text.startsWith("✅"))
+    ? "success"
+    : "error";
+
   notice.hidden = false;
   notice.className = `reservation-notice ${resolvedType}`;
-  notice.innerHTML = `
-    <span class="reservation-notice-icon">${resolvedType === "success" ? "✓" : "!"}</span>
-    <span>${text.replace(/^✅\s*/, "")}</span>
-    <button type="button" class="reservation-notice-close" aria-label="Zavřít">×</button>
-  `;
+  notice.replaceChildren();
 
-  notice.querySelector(".reservation-notice-close")?.addEventListener("click", () => {
+  const icon = document.createElement("span");
+  icon.className = "reservation-notice-icon";
+  icon.textContent = resolvedType === "success" ? "✓" : "!";
+
+  const messageText = document.createElement("span");
+  messageText.textContent = text.replace(/^✅\s*/, "");
+
+  const closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "reservation-notice-close";
+  closeButton.setAttribute("aria-label", "Zavřít");
+  closeButton.textContent = "×";
+  closeButton.addEventListener("click", () => {
     notice.hidden = true;
   });
 
+  notice.append(icon, messageText, closeButton);
   notice.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
@@ -465,9 +516,21 @@ async function loadAvailableReservationTimes() {
       return;
     }
 
-    timeSelect.innerHTML = '<option value="">Vyber čas</option>' +
-      slots.map(slot => `<option value="${slot}">${slot}</option>`).join("");
-    timeSelect.disabled = false;
+    timeSelect.replaceChildren();
+    const placeholderOption = document.createElement("option");
+    placeholderOption.value = "";
+    placeholderOption.textContent = "Vyber čas";
+    timeSelect.appendChild(placeholderOption);
+
+    slots.forEach(slot => {
+      const safeSlot = String(slot || "");
+      if (!/^\\d{2}:\\d{2}$/.test(safeSlot)) return;
+      const option = document.createElement("option");
+      option.value = safeSlot;
+      option.textContent = safeSlot;
+      timeSelect.appendChild(option);
+    });
+    timeSelect.disabled = timeSelect.options.length <= 1;
     if (slots.includes(previousValue)) timeSelect.value = previousValue;
     setAvailableTimesStatus(data.message || `${slots.length} volných termínů`, "success");
   } catch (error) {
