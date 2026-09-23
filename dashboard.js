@@ -7444,6 +7444,22 @@ function attachCalendarDragHandlers() {
         const newTime = minutesToTime((10 * 60) + snappedMinutes);
         const reservationId = card.dataset.reservationId;
 
+        try {
+          await fetchReservationsSnapshot();
+        } catch (error) {
+          console.error(
+            "Čerstvý stav rezervací se nepodařilo načíst:",
+            error
+          );
+
+          showDashboardNotice(
+            "Rezervaci teď nelze bezpečně přesunout. Obnov stránku a zkus to znovu."
+          );
+
+          renderCalendar();
+          return;
+        }
+
         const draggedReservation = reservations.find(
           item => Number(item.id) === Number(reservationId)
         );
@@ -7493,6 +7509,24 @@ function attachCalendarDragHandlers() {
         ) {
           showDashboardNotice(
             `${getTableName(proposedReservation.table_id)} je v čase ${newTime} obsazený.\n\n` +
+            "Rezervace nebyla přesunuta."
+          );
+          renderCalendar();
+          return;
+        }
+
+        if (
+          proposedReservation.table_group_id !== null &&
+          proposedReservation.table_group_id !== undefined &&
+          (proposedReservation.status || "Čeká") !== "Zrušeno" &&
+          hasTableGroupConflict(
+            proposedReservation.table_group_id,
+            proposedReservation,
+            proposedReservation.id
+          )
+        ) {
+          showDashboardNotice(
+            `${getReservationTableLabel(proposedReservation)} jsou v čase ${newTime} obsazené.\n\n` +
             "Rezervace nebyla přesunuta."
           );
           renderCalendar();
