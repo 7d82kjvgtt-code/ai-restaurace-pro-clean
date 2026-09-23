@@ -8501,8 +8501,14 @@ async function saveReservationSettings() {
     return;
   }
 
-  if (!Number.isFinite(values.min_advance_minutes) || values.min_advance_minutes < 0) {
-    showDashboardNotice("Minimální čas předem nemůže být záporný.");
+  if (
+    !Number.isFinite(values.min_advance_minutes) ||
+    values.min_advance_minutes < 0 ||
+    values.min_advance_minutes > 10080
+  ) {
+    showDashboardNotice(
+      "Minimální čas předem musí být od 0 do 10 080 minut."
+    );
     return;
   }
 
@@ -8511,8 +8517,17 @@ async function saveReservationSettings() {
     return;
   }
 
-  if (!Number.isInteger(values.min_people) || !Number.isInteger(values.max_people) || values.min_people < 1 || values.max_people < values.min_people) {
-    showDashboardNotice("Zkontroluj minimální a maximální počet hostů.");
+  if (
+    !Number.isInteger(values.min_people) ||
+    !Number.isInteger(values.max_people) ||
+    values.min_people < 1 ||
+    values.min_people > 50 ||
+    values.max_people < values.min_people ||
+    values.max_people > 200
+  ) {
+    showDashboardNotice(
+      "Minimum hostů musí být 1–50 a maximum musí být alespoň minimum, nejvýše 200."
+    );
     return;
   }
 
