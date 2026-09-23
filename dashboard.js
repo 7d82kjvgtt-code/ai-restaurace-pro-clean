@@ -105,6 +105,54 @@ function toggleMergeMode() {
     return;
   }
 
+  const inactiveTable =
+    selectedTables.find(
+      table =>
+        table.active === false
+    );
+
+  if (inactiveTable) {
+    showDashboardNotice(
+      `${inactiveTable.name || "Vybraný stůl"} je neaktivní. Spojit lze jen aktivní stoly.`
+    );
+    return;
+  }
+
+  const groupedTable =
+    selectedTables.find(
+      table =>
+        isTableInActiveGroup(
+          table.id
+        )
+    );
+
+  if (groupedTable) {
+    showDashboardNotice(
+      `${groupedTable.name || "Vybraný stůl"} už je součástí aktivní skupiny.`
+    );
+    return;
+  }
+
+  const reservedTable =
+    selectedTables.find(
+      table =>
+        getReservationsUsingTableResource(
+          table.id
+        ).some(
+          reservation =>
+            reservationHasNotEnded(
+              reservation
+            )
+        )
+    );
+
+  if (reservedTable) {
+    showDashboardNotice(
+      `${reservedTable.name || "Vybraný stůl"} má aktuální nebo budoucí rezervaci. Spoj ho až po přesunu nebo zrušení rezervace.`
+    );
+    return;
+  }
+
   const rooms = [...new Set(
     selectedTables.map((table) => table.room || "Hlavní sál")
   )];
