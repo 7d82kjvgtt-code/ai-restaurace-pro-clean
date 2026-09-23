@@ -1285,6 +1285,9 @@ async function getPublicRestaurantInfoOnServer(
         cleanRestaurantSlug
       );
 
+    const restaurantNow =
+      getRestaurantNow();
+
     return res
       .status(200)
       .json({
@@ -1305,7 +1308,11 @@ async function getPublicRestaurantInfoOnServer(
               restaurant.slug ||
               cleanRestaurantSlug
             )
-        }
+        },
+        restaurant_date:
+          restaurantNow.date,
+        time_zone:
+          RESTAURANT_TIME_ZONE
       });
   } catch (error) {
     console.error(
