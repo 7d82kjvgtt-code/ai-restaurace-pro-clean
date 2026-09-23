@@ -340,6 +340,11 @@ async function loadCurrentRestaurantInfo() {
         ""
       ).trim();
 
+    if (currentRestaurantName) {
+      document.title =
+        `${currentRestaurantName} | AI Restaurace PRO`;
+    }
+
     currentRestaurantSlug =
       String(
         data.restaurant.slug ||
