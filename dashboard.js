@@ -4139,11 +4139,23 @@ function createTableOption({
   option.textContent =
     String(label);
 
-  option.selected =
-    Boolean(selected);
+  if (selected) {
+    option.setAttribute(
+      "selected",
+      ""
+    );
+    option.selected =
+      true;
+  }
 
-  option.disabled =
-    Boolean(disabled);
+  if (disabled) {
+    option.setAttribute(
+      "disabled",
+      ""
+    );
+    option.disabled =
+      true;
+  }
 
   return option;
 }
