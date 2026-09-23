@@ -31,6 +31,7 @@ function resolvePublicRestaurantSlug() {
 const PUBLIC_RESTAURANT_SLUG = resolvePublicRestaurantSlug();
 
 let publicRestaurantInfo = null;
+let publicRestaurantToday = "";
 
 function applyPublicPageMode() {
   const hasRestaurant =
@@ -107,6 +108,12 @@ async function loadPublicRestaurantInfo() {
 
   publicRestaurantInfo =
     data.restaurant;
+
+  publicRestaurantToday =
+    String(
+      data.restaurant_date ||
+      ""
+    ).trim();
 
   const name =
     String(
@@ -723,10 +730,17 @@ async function ulozitRezervaci() {
     return;
   }
 
-  const today = new Date();
-  const localToday = new Date(
-    today.getTime() - today.getTimezoneOffset() * 60000
-  ).toISOString().split("T")[0];
+  const today =
+    new Date();
+
+  const localToday =
+    publicRestaurantToday ||
+    new Date(
+      today.getTime() -
+      today.getTimezoneOffset() * 60000
+    )
+      .toISOString()
+      .split("T")[0];
 
   if (!date) {
     showPublicReservationNotice("Zadej platné datum rezervace.");
@@ -743,27 +757,24 @@ async function ulozitRezervaci() {
     return;
   }
 
-  const localMaxDate = localDateString(
-    addLocalDays(new Date(), publicReservationSettings.max_advance_days)
-  );
+  const maxDateBase =
+    new Date(
+      `${localToday}T12:00:00`
+    );
+
+  const localMaxDate =
+    localDateString(
+      addLocalDays(
+        maxDateBase,
+        publicReservationSettings.max_advance_days
+      )
+    );
 
   if (date > localMaxDate) {
     showPublicReservationNotice(`Rezervaci lze vytvořit maximálně ${publicReservationSettings.max_advance_days} dní dopředu.`);
     return;
   }
 
-
-  if (date === localToday) {
-    const now = new Date();
-    const currentTime =
-      String(now.getHours()).padStart(2, "0") + ":" +
-      String(now.getMinutes()).padStart(2, "0");
-
-    if (time <= currentTime) {
-      showPublicReservationNotice("Na dnešek nelze rezervovat čas, který už proběhl.");
-      return;
-    }
-  }
 
   const peopleNumber = Number(people);
   if (!Number.isInteger(peopleNumber) || peopleNumber < publicReservationSettings.min_people || peopleNumber > publicReservationSettings.max_people) {
@@ -788,13 +799,10 @@ async function ulozitRezervaci() {
     return;
   }
 
-  const reservationDurationMinutes = getPublicReservationDuration(peopleNumber);
-  const requestedStart = new Date(`${date}T${time}:00`);
-  const earliestAllowed = Date.now() + (Number(publicReservationSettings.min_advance_minutes || 0) * 60000);
-  if (requestedStart.getTime() < earliestAllowed) {
-    showPublicReservationNotice(`Rezervaci je potřeba vytvořit alespoň ${publicReservationSettings.min_advance_minutes} minut předem.`);
-    return;
-  }
+  const reservationDurationMinutes =
+    getPublicReservationDuration(
+      peopleNumber
+    );
 
   setPublicReservationSubmitting(true);
 
@@ -884,24 +892,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     );
 
   if (dateInput) {
-    const now =
-      new Date();
-
-    const localToday =
+    const restaurantToday =
+      publicRestaurantToday ||
       localDateString(
-        now
+        new Date()
+      );
+
+    const maxDateBase =
+      new Date(
+        `${restaurantToday}T12:00:00`
       );
 
     const localMax =
       localDateString(
         addLocalDays(
-          now,
+          maxDateBase,
           publicReservationSettings.max_advance_days
         )
       );
 
     dateInput.min =
-      localToday;
+      restaurantToday;
 
     dateInput.max =
       localMax;
