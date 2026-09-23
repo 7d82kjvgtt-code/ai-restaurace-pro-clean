@@ -916,6 +916,18 @@ function getReservationGuestName(reservation) {
     .join(" ") || "-";
 }
 
+function isValidOptionalEmail(value) {
+  const email = String(value || "").trim();
+
+  return (
+    !email ||
+    (
+      email.length <= 320 &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    )
+  );
+}
+
 /* =========================================================
    REZERVACE
 ========================================================= */
@@ -2512,6 +2524,11 @@ async function saveReservationChanges() {
     return;
   }
 
+  if (!isValidOptionalEmail(email)) {
+    showDashboardNotice("Zadej platný e-mail, nebo pole nech prázdné.");
+    return;
+  }
+
   const currentReservation =
     reservations.find(
       reservation => Number(reservation.id) === id
@@ -3635,8 +3652,23 @@ async function saveNewReservation() {
     const email = document.getElementById("newEmail").value.trim();
     const note = document.getElementById("newNote").value.trim();
 
-    if (!name || !date || !time || !Number.isInteger(people) || people < 1) {
-        showDashboardNotice("Vyplň jméno, počet osob, datum a čas.");
+    if (
+        !name ||
+        !date ||
+        !time ||
+        !Number.isInteger(people) ||
+        people < 1 ||
+        people > 30 ||
+        !Number.isFinite(durationMinutes) ||
+        durationMinutes < 30 ||
+        durationMinutes > 360
+    ) {
+        showDashboardNotice("Vyplň správně jméno, počet osob, datum, čas a délku.");
+        return;
+    }
+
+    if (!isValidOptionalEmail(email)) {
+        showDashboardNotice("Zadej platný e-mail, nebo pole nech prázdné.");
         return;
     }
 
@@ -4499,6 +4531,9 @@ async function saveFood() {
       .value
       .trim();
 
+  const priceNumber =
+    Number(price);
+
   const emoji =
     document
       .getElementById("foodEmoji")
@@ -4539,8 +4574,17 @@ async function saveFood() {
       "foodImage"
     ).files?.[0];
 
-  if (!name || !price) {
+  if (!name || price === "") {
     showDashboardNotice("Vyplň název i cenu.");
+    return;
+  }
+
+  if (
+    !Number.isFinite(priceNumber) ||
+    priceNumber < 0 ||
+    priceNumber > 1000000
+  ) {
+    showDashboardNotice("Cena musí být platné nezáporné číslo.");
     return;
   }
 
@@ -4593,7 +4637,7 @@ async function saveFood() {
 
     const foodData = {
       name,
-      price: Number(price),
+      price: priceNumber,
       emoji,
       image_url: imageUrl,
       category,
