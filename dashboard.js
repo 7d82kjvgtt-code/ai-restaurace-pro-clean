@@ -1747,7 +1747,7 @@ async function deleteReservation(id) {
 
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`,
+      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${Number(id)}&restaurant_id=eq.${currentRestaurantId}`,
       {
         method: "DELETE",
         headers: getHeaders()
@@ -2539,7 +2539,7 @@ const durationMinutes = Number(
 
     try {
         const response = await authorizedFetch(
-            `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`,
+            `${SUPABASE_URL}/rest/v1/reservations?id=eq.${Number(id)}&restaurant_id=eq.${currentRestaurantId}`,
             {
                 method: "PATCH",
                 headers: getHeaders({
@@ -2583,7 +2583,7 @@ showDashboardNotice("Rezervace byla úspěšně upravena.");
 async function updateReservation(id, data) {
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`,
+      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${Number(id)}&restaurant_id=eq.${currentRestaurantId}`,
       {
         method: "PATCH",
         headers: getHeaders(),
@@ -4274,7 +4274,7 @@ async function assignTable(
   try {
     const response =
       await authorizedFetch(
-        `${SUPABASE_URL}/rest/v1/reservations?id=eq.${reservationId}`,
+        `${SUPABASE_URL}/rest/v1/reservations?id=eq.${Number(reservationId)}&restaurant_id=eq.${currentRestaurantId}`,
         {
           method: "PATCH",
           headers: getHeaders(),
