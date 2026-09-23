@@ -38,8 +38,25 @@ async function publicRpc(functionName, body = {}) {
   });
 
   if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `RPC ${functionName} selhalo.`);
+    const internalMessage =
+      await response
+        .text()
+        .catch(() => "");
+
+    console.error(
+      `Veřejné RPC ${functionName} selhalo:`,
+      internalMessage || response.status
+    );
+
+    const error =
+      new Error(
+        "Veřejná data restaurace se nepodařilo načíst."
+      );
+
+    error.status =
+      response.status;
+
+    throw error;
   }
 
   return response.json();
