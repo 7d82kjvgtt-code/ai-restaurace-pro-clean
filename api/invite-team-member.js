@@ -568,12 +568,17 @@ module.exports =
       if (
         !teamResponse.ok
       ) {
+        console.error(
+          "Pozvánka odešla, ale člen týmu se neuložil:",
+          await teamResponse.text()
+        );
+
         return send(
           res,
           500,
           {
             error:
-              `Pozvánka odešla, ale člen týmu se neuložil: ${await teamResponse.text()}`
+              "Pozvánka odešla, ale člen týmu se nepodařilo uložit. Zkuste pozvání zopakovat."
           }
         );
       }
