@@ -176,6 +176,68 @@ async function loadPublicRestaurantInfo() {
   return data.restaurant;
 }
 
+function showPublicRestaurantUnavailable(
+  message = "Restaurace není dostupná."
+) {
+  document.title =
+    "Restaurace není dostupná | AI Restaurace PRO";
+
+  document
+    .querySelectorAll(
+      "[data-restaurant-only]"
+    )
+    .forEach(element => {
+      element.hidden =
+        true;
+    });
+
+  const badge =
+    document.getElementById(
+      "publicRestaurantBadge"
+    );
+
+  if (badge) {
+    badge.textContent =
+      "Veřejná stránka není dostupná";
+  }
+
+  const title =
+    document.getElementById(
+      "publicRestaurantHeroTitle"
+    );
+
+  if (title) {
+    title.textContent =
+      "Restaurace není dostupná";
+  }
+
+  const subtitle =
+    document.getElementById(
+      "publicRestaurantHeroSubtitle"
+    );
+
+  if (subtitle) {
+    subtitle.textContent =
+      String(
+        message ||
+        "Zkontrolujte prosím odkaz restaurace."
+      );
+  }
+
+  const brand =
+    document.getElementById(
+      "publicRestaurantBrand"
+    );
+
+  if (brand) {
+    brand.textContent =
+      "🍽️ AI Restaurace PRO";
+
+    brand.href =
+      "/";
+  }
+}
+
 async function publicRpc(functionName, body = {}) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
     method: "POST",
@@ -507,29 +569,46 @@ function renderPublicMenu() {
 }
 
 function odpoved() {
-  const input = document.getElementById("dotaz");
-  const vysledek = document.getElementById("vysledek");
-  if (!input || !vysledek) return;
+  const input =
+    document.getElementById(
+      "dotaz"
+    );
 
-  const text = input.value.toLowerCase();
+  const vysledek =
+    document.getElementById(
+      "vysledek"
+    );
 
-  if (text.includes("menu")) {
-    vysledek.replaceChildren();
-    menu.forEach((item, index) => {
-      if (index > 0) vysledek.appendChild(document.createElement("br"));
-      vysledek.appendChild(
-        document.createTextNode(
-          `${String(item.emoji || "🍽️")} ${String(item.name || "")} - ${String(item.price ?? "")} Kč`
-        )
-      );
-    });
-  } else if (text.includes("otev")) {
-    vysledek.textContent = "🕒 Otevřeno každý den 10:00–22:00.";
-  } else if (text.includes("rezerv")) {
-    document.getElementById("rezervace")?.scrollIntoView({ behavior: "smooth" });
-    vysledek.textContent = "📅 Formulář rezervace je níže.";
+  if (
+    !input ||
+    !vysledek
+  ) {
+    return;
+  }
+
+  const text =
+    input.value
+      .toLowerCase()
+      .trim();
+
+  if (
+    text.includes("menu")
+  ) {
+    vysledek.textContent =
+      "🍽️ Menu se spravuje v dashboardu a hosté vždy vidí aktuální nabídku na veřejné stránce restaurace.";
+  } else if (
+    text.includes("otev")
+  ) {
+    vysledek.textContent =
+      "🕒 Každá restaurace si nastaví vlastní otevírací dobu a blokované časy. Rezervační systém je automaticky respektuje.";
+  } else if (
+    text.includes("rezerv")
+  ) {
+    vysledek.textContent =
+      "📅 Online rezervace hlídají kapacitu, provozní dobu, blokace a dostupnost stolů.";
   } else {
-    vysledek.textContent = "Zkus napsat: menu, otevřeno nebo rezervace.";
+    vysledek.textContent =
+      "Zkus napsat: menu, otevřeno nebo rezervace.";
   }
 }
 
@@ -874,6 +953,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       "Veřejná stránka restaurace se nepodařila kompletně načíst:",
       error
     );
+
+    showPublicRestaurantUnavailable(
+      error?.message ||
+      "Zkontrolujte prosím odkaz restaurace."
+    );
+
+    return;
   }
 
   const dateInput =
