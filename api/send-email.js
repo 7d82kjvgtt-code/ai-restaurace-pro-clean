@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 const RESEND_API_URL = "https://api.resend.com/emails";
 
 const SUPABASE_URL =
@@ -2083,6 +2084,59 @@ async function createReservationOnServer(
     // Ochrana veřejného rezervačního formuláře proti spamu.
     // Klíč je svázaný s restaurací + kontaktem zákazníka,
     // takže limit jedné restaurace neovlivní ostatní restaurace.
+        // Druhá vrstva ochrany proti spamu podle IP adresy.
+    const forwardedFor =
+      String(
+        req.headers?.["x-forwarded-for"] || ""
+      ).trim();
+
+    const realIp =
+      String(
+        req.headers?.["x-real-ip"] || ""
+      ).trim();
+
+    const clientIp =
+      forwardedFor
+        .split(",")[0]
+        .trim() ||
+      realIp;
+
+    if (clientIp) {
+      const clientIpHash =
+  createHash("sha256")
+    .update(clientIp)
+    .digest("hex");
+
+const ipRateKey =
+  `reservation-ip:${restaurantId}:${clientIpHash}`;
+      const ipRateLimitResult =
+        await supabaseServiceJson(
+          "/rest/v1/rpc/check_public_reservation_ip_rate_limit",
+          {
+            method: "POST",
+            headers: {
+              Prefer: "return=representation"
+            },
+            body: JSON.stringify({
+              p_rate_key: ipRateKey
+            })
+          }
+        );
+
+      const ipRateLimitAllowed =
+        Array.isArray(ipRateLimitResult)
+          ? ipRateLimitResult[0]
+          : ipRateLimitResult;
+
+      if (ipRateLimitAllowed !== true) {
+        return res
+          .status(429)
+          .json({
+            error:
+              "Z této sítě bylo odesláno příliš mnoho rezervací. Zkuste to prosím později."
+          });
+      }
+    }
     const rateKey =
       `reservation:${restaurantId}:${cleanEmail}:${cleanPhone}`;
 
