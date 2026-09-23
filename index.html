@@ -50,7 +50,7 @@
 
 <nav class="navbar">
 
-  <a class="brand" href="/">
+  <a class="brand" id="publicRestaurantBrand" href="/">
     🍽️ AI Restaurace <span>PRO</span>
   </a>
 
@@ -65,12 +65,12 @@
   </button>
 
   <div class="nav-links" id="navLinks">
-    <a href="#funkce">Funkce</a>
+    <a href="#funkce" data-saas-only>Funkce</a>
     <a href="#menu">Menu</a>
     <a href="#rezervace">Rezervace</a>
-    <a href="#cenik">Ceník</a>
-    <a href="#kontakt">Kontakt</a>
-    <a class="admin-link" href="/dashboard.html">Dashboard</a>
+    <a href="#cenik" data-saas-only>Ceník</a>
+    <a href="#kontakt" data-saas-only>Kontakt</a>
+    <a class="admin-link" href="/dashboard.html" data-saas-only>Dashboard</a>
   </div>
 
 </nav>
@@ -80,17 +80,17 @@
 
   <div class="hero-text">
 
-    <p class="badge">
+    <p class="badge" id="publicRestaurantBadge">
       Prémiový systém pro moderní restaurace
     </p>
 
-    <h1>
+    <h1 id="publicRestaurantHeroTitle">
       Web, rezervace,
       menu a AI asistent
       v jednom systému.
     </h1>
 
-    <p class="subtitle">
+    <p class="subtitle" id="publicRestaurantHeroSubtitle">
       Profesionální řešení pro restaurace,
       které chtějí více rezervací,
       moderní prezentaci a jednoduchou správu podniku.
@@ -102,7 +102,7 @@
         Rezervovat stůl
       </a>
 
-      <a class="btn secondary" href="#funkce">
+      <a class="btn secondary" href="#funkce" data-saas-only>
         Co systém umí
       </a>
 
@@ -111,7 +111,7 @@
   </div>
 
 
-  <div class="assistant-card">
+  <div class="assistant-card" data-saas-only>
 
     <h3>🤖 AI Asistent</h3>
 
@@ -133,7 +133,7 @@
 </section>
 
 
-<section id="funkce" class="section">
+<section id="funkce" class="section" data-saas-only>
 
   <div class="section-head">
 
@@ -349,7 +349,7 @@
 </section>
 
 
-<section class="section">
+<section class="section" data-saas-only>
 
   <div class="section-head">
 
@@ -424,7 +424,7 @@
 </section>
 
 
-<section id="cenik" class="section">
+<section id="cenik" class="section" data-saas-only>
 
   <div class="section-head">
 
@@ -502,7 +502,7 @@
 </section>
 
 
-<section class="section">
+<section class="section" data-saas-only>
 
   <div
     class="assistant-card"
@@ -535,6 +535,7 @@
 <section
   id="kontakt"
   class="section contact"
+  data-saas-only
 >
 
   <h2>
