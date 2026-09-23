@@ -2430,154 +2430,259 @@ function closeReservationModal() {
 }
 
 async function saveReservationChanges() {
-    const id = Number(
-        document.getElementById("editReservationId").value
+  const id = Number(
+    document.getElementById("editReservationId").value
+  );
+
+  const name =
+    document
+      .getElementById("editReservationName")
+      .value
+      .trim();
+
+  const people = Number(
+    document.getElementById("editReservationPeople").value
+  );
+
+  const date =
+    document.getElementById("editReservationDate").value;
+
+  const time =
+    document.getElementById("editReservationTime").value;
+
+  const durationMinutes = Number(
+    document.getElementById("editReservationDuration").value
+  );
+
+  const tableValue =
+    document.getElementById("editReservationTable").value;
+
+  const tableId =
+    tableValue ? Number(tableValue) : null;
+
+  const status =
+    String(
+      document.getElementById("editReservationStatus").value || ""
+    ).trim();
+
+  const phone =
+    document
+      .getElementById("editReservationPhone")
+      .value
+      .trim();
+
+  const email =
+    document
+      .getElementById("editReservationEmail")
+      .value
+      .trim();
+
+  const note =
+    document
+      .getElementById("editReservationNote")
+      .value
+      .trim();
+
+  if (
+    !Number.isInteger(id) ||
+    id < 1 ||
+    !name ||
+    !date ||
+    !time ||
+    !Number.isInteger(people) ||
+    people < 1 ||
+    people > 30 ||
+    !Number.isFinite(durationMinutes) ||
+    durationMinutes < 30 ||
+    durationMinutes > 360 ||
+    !["Čeká", "Potvrzeno", "Zrušeno"].includes(status)
+  ) {
+    showDashboardNotice(
+      "Vyplň správně jméno, počet osob, datum, čas, délku a stav."
+    );
+    return;
+  }
+
+  const currentReservation =
+    reservations.find(
+      reservation => Number(reservation.id) === id
     );
 
-    const name =
-        document
-            .getElementById("editReservationName")
-            .value
-            .trim();
+  if (!currentReservation) {
+    showDashboardNotice("Rezervace nebyla nalezena.");
+    return;
+  }
 
-    const people = Number(
-        document.getElementById("editReservationPeople").value
-    );
+  const openingAvailability =
+    await checkDashboardOpeningAvailability({
+      date,
+      time,
+      durationMinutes
+    });
 
-    const date =
-        document.getElementById("editReservationDate").value;
+  if (!openingAvailability.ok && status !== "Zrušeno") {
+    showDashboardNotice(openingAvailability.message);
+    return;
+  }
 
-    const time =
-        document.getElementById("editReservationTime").value;
-  
-const durationMinutes = Number(
-  document.getElementById("editReservationDuration").value
-);
-  
-    const tableValue =
-        document.getElementById("editReservationTable").value;
+  const updatedReservation = {
+    id,
+    name,
+    people,
+    date,
+    time,
+    duration_minutes: durationMinutes,
+    table_id: tableId,
+    phone,
+    email,
+    note,
+    status
+  };
 
-    const tableId =
-        tableValue ? Number(tableValue) : null;
+  if (tableId !== null) {
+    const selectedTable =
+      restaurantTables.find(
+        table => Number(table.id) === tableId
+      );
 
-    const status =
-        document.getElementById("editReservationStatus").value;
+    if (!selectedTable) {
+      showDashboardNotice("Vybraný stůl nebyl nalezen.");
+      return;
+    }
 
-    const phone =
-        document
-            .getElementById("editReservationPhone")
-            .value
-            .trim();
-
-    const email =
-        document
-            .getElementById("editReservationEmail")
-            .value
-            .trim();
-
-    const note =
-        document
-            .getElementById("editReservationNote")
-            .value
-            .trim();
+    if (people > Number(selectedTable.capacity)) {
+      showDashboardNotice(
+        `${selectedTable.name} má jen ` +
+        `${selectedTable.capacity} míst.`
+      );
+      return;
+    }
 
     if (
-        !name ||
-        !date ||
-        !time ||
-        !Number.isInteger(people) ||
-        people < 1 ||
-        people > 30
+      status !== "Zrušeno" &&
+      hasTableConflict(
+        tableId,
+        updatedReservation,
+        id
+      )
     ) {
-        showDashboardNotice("Vyplň správně jméno, počet osob, datum a čas.");
-        return;
+      showDashboardNotice(
+        `${selectedTable.name} je v tomto čase obsazený.\n\n` +
+        "Vyber jiný stůl nebo jiný čas."
+      );
+      return;
+    }
+  }
+
+  try {
+    // Nejdřív uložíme obsah rezervace BEZ statusu.
+    // Potvrzení/zrušení pak musí projít serverovým endpointem,
+    // aby se zachovala autorizace, ochrana proti duplicitě a status e-mail.
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}&restaurant_id=eq.${currentRestaurantId}`,
+      {
+        method: "PATCH",
+        headers: getHeaders({
+          Prefer: "return=minimal"
+        }),
+        body: JSON.stringify({
+          name,
+          people,
+          date,
+          time,
+          duration_minutes: durationMinutes,
+          table_id: tableId,
+          phone,
+          email,
+          note
+        })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
     }
 
-   const updatedReservation = {
-  id,
-  name,
-  people,
-  date,
-  time,
-  duration_minutes: durationMinutes,
-  table_id: tableId,
-  phone,
-  email,
-  note,
-  status
-};
+    const previousStatus =
+      String(currentReservation.status || "Čeká");
 
-    if (tableId !== null) {
-        const selectedTable = restaurantTables.find(
-            table => Number(table.id) === Number(tableId)
-        );
+    let statusResult = null;
 
-        if (!selectedTable) {
-            showDashboardNotice("Vybraný stůl nebyl nalezen.");
-            return;
-        }
-
-        if (people > Number(selectedTable.capacity)) {
-            showDashboardNotice(
-                `${selectedTable.name} má jen ` +
-                `${selectedTable.capacity} míst.`
-            );
-            return;
-        }
-
-        if (
-            status !== "Zrušeno" &&
-            hasTableConflict(tableId, updatedReservation, id)
-        ) {
-            showDashboardNotice(
-                `${selectedTable.name} je v tomto čase obsazený.\n\n` +
-                "Vyber jiný stůl nebo jiný čas."
-            );
-            return;
-        }
-    }
-
-    try {
-        const response = await authorizedFetch(
-            `${SUPABASE_URL}/rest/v1/reservations?id=eq.${Number(id)}&restaurant_id=eq.${currentRestaurantId}`,
+    if (status !== previousStatus) {
+      if (["Potvrzeno", "Zrušeno"].includes(status)) {
+        statusResult =
+          await updateReservationStatusRequest(
+            id,
+            status
+          );
+      } else {
+        const statusResponse =
+          await authorizedFetch(
+            `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}&restaurant_id=eq.${currentRestaurantId}`,
             {
-                method: "PATCH",
-                headers: getHeaders({
-                    Prefer: "return=minimal"
-                }),
+              method: "PATCH",
+              headers: getHeaders({
+                Prefer: "return=minimal"
+              }),
               body: JSON.stringify({
-               name,
-               people,
-               date,
-               time,
-               duration_minutes: durationMinutes,
-               table_id: tableId,
-               phone,
-               email,
-               note,
-               status
-})
+                status: "Čeká"
+              })
             }
-        );
+          );
 
-        if (!response.ok) {
-            throw new Error(await response.text());
+        if (!statusResponse.ok) {
+          throw new Error(
+            await statusResponse.text()
+          );
         }
-
-       closeReservationModal();
-      
-closeTableModal();
-      
-await loadReservations();
-await loadReservationHistory();
-
-renderTables();
-
-showDashboardNotice("Rezervace byla úspěšně upravena.");
-    } catch (error) {
-        console.error(error);
-        showDashboardNotice("Rezervaci se nepodařilo upravit.");
+      }
     }
+
+    closeReservationModal();
+    closeTableModal();
+
+    await Promise.all([
+      loadReservations(),
+      loadReservationHistory()
+    ]);
+
+    renderTables();
+
+    if (
+      statusResult &&
+      statusResult.email_sent
+    ) {
+      showDashboardNotice(
+        status === "Potvrzeno"
+          ? "Rezervace byla upravena, potvrzena a zákazníkovi byl odeslán e-mail."
+          : "Rezervace byla upravena, zrušena a zákazníkovi byl odeslán e-mail.",
+        "success"
+      );
+    } else if (
+      statusResult &&
+      statusResult.email_error
+    ) {
+      showDashboardNotice(
+        `Rezervace byla upravena a stav změněn, ale e-mail se nepodařilo odeslat: ${statusResult.email_error}`,
+        "error"
+      );
+    } else {
+      showDashboardNotice(
+        "Rezervace byla úspěšně upravena.",
+        "success"
+      );
+    }
+  } catch (error) {
+    console.error(error);
+    showDashboardNotice(
+      "Rezervaci se nepodařilo kompletně upravit."
+    );
+
+    await Promise.allSettled([
+      loadReservations(),
+      loadReservationHistory()
+    ]);
+  }
 }
 
 async function updateReservation(id, data) {
