@@ -4965,6 +4965,28 @@ async function saveNewReservation() {
   }
 
   if (
+    name.length > 120 ||
+    phone.length > 40 ||
+    note.length > 1000
+  ) {
+    showDashboardNotice(
+      "Jméno může mít maximálně 120 znaků, telefon 40 a poznámka 1000."
+    );
+    return;
+  }
+
+  if (
+    name.length > 120 ||
+    phone.length > 40 ||
+    note.length > 1000
+  ) {
+    showDashboardNotice(
+      "Jméno může mít maximálně 120 znaků, telefon 40 a poznámka 1000."
+    );
+    return;
+  }
+
+  if (
     !isValidOptionalEmail(
       email
     )
@@ -6863,6 +6885,20 @@ async function saveFood() {
     return;
   }
 
+  if (
+    name.length > 120 ||
+    emoji.length > 16 ||
+    description.length > 1000 ||
+    ingredients.length > 2000 ||
+    allergens.length > 200 ||
+    weight.length > 80
+  ) {
+    showDashboardNotice(
+      "Některé údaje jídla jsou příliš dlouhé. Zkrať název, popis, ingredience nebo doplňující údaje."
+    );
+    return;
+  }
+
   let imageUrl =
     getSafeHttpImageUrl(editingImageUrl);
 
@@ -8527,6 +8563,12 @@ async function addBlockedTime() {
     showDashboardNotice("Vyplň datum a platný čas blokace.");
     return;
   }
+
+  if (reason.length > 300) {
+    showDashboardNotice("Důvod blokace může mít maximálně 300 znaků.");
+    return;
+  }
+
   try {
     const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/blocked_times`, {
       method: "POST",
