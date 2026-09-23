@@ -405,9 +405,15 @@ async function loadCurrentRestaurantInfo() {
         "Přehled provozu restaurace";
     }
 
+    const isPublished =
+      data.restaurant
+        .is_published ===
+      true;
+
     if (
       link &&
-      currentRestaurantSlug
+      currentRestaurantSlug &&
+      isPublished
     ) {
       link.href =
         `/r/${encodeURIComponent(
