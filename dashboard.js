@@ -4338,6 +4338,77 @@ function setupAutomaticTableRecommendation() {
     });
 }
 
+function openNewReservationForm() {
+  if (
+    !canAccessSection(
+      "rezervace"
+    )
+  ) {
+    showDashboardNotice(
+      "Pro vytváření rezervací nemáš oprávnění.",
+      "info"
+    );
+    return;
+  }
+
+  showDashboardSection(
+    "rezervace"
+  );
+
+  const reservationSection =
+    document.getElementById(
+      "novaRezervace"
+    );
+
+  const dateInput =
+    document.getElementById(
+      "newDate"
+    );
+
+  if (!reservationSection) {
+    showDashboardNotice(
+      "Formulář nové rezervace se nepodařilo otevřít."
+    );
+    return;
+  }
+
+  fillNewTableOptions(
+    "auto"
+  );
+
+  setupAutomaticTableRecommendation();
+
+  if (
+    dateInput &&
+    !dateInput.value
+  ) {
+    dateInput.value =
+      getLocalDateString();
+  }
+
+  updateNewTableRecommendation();
+
+  reservationSection.style.display =
+    "block";
+
+  requestAnimationFrame(
+    () => {
+      reservationSection.scrollIntoView({
+        behavior:
+          "smooth",
+        block:
+          "start"
+      });
+
+      document
+        .getElementById(
+          "newName"
+        )
+        ?.focus();
+    }
+  );
+}
+
 function createReservationFromTable() {
     closeTableModal();
 
