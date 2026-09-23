@@ -585,3 +585,118 @@ textarea::placeholder{
   .reservation-notice { grid-template-columns: 34px 1fr 30px; padding: 13px; font-size: 14px; }
   .reservation-notice-icon { width:34px; height:34px; }
 }
+
+
+/* =========================================================
+   PUBLIC RESTAURANT MODE — PILOT V1 POLISH
+========================================================= */
+body.restaurant-public-mode .hero {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 52vh;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 64px 8% 52px;
+}
+
+body.restaurant-public-mode .hero-text {
+  max-width: 900px;
+}
+
+body.restaurant-public-mode .hero h1 {
+  max-width: 900px;
+}
+
+body.restaurant-public-mode .section {
+  max-width: 1500px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 54px;
+  padding-bottom: 54px;
+}
+
+body.restaurant-public-mode #menu {
+  padding-top: 44px;
+}
+
+body.restaurant-public-mode .menu-category {
+  margin-bottom: 50px !important;
+}
+
+body.restaurant-public-mode .menu-category .grid {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 260px)) !important;
+  justify-content: start !important;
+  gap: 24px !important;
+}
+
+body.restaurant-public-mode .food-card {
+  width: 100%;
+  min-height: 330px;
+}
+
+body.restaurant-public-mode #rezervace {
+  max-width: 900px;
+}
+
+body.restaurant-public-mode .reservation-box {
+  max-width: 680px;
+  padding: 30px;
+}
+
+body.restaurant-public-mode .reservation-box label {
+  margin: 4px 0 0;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+
+body.restaurant-public-mode .reservation-box input,
+body.restaurant-public-mode .reservation-box select,
+body.restaurant-public-mode .reservation-box textarea {
+  margin-top: 6px;
+  margin-bottom: 10px;
+}
+
+body.restaurant-public-mode .reservation-box textarea {
+  min-height: 105px;
+}
+
+body.restaurant-public-mode #reservationSubmitButton {
+  margin-top: 10px;
+}
+
+@media (max-width: 760px) {
+  body.restaurant-public-mode .hero {
+    min-height: auto;
+    padding: 40px 20px 42px;
+  }
+
+  body.restaurant-public-mode .section {
+    padding: 42px 20px;
+  }
+
+  body.restaurant-public-mode #menu {
+    padding-top: 34px;
+  }
+
+  body.restaurant-public-mode .menu-category {
+    margin-bottom: 38px !important;
+  }
+
+  body.restaurant-public-mode .menu-category .grid {
+    grid-template-columns: 1fr !important;
+    justify-content: stretch !important;
+  }
+
+  body.restaurant-public-mode .food-card {
+    width: 100%;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  body.restaurant-public-mode .reservation-box {
+    max-width: none;
+    padding: 20px;
+  }
+}
