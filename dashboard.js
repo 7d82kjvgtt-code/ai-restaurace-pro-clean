@@ -464,7 +464,7 @@ async function loadRestaurantContext() {
       await fetch(
         `${SUPABASE_URL}/rest/v1/restaurant_team?user_id=eq.${encodeURIComponent(
           payload.sub
-        )}&active=eq.true&select=restaurant_id,role&limit=1`,
+        )}&active=eq.true&select=restaurant_id,role&order=id.asc&limit=2`,
         {
           method: "GET",
           headers: getHeaders()
@@ -474,6 +474,17 @@ async function loadRestaurantContext() {
     if (teamResponse.ok) {
       const memberships =
         await teamResponse.json();
+
+      if (
+        Array.isArray(memberships) &&
+        memberships.length > 1
+      ) {
+        console.error(
+          "Účet má více aktivních restaurací. Přepínač restaurací zatím není ve V1 podporovaný."
+        );
+
+        return false;
+      }
 
       const membership =
         memberships?.[0];
