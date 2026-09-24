@@ -841,3 +841,187 @@ body.restaurant-public-mode .restaurant-ai-section {
     width: 100%;
   }
 }
+
+
+/* =========================================================
+   PUBLIC RESTAURANT BRANDING
+========================================================= */
+body.restaurant-public-mode {
+  --restaurant-accent: #f59e0b;
+}
+
+body.restaurant-public-mode .brand-logo {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow:
+    0 10px 24px
+    color-mix(
+      in srgb,
+      var(--restaurant-accent) 24%,
+      transparent
+    );
+}
+
+body.restaurant-public-mode .brand-monogram {
+  background:
+    linear-gradient(
+      135deg,
+      var(--restaurant-accent),
+      color-mix(
+        in srgb,
+        var(--restaurant-accent) 72%,
+        #ffffff
+      )
+    );
+  box-shadow:
+    0 10px 24px
+    color-mix(
+      in srgb,
+      var(--restaurant-accent) 24%,
+      transparent
+    );
+}
+
+body.restaurant-public-mode .badge {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--restaurant-accent) 32%,
+      transparent
+    );
+  background:
+    color-mix(
+      in srgb,
+      var(--restaurant-accent) 10%,
+      transparent
+    );
+  color:
+    color-mix(
+      in srgb,
+      var(--restaurant-accent) 82%,
+      #ffffff
+    );
+}
+
+body.restaurant-public-mode .btn:not(.secondary) {
+  background:
+    var(--restaurant-accent);
+  border-color:
+    var(--restaurant-accent);
+  box-shadow:
+    0 16px 34px
+    color-mix(
+      in srgb,
+      var(--restaurant-accent) 22%,
+      transparent
+    );
+}
+
+body.restaurant-public-mode .restaurant-ai-card {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--restaurant-accent) 22%,
+      transparent
+    );
+}
+
+body.restaurant-public-mode .restaurant-ai-answer {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--restaurant-accent) 18%,
+      transparent
+    );
+}
+
+body.restaurant-public-mode .restaurant-ai-suggestions button:hover {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--restaurant-accent) 42%,
+      transparent
+    );
+  background:
+    color-mix(
+      in srgb,
+      var(--restaurant-accent) 12%,
+      transparent
+    );
+}
+
+.restaurant-contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.restaurant-contact-row[hidden] {
+  display: none !important;
+}
+
+.restaurant-contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  padding: 9px 12px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--restaurant-accent, #f59e0b) 24%,
+      rgba(255,255,255,.12)
+    );
+  border-radius: 999px;
+  background: rgba(15,23,42,.5);
+  color: #dbe4f0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+a.restaurant-contact-item:hover {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--restaurant-accent, #f59e0b) 52%,
+      transparent
+    );
+  background:
+    color-mix(
+      in srgb,
+      var(--restaurant-accent, #f59e0b) 10%,
+      rgba(15,23,42,.7)
+    );
+}
+
+.restaurant-contact-item span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  body.restaurant-public-mode .brand-logo {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+    border-radius: 10px;
+  }
+
+  .restaurant-contact-row {
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .restaurant-contact-item {
+    max-width: 100%;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+}
