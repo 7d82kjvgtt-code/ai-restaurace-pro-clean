@@ -32,6 +32,8 @@ const PUBLIC_RESTAURANT_SLUG = resolvePublicRestaurantSlug();
 
 let publicRestaurantInfo = null;
 let publicRestaurantToday = "";
+let publicRestaurantAiEnabled = false;
+let restaurantAiRequestInProgress = false;
 
 function applyPublicPageMode() {
   const hasRestaurant =
@@ -57,6 +59,15 @@ function applyPublicPageMode() {
         !hasRestaurant;
     });
 
+  document
+    .querySelectorAll(
+      "[data-restaurant-ai]"
+    )
+    .forEach(element => {
+      element.hidden =
+        true;
+    });
+
   if (hasRestaurant) {
     document.body.classList.add(
       "restaurant-public-mode"
@@ -77,6 +88,225 @@ function applyPublicPageMode() {
       hasRestaurant;
   }
 }
+
+function setRestaurantAiVisibility(
+  enabled
+) {
+  publicRestaurantAiEnabled =
+    Boolean(enabled);
+
+  document
+    .querySelectorAll(
+      "[data-restaurant-ai]"
+    )
+    .forEach(element => {
+      element.hidden =
+        !publicRestaurantAiEnabled;
+    });
+}
+
+
+function setRestaurantAiBusy(
+  busy
+) {
+  restaurantAiRequestInProgress =
+    Boolean(busy);
+
+  const button =
+    document.getElementById(
+      "restaurantAiSendButton"
+    );
+
+  const input =
+    document.getElementById(
+      "restaurantAiInput"
+    );
+
+  if (button) {
+    button.disabled =
+      restaurantAiRequestInProgress;
+
+    button.textContent =
+      restaurantAiRequestInProgress
+        ? "Přemýšlím…"
+        : "Zeptat se";
+  }
+
+  if (input) {
+    input.disabled =
+      restaurantAiRequestInProgress;
+  }
+}
+
+
+async function askRestaurantAi(
+  questionOverride = ""
+) {
+  if (
+    !publicRestaurantAiEnabled ||
+    restaurantAiRequestInProgress
+  ) {
+    return;
+  }
+
+  const input =
+    document.getElementById(
+      "restaurantAiInput"
+    );
+
+  const answer =
+    document.getElementById(
+      "restaurantAiAnswer"
+    );
+
+  const question =
+    String(
+      questionOverride ||
+      input?.value ||
+      ""
+    )
+      .trim()
+      .slice(0, 601);
+
+  if (!question) {
+    if (answer) {
+      answer.textContent =
+        "Napište prosím dotaz.";
+    }
+
+    input?.focus();
+    return;
+  }
+
+  if (question.length > 600) {
+    if (answer) {
+      answer.textContent =
+        "Dotaz může mít maximálně 600 znaků.";
+    }
+
+    return;
+  }
+
+  if (answer) {
+    answer.textContent =
+      "Hledám odpověď v aktuálních údajích restaurace…";
+  }
+
+  setRestaurantAiBusy(
+    true
+  );
+
+  try {
+    const response =
+      await fetch(
+        "/api/restaurant-ai",
+        {
+          method:
+            "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body:
+            JSON.stringify({
+              slug:
+                requirePublicRestaurantSlug(),
+              question
+            })
+        }
+      );
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+    if (
+      !response.ok ||
+      !data?.answer
+    ) {
+      throw new Error(
+        data?.error ||
+        "AI asistent teď není dostupný."
+      );
+    }
+
+    if (answer) {
+      answer.textContent =
+        String(
+          data.answer
+        );
+    }
+
+    if (
+      input &&
+      !questionOverride
+    ) {
+      input.value =
+        "";
+    }
+  } catch (error) {
+    console.error(
+      "AI asistent restaurace:",
+      error
+    );
+
+    if (answer) {
+      answer.textContent =
+        String(
+          error?.message ||
+          "AI asistent teď není dostupný. Zkuste to prosím za chvíli."
+        );
+    }
+  } finally {
+    setRestaurantAiBusy(
+      false
+    );
+  }
+}
+
+
+function setupRestaurantAi() {
+  const form =
+    document.getElementById(
+      "restaurantAiForm"
+    );
+
+  if (form) {
+    form.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
+        askRestaurantAi();
+      }
+    );
+  }
+
+  document
+    .querySelectorAll(
+      "[data-ai-question]"
+    )
+    .forEach(button => {
+      button.addEventListener(
+        "click",
+        () => {
+          const question =
+            String(
+              button.dataset
+                .aiQuestion ||
+              ""
+            ).trim();
+
+          if (question) {
+            askRestaurantAi(
+              question
+            );
+          }
+        }
+      );
+    });
+}
+
 
 async function loadPublicRestaurantInfo() {
   const slug =
@@ -124,6 +354,10 @@ async function loadPublicRestaurantInfo() {
       data.restaurant_date ||
       ""
     ).trim();
+
+  setRestaurantAiVisibility(
+    data.ai_enabled === true
+  );
 
   const name =
     String(
@@ -219,6 +453,10 @@ async function loadPublicRestaurantInfo() {
 function showPublicRestaurantUnavailable(
   message = "Restaurace není dostupná."
 ) {
+  setRestaurantAiVisibility(
+    false
+  );
+
   document.title =
     "Restaurace není dostupná | AI Restaurace PRO";
 
@@ -1002,6 +1240,7 @@ async function ulozitRezervaci() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   applyPublicPageMode();
+  setupRestaurantAi();
 
   if (
     !PUBLIC_RESTAURANT_SLUG
