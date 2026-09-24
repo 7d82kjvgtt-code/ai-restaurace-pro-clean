@@ -546,6 +546,7 @@ function reservationEmailHtml({
   restaurantName,
   title,
   message,
+  locale = "cs",
   name,
   lastName,
   date,
@@ -554,6 +555,9 @@ function reservationEmailHtml({
   placeName,
   statusLabel
 }) {
+  const labels = locale === "en"
+    ? { greeting: "Hello", details: "Reservation details", restaurant: "Restaurant", date: "Date", time: "Time", people: "Guests", table: "Table", status: "Status", footer: "This email was sent automatically by the restaurant." }
+    : { greeting: "Dobrý den", details: "Detail rezervace", restaurant: "Restaurace", date: "Datum", time: "Čas", people: "Počet osob", table: "Stůl", status: "Stav", footer: "Tento e-mail byl odeslán automaticky systémem restaurace." };
   const fullName =
     `${String(
       name || ""
@@ -563,7 +567,7 @@ function reservationEmailHtml({
 
   return `
 <!doctype html>
-<html lang="cs">
+<html lang="${locale === "en" ? "en" : "cs"}">
 <head>
   <meta charset="utf-8">
   <meta
@@ -637,9 +641,9 @@ function reservationEmailHtml({
             line-height:1.6;
           "
         >
-          Dobrý den${
+          ${labels.greeting}${
             fullName
-              ? `, ${escapeHtml(
+              ? `${locale === "en" ? " " : ", "}${escapeHtml(
                   fullName
                 )}`
               : ""
@@ -674,7 +678,7 @@ function reservationEmailHtml({
               color:#94a3b8;
             "
           >
-            Detail rezervace
+            ${labels.details}
           </div>
 
           <table
@@ -693,7 +697,7 @@ function reservationEmailHtml({
                   color:#94a3b8;
                 "
               >
-                Restaurace
+                ${labels.restaurant}
               </td>
 
               <td
@@ -716,7 +720,7 @@ function reservationEmailHtml({
                   color:#94a3b8;
                 "
               >
-                Datum
+                ${labels.date}
               </td>
 
               <td
@@ -739,7 +743,7 @@ function reservationEmailHtml({
                   color:#94a3b8;
                 "
               >
-                Čas
+                ${labels.time}
               </td>
 
               <td
@@ -767,7 +771,7 @@ function reservationEmailHtml({
                   color:#94a3b8;
                 "
               >
-                Počet osob
+                ${labels.people}
               </td>
 
               <td
@@ -793,7 +797,7 @@ function reservationEmailHtml({
                   color:#94a3b8;
                 "
               >
-                Stůl
+                ${labels.table}
               </td>
 
               <td
@@ -819,7 +823,7 @@ function reservationEmailHtml({
                   color:#94a3b8;
                 "
               >
-                Stav
+                ${labels.status}
               </td>
 
               <td
@@ -846,8 +850,7 @@ function reservationEmailHtml({
             color:#94a3b8;
           "
         >
-          Tento e-mail byl odeslán
-          automaticky systémem restaurace.
+          ${labels.footer}
         </p>
       </div>
     </div>
@@ -952,6 +955,7 @@ async function sendResendEmail({
 async function sendReservationCreatedEmail({
   restaurant,
   email,
+  locale = "cs",
   name,
   lastName,
   date,
@@ -963,18 +967,23 @@ async function sendReservationCreatedEmail({
     to: email,
 
     subject:
-      `Rezervaci jsme přijali – ${restaurant.name}`,
+      locale === "en"
+        ? `Reservation received – ${restaurant.name}`
+        : `Rezervaci jsme přijali – ${restaurant.name}`,
 
     html:
       reservationEmailHtml({
+        locale,
         restaurantName:
           restaurant.name,
 
         title:
-          "Rezervaci jsme přijali",
+          locale === "en" ? "Reservation received" : "Rezervaci jsme přijali",
 
         message:
-          "Vaše rezervace byla úspěšně uložena a čeká na potvrzení restaurace.",
+          locale === "en"
+            ? "Your reservation has been received and is awaiting confirmation from the restaurant."
+            : "Vaše rezervace byla úspěšně uložena a čeká na potvrzení restaurace.",
 
         name,
         lastName,
@@ -984,7 +993,7 @@ async function sendReservationCreatedEmail({
         placeName,
 
         statusLabel:
-          "Čeká"
+          locale === "en" ? "Pending" : "Čeká"
       })
   });
 }
@@ -998,30 +1007,36 @@ async function sendReservationStatusEmail({
 }) {
   const confirmed =
     status === "Potvrzeno";
+  const locale = reservation.locale === "en" ? "en" : "cs";
 
   return sendResendEmail({
     to:
       reservation.email,
 
     subject:
-      confirmed
-        ? `Rezervace potvrzena – ${restaurant.name}`
-        : `Rezervace zrušena – ${restaurant.name}`,
+      locale === "en"
+        ? `${confirmed ? "Reservation confirmed" : "Reservation cancelled"} – ${restaurant.name}`
+        : `${confirmed ? "Rezervace potvrzena" : "Rezervace zrušena"} – ${restaurant.name}`,
 
     html:
       reservationEmailHtml({
+        locale,
         restaurantName:
           restaurant.name,
 
         title:
-          confirmed
-            ? "Rezervace potvrzena"
-            : "Rezervace zrušena",
+          locale === "en"
+            ? confirmed ? "Reservation confirmed" : "Reservation cancelled"
+            : confirmed ? "Rezervace potvrzena" : "Rezervace zrušena",
 
         message:
-          confirmed
-            ? "Restaurace vaši rezervaci potvrdila. Těšíme se na vaši návštěvu."
-            : "Restaurace vaši rezervaci zrušila. Pokud potřebujete nový termín, vytvořte prosím novou rezervaci.",
+          locale === "en"
+            ? confirmed
+              ? "The restaurant has confirmed your reservation. We look forward to your visit."
+              : "The restaurant has cancelled your reservation. If you need another time, please make a new reservation."
+            : confirmed
+              ? "Restaurace vaši rezervaci potvrdila. Těšíme se na vaši návštěvu."
+              : "Restaurace vaši rezervaci zrušila. Pokud potřebujete nový termín, vytvořte prosím novou rezervaci.",
 
         name:
           reservation.name,
@@ -1041,7 +1056,7 @@ async function sendReservationStatusEmail({
         placeName,
 
         statusLabel:
-          status
+          locale === "en" ? confirmed ? "Confirmed" : "Cancelled" : status
       })
   });
 }
@@ -2211,7 +2226,8 @@ async function createReservationOnServer(
     time = "",
     phone = "",
     email = "",
-    note = ""
+    note = "",
+    locale = "cs"
   } = req.body || {};
 
   const cleanRestaurantSlug =
@@ -2241,6 +2257,8 @@ async function createReservationOnServer(
     String(
       note || ""
     ).trim();
+
+  const cleanLocale = locale === "en" ? "en" : "cs";
 
   const peopleNumber =
     Number(people);
@@ -2724,7 +2742,7 @@ const ipRateKey =
 
     const rpcResult =
       await supabaseServiceJson(
-        "/rest/v1/rpc/create_public_reservation_safe",
+        "/rest/v1/rpc/create_public_reservation_with_locale",
         {
           method: "POST",
           headers: {
@@ -2772,7 +2790,9 @@ const ipRateKey =
                 ? Number(
                     selectedGroup.id
                   )
-                : null
+                : null,
+
+            p_locale: cleanLocale
           })
         }
       );
@@ -2797,6 +2817,7 @@ const ipRateKey =
     try {
       await sendReservationCreatedEmail({
         restaurant,
+        locale: cleanLocale,
         email:
           cleanEmail,
         name:
@@ -4207,7 +4228,7 @@ async function updateReservationOnServer(
       await supabaseUserJson(
         `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${restaurantId}&status=eq.${encodeURIComponent(
           previousStatus
-        )}&select=id,restaurant_id,name,last_name,people,date,time,duration_minutes,email,phone,note,table_id,table_group_id,status`,
+        )}&select=id,restaurant_id,name,last_name,people,date,time,duration_minutes,email,phone,note,table_id,table_group_id,status,locale`,
         callerToken,
         {
           method:
@@ -4432,7 +4453,7 @@ async function updateReservationStatusOnServer(
     // Změň pouze stav, který jsme skutečně přečetli. Dva souběžné
     // požadavky s různým cílovým stavem tak neodešlou protichůdné e-maily.
     const changedRows = await supabaseUserJson(
-      `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${Number(existing.restaurant_id)}&status=eq.${encodeURIComponent(String(existing.status))}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status`,
+      `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${Number(existing.restaurant_id)}&status=eq.${encodeURIComponent(String(existing.status))}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status,locale`,
       callerToken,
       {
         method: "PATCH",
