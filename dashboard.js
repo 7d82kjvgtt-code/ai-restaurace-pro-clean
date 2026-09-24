@@ -1,6 +1,16 @@
 const SUPABASE_URL = "https://decpnnbaejxjbpmyjocs.supabase.co";
 const SUPABASE_KEY = "sb_publishable_l6ko8NS_92RjQBM2rEzAvA_Sd2hYicb";
 
+const RESTAURANT_LOGO_TYPES = new Map([
+  ["image/jpeg", "jpg"],
+  ["image/png", "png"],
+  ["image/webp", "webp"],
+  ["image/avif", "avif"]
+]);
+
+const MAX_RESTAURANT_LOGO_BYTES =
+  5 * 1024 * 1024;
+
 let reservations = [];
 let foods = [];
 let restaurantTables = [];
@@ -11,6 +21,7 @@ let currentRestaurantId = null;
 let currentRestaurantName = "";
 let currentRestaurantSlug = "";
 let currentRestaurantIsPublished = false;
+let currentRestaurantBranding = null;
 let currentDashboardAiEnabled = false;
 let dashboardAiRequestInProgress = false;
 let openingHoursConfigured = false;
@@ -295,6 +306,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupNavigation();
   setupMobileNavigation();
   setupDashboardAi();
+  setupRestaurantBrandingInputs();
 document.querySelectorAll(".room-switch").forEach((button) => {
     button.addEventListener("click", () => {
         selectedRoom = button.dataset.room;
@@ -356,6 +368,9 @@ async function loadCurrentRestaurantInfo() {
 
     currentRestaurantIsPublished =
       false;
+
+    currentRestaurantBranding =
+      null;
 
     currentDashboardAiEnabled =
       false;
@@ -444,6 +459,15 @@ async function loadCurrentRestaurantInfo() {
         .ai_enabled ===
       true;
 
+    currentRestaurantBranding =
+      {
+        ...data.restaurant
+      };
+
+    renderRestaurantBrandingForm(
+      currentRestaurantBranding
+    );
+
     if (
       link &&
       currentRestaurantSlug &&
@@ -482,6 +506,9 @@ async function loadCurrentRestaurantInfo() {
 
     currentRestaurantIsPublished =
       false;
+
+    currentRestaurantBranding =
+      null;
 
     currentDashboardAiEnabled =
       false;
@@ -790,6 +817,967 @@ function setupDashboardAi() {
 }
 
 
+function normalizeRestaurantWebsiteUrl(
+  value
+) {
+  const raw =
+    String(
+      value || ""
+    ).trim();
+
+  if (!raw) {
+    return "";
+  }
+
+  try {
+    const url =
+      new URL(raw);
+
+    if (
+      url.protocol !==
+        "https:" &&
+      url.protocol !==
+        "http:"
+    ) {
+      return "";
+    }
+
+    return url.href;
+  } catch {
+    return "";
+  }
+}
+
+
+function updateRestaurantBrandingPreview() {
+  const name =
+    String(
+      document
+        .getElementById(
+          "restaurantBrandName"
+        )
+        ?.value ||
+      currentRestaurantName ||
+      "Restaurace"
+    ).trim() ||
+    "Restaurace";
+
+  const description =
+    String(
+      document
+        .getElementById(
+          "restaurantBrandDescription"
+        )
+        ?.value ||
+      ""
+    ).trim();
+
+  const address =
+    String(
+      document
+        .getElementById(
+          "restaurantBrandAddress"
+        )
+        ?.value ||
+      ""
+    ).trim();
+
+  const phone =
+    String(
+      document
+        .getElementById(
+          "restaurantBrandPhone"
+        )
+        ?.value ||
+      ""
+    ).trim();
+
+  const email =
+    String(
+      document
+        .getElementById(
+          "restaurantBrandEmail"
+        )
+        ?.value ||
+      ""
+    ).trim();
+
+  const accent =
+    String(
+      document
+        .getElementById(
+          "restaurantBrandAccent"
+        )
+        ?.value ||
+      "#f59e0b"
+    ).trim();
+
+  const previewName =
+    document.getElementById(
+      "restaurantBrandPreviewName"
+    );
+
+  const previewDescription =
+    document.getElementById(
+      "restaurantBrandPreviewDescription"
+    );
+
+  const previewContact =
+    document.getElementById(
+      "restaurantBrandPreviewContact"
+    );
+
+  const fallback =
+    document.getElementById(
+      "restaurantLogoFallback"
+    );
+
+  const accentValue =
+    document.getElementById(
+      "restaurantBrandAccentValue"
+    );
+
+  const logoPreview =
+    document.getElementById(
+      "restaurantLogoPreview"
+    );
+
+  if (previewName) {
+    previewName.textContent =
+      name;
+  }
+
+  if (previewDescription) {
+    previewDescription.textContent =
+      description ||
+      "Krátký popis restaurace se zobrazí tady.";
+  }
+
+  if (previewContact) {
+    const parts =
+      [
+        address,
+        phone,
+        email
+      ].filter(Boolean);
+
+    previewContact.textContent =
+      parts.length
+        ? parts.join(" · ")
+        : "Kontaktní údaje se doplní po uložení.";
+  }
+
+  if (fallback) {
+    fallback.textContent =
+      (
+        Array.from(name)[0] ||
+        "R"
+      ).toLocaleUpperCase(
+        "cs-CZ"
+      );
+  }
+
+  if (accentValue) {
+    accentValue.textContent =
+      accent;
+  }
+
+  if (
+    logoPreview &&
+    /^#[0-9a-fA-F]{6}$/.test(
+      accent
+    )
+  ) {
+    logoPreview.style.setProperty(
+      "--restaurant-accent",
+      accent
+    );
+  }
+}
+
+
+function renderRestaurantBrandingForm(
+  restaurant = {}
+) {
+  const get =
+    id =>
+      document.getElementById(
+        id
+      );
+
+  const name =
+    String(
+      restaurant.name ||
+      currentRestaurantName ||
+      ""
+    );
+
+  const slug =
+    String(
+      restaurant.slug ||
+      currentRestaurantSlug ||
+      ""
+    );
+
+  const address =
+    String(
+      restaurant.address ||
+      ""
+    );
+
+  const phone =
+    String(
+      restaurant.phone ||
+      ""
+    );
+
+  const email =
+    String(
+      restaurant.email ||
+      ""
+    );
+
+  const websiteUrl =
+    normalizeRestaurantWebsiteUrl(
+      restaurant.website_url
+    );
+
+  const description =
+    String(
+      restaurant.short_description ||
+      ""
+    );
+
+  const accent =
+    /^#[0-9a-fA-F]{6}$/.test(
+      String(
+        restaurant.accent_color ||
+        ""
+      )
+    )
+      ? String(
+          restaurant.accent_color
+        )
+      : "#f59e0b";
+
+  if (get("restaurantBrandName")) {
+    get("restaurantBrandName").value =
+      name;
+  }
+
+  if (get("restaurantBrandSlug")) {
+    get("restaurantBrandSlug").value =
+      slug;
+  }
+
+  if (get("restaurantBrandAddress")) {
+    get("restaurantBrandAddress").value =
+      address;
+  }
+
+  if (get("restaurantBrandPhone")) {
+    get("restaurantBrandPhone").value =
+      phone;
+  }
+
+  if (get("restaurantBrandEmail")) {
+    get("restaurantBrandEmail").value =
+      email;
+  }
+
+  if (get("restaurantBrandWebsite")) {
+    get("restaurantBrandWebsite").value =
+      websiteUrl;
+  }
+
+  if (get("restaurantBrandDescription")) {
+    get("restaurantBrandDescription").value =
+      description;
+  }
+
+  if (get("restaurantBrandAccent")) {
+    get("restaurantBrandAccent").value =
+      accent;
+  }
+
+  if (get("restaurantBrandPublished")) {
+    get("restaurantBrandPublished").checked =
+      restaurant.is_published ===
+      true;
+  }
+
+  const logoUrl =
+    getSafeHttpImageUrl(
+      restaurant.logo_url
+    );
+
+  const logoImage =
+    get(
+      "restaurantLogoPreviewImage"
+    );
+
+  const logoFallback =
+    get(
+      "restaurantLogoFallback"
+    );
+
+  const removeLogoButton =
+    get(
+      "restaurantBrandRemoveLogoButton"
+    );
+
+  if (logoImage) {
+    logoImage.hidden =
+      !logoUrl;
+
+    logoImage.src =
+      logoUrl || "";
+  }
+
+  if (logoFallback) {
+    logoFallback.hidden =
+      Boolean(logoUrl);
+  }
+
+  if (removeLogoButton) {
+    removeLogoButton.hidden =
+      !logoUrl;
+  }
+
+  const publicLink =
+    get(
+      "restaurantBrandingPublicLink"
+    );
+
+  if (
+    publicLink &&
+    slug &&
+    restaurant.is_published ===
+      true
+  ) {
+    publicLink.href =
+      `/r/${encodeURIComponent(
+        slug
+      )}`;
+
+    publicLink.hidden =
+      false;
+  } else if (publicLink) {
+    publicLink.hidden =
+      true;
+  }
+
+  updateRestaurantBrandingPreview();
+}
+
+
+function canPublishRestaurantFromDashboard() {
+  return (
+    restaurantTables.some(
+      table =>
+        table?.active ===
+        true
+    ) &&
+    openingHoursConfigured &&
+    reservationSettingsConfigured &&
+    foods.length > 0
+  );
+}
+
+
+async function uploadRestaurantLogo(
+  file
+) {
+  const extension =
+    RESTAURANT_LOGO_TYPES.get(
+      file?.type
+    );
+
+  if (!extension) {
+    throw new Error(
+      "Logo musí být JPG, PNG, WebP nebo AVIF."
+    );
+  }
+
+  if (
+    !file?.size ||
+    file.size >
+      MAX_RESTAURANT_LOGO_BYTES
+  ) {
+    throw new Error(
+      "Logo může mít maximálně 5 MB."
+    );
+  }
+
+  const fileName =
+    "logo-" +
+    Date.now() +
+    "-" +
+    Math.random()
+      .toString(36)
+      .slice(2) +
+    "." +
+    extension;
+
+  const objectPath =
+    `${Number(
+      currentRestaurantId
+    )}/branding/${fileName}`;
+
+  const response =
+    await authorizedFetch(
+      `${SUPABASE_URL}/storage/v1/object/food-images/${objectPath}`,
+      {
+        method:
+          "POST",
+        headers:
+          getHeaders({
+            "Content-Type":
+              file.type,
+            "x-upsert":
+              "false"
+          }),
+        body:
+          file
+      }
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      "Logo se nepodařilo nahrát."
+    );
+  }
+
+  return (
+    `${SUPABASE_URL}/storage/v1/object/public/food-images/${objectPath}`
+  );
+}
+
+
+async function saveRestaurantBranding() {
+  if (
+    currentUserRole !==
+      "owner" ||
+    !currentRestaurantId
+  ) {
+    showDashboardNotice(
+      "Branding restaurace může upravovat pouze majitel.",
+      "error"
+    );
+    return;
+  }
+
+  const name =
+    String(
+      document
+        .getElementById(
+          "restaurantBrandName"
+        )
+        ?.value ||
+      ""
+    ).trim();
+
+  const address =
+    String(
+      document
+        .getElementById(
+          "restaurantBrandAddress"
+        )
+        ?.value ||
+      ""
+    ).trim();
+
+  const phone =
+    String(
+      document
+        .getElementById(
+          "restaurantBrandPhone"
+        )
+        ?.value ||
+      ""
+    ).trim();
+
+  const email =
+    String(
+      document
+        .getElementById(
+          "restaurantBrandEmail"
+        )
+        ?.value ||
+      ""
+    ).trim();
+
+  const rawWebsite =
+    String(
+      document
+        .getElementById(
+          "restaurantBrandWebsite"
+        )
+        ?.value ||
+      ""
+    ).trim();
+
+  const description =
+    String(
+      document
+        .getElementById(
+          "restaurantBrandDescription"
+        )
+        ?.value ||
+      ""
+    ).trim();
+
+  const accent =
+    String(
+      document
+        .getElementById(
+          "restaurantBrandAccent"
+        )
+        ?.value ||
+      "#f59e0b"
+    ).trim();
+
+  const published =
+    document
+      .getElementById(
+        "restaurantBrandPublished"
+      )
+      ?.checked ===
+    true;
+
+  const logoFile =
+    document
+      .getElementById(
+        "restaurantBrandLogo"
+      )
+      ?.files?.[0];
+
+  if (
+    !name ||
+    name.length > 120 ||
+    address.length > 300 ||
+    phone.length > 40 ||
+    email.length > 320 ||
+    description.length > 500 ||
+    rawWebsite.length > 1000 ||
+    !/^#[0-9a-fA-F]{6}$/.test(
+      accent
+    )
+  ) {
+    showDashboardNotice(
+      "Zkontroluj název, kontaktní údaje, popis a barvu restaurace.",
+      "error"
+    );
+    return;
+  }
+
+  if (
+    !isValidOptionalEmail(
+      email
+    )
+  ) {
+    showDashboardNotice(
+      "Zadej platný e-mail, nebo ho nech prázdný.",
+      "error"
+    );
+    return;
+  }
+
+  const websiteUrl =
+    rawWebsite
+      ? normalizeRestaurantWebsiteUrl(
+          rawWebsite
+        )
+      : "";
+
+  if (
+    rawWebsite &&
+    !websiteUrl
+  ) {
+    showDashboardNotice(
+      "Web musí začínat http:// nebo https://.",
+      "error"
+    );
+    return;
+  }
+
+  if (
+    published &&
+    !canPublishRestaurantFromDashboard()
+  ) {
+    showDashboardNotice(
+      "Před zveřejněním dokonči aktivní stůl, provozní dobu, pravidla rezervací a alespoň jedno jídlo.",
+      "error"
+    );
+    return;
+  }
+
+  const saveButton =
+    document.getElementById(
+      "restaurantBrandSaveButton"
+    );
+
+  if (saveButton) {
+    saveButton.disabled =
+      true;
+
+    saveButton.textContent =
+      "Ukládám…";
+  }
+
+  try {
+    let logoUrl =
+      getSafeHttpImageUrl(
+        currentRestaurantBranding
+          ?.logo_url
+      );
+
+    if (logoFile) {
+      logoUrl =
+        await uploadRestaurantLogo(
+          logoFile
+        );
+    }
+
+    const response =
+      await authorizedFetch(
+        `${SUPABASE_URL}/rest/v1/restaurants?id=eq.${Number(
+          currentRestaurantId
+        )}&select=id,name,slug,address,phone,email,logo_url,short_description,website_url,accent_color,is_published`,
+        {
+          method:
+            "PATCH",
+          headers:
+            getHeaders({
+              Prefer:
+                "return=representation"
+            }),
+          body:
+            JSON.stringify({
+              name,
+              address:
+                address ||
+                null,
+              phone:
+                phone ||
+                null,
+              email:
+                email ||
+                null,
+              logo_url:
+                logoUrl ||
+                null,
+              short_description:
+                description ||
+                null,
+              website_url:
+                websiteUrl ||
+                null,
+              accent_color:
+                accent,
+              is_published:
+                published
+            })
+        }
+      );
+
+    const rows =
+      await response
+        .json()
+        .catch(
+          () => []
+        );
+
+    if (
+      !response.ok ||
+      !Array.isArray(
+        rows
+      ) ||
+      !rows[0]
+    ) {
+      throw new Error(
+        "Restauraci se nepodařilo uložit."
+      );
+    }
+
+    currentRestaurantBranding =
+      rows[0];
+
+    currentRestaurantName =
+      String(
+        rows[0].name ||
+        ""
+      ).trim();
+
+    currentRestaurantSlug =
+      String(
+        rows[0].slug ||
+        ""
+      ).trim();
+
+    currentRestaurantIsPublished =
+      rows[0].is_published ===
+      true;
+
+    const nameLabel =
+      document.getElementById(
+        "currentRestaurantNameLabel"
+      );
+
+    if (nameLabel) {
+      nameLabel.textContent =
+        currentRestaurantName ||
+        "Přehled provozu restaurace";
+    }
+
+    if (currentRestaurantName) {
+      document.title =
+        `${currentRestaurantName} | AI Restaurace PRO`;
+    }
+
+    const mainPublicLink =
+      document.getElementById(
+        "publicRestaurantLink"
+      );
+
+    if (
+      mainPublicLink &&
+      currentRestaurantSlug &&
+      currentRestaurantIsPublished
+    ) {
+      mainPublicLink.href =
+        `/r/${encodeURIComponent(
+          currentRestaurantSlug
+        )}`;
+
+      mainPublicLink.hidden =
+        false;
+    } else if (mainPublicLink) {
+      mainPublicLink.hidden =
+        true;
+    }
+
+    const fileInput =
+      document.getElementById(
+        "restaurantBrandLogo"
+      );
+
+    if (fileInput) {
+      fileInput.value =
+        "";
+    }
+
+    renderRestaurantBrandingForm(
+      currentRestaurantBranding
+    );
+
+    renderSetupChecklist();
+
+    showDashboardNotice(
+      "Údaje restaurace byly uloženy.",
+      "success"
+    );
+  } catch (error) {
+    console.error(
+      error
+    );
+
+    showDashboardNotice(
+      String(
+        error?.message ||
+        "Restauraci se nepodařilo uložit."
+      ),
+      "error"
+    );
+  } finally {
+    if (saveButton) {
+      saveButton.disabled =
+        false;
+
+      saveButton.textContent =
+        "Uložit restauraci";
+    }
+  }
+}
+
+
+async function removeRestaurantLogo() {
+  if (
+    currentUserRole !==
+      "owner" ||
+    !currentRestaurantId
+  ) {
+    return;
+  }
+
+  try {
+    const response =
+      await authorizedFetch(
+        `${SUPABASE_URL}/rest/v1/restaurants?id=eq.${Number(
+          currentRestaurantId
+        )}&select=id,name,slug,address,phone,email,logo_url,short_description,website_url,accent_color,is_published`,
+        {
+          method:
+            "PATCH",
+          headers:
+            getHeaders({
+              Prefer:
+                "return=representation"
+            }),
+          body:
+            JSON.stringify({
+              logo_url:
+                null
+            })
+        }
+      );
+
+    const rows =
+      await response
+        .json()
+        .catch(
+          () => []
+        );
+
+    if (
+      !response.ok ||
+      !Array.isArray(
+        rows
+      ) ||
+      !rows[0]
+    ) {
+      throw new Error(
+        "Logo se nepodařilo odebrat."
+      );
+    }
+
+    currentRestaurantBranding =
+      rows[0];
+
+    renderRestaurantBrandingForm(
+      currentRestaurantBranding
+    );
+
+    showDashboardNotice(
+      "Logo bylo odebráno.",
+      "success"
+    );
+  } catch (error) {
+    console.error(
+      error
+    );
+
+    showDashboardNotice(
+      String(
+        error?.message ||
+        "Logo se nepodařilo odebrat."
+      ),
+      "error"
+    );
+  }
+}
+
+
+function setupRestaurantBrandingInputs() {
+  [
+    "restaurantBrandName",
+    "restaurantBrandAddress",
+    "restaurantBrandPhone",
+    "restaurantBrandEmail",
+    "restaurantBrandDescription",
+    "restaurantBrandAccent"
+  ].forEach(
+    id => {
+      document
+        .getElementById(
+          id
+        )
+        ?.addEventListener(
+          "input",
+          updateRestaurantBrandingPreview
+        );
+    }
+  );
+
+  document
+    .getElementById(
+      "restaurantBrandLogo"
+    )
+    ?.addEventListener(
+      "change",
+      event => {
+        const file =
+          event.target
+            ?.files?.[0];
+
+        if (!file) {
+          renderRestaurantBrandingForm(
+            currentRestaurantBranding ||
+            {}
+          );
+          return;
+        }
+
+        const extension =
+          RESTAURANT_LOGO_TYPES.get(
+            file.type
+          );
+
+        if (
+          !extension ||
+          file.size <= 0 ||
+          file.size >
+            MAX_RESTAURANT_LOGO_BYTES
+        ) {
+          showDashboardNotice(
+            "Logo musí být JPG, PNG, WebP nebo AVIF a mít maximálně 5 MB.",
+            "error"
+          );
+
+          event.target.value =
+            "";
+
+          return;
+        }
+
+        const logoImage =
+          document.getElementById(
+            "restaurantLogoPreviewImage"
+          );
+
+        const fallback =
+          document.getElementById(
+            "restaurantLogoFallback"
+          );
+
+        if (logoImage) {
+          logoImage.src =
+            URL.createObjectURL(
+              file
+            );
+
+          logoImage.hidden =
+            false;
+        }
+
+        if (fallback) {
+          fallback.hidden =
+            true;
+        }
+      }
+    );
+
+  document
+    .getElementById(
+      "restaurantBrandAccent"
+    )
+    ?.addEventListener(
+      "change",
+      updateRestaurantBrandingPreview
+    );
+}
+
+
 function setSetupStepState(elementId, completed) {
   const element = document.getElementById(elementId);
   if (!element) return;
@@ -1064,6 +2052,9 @@ function clearSession() {
 
   currentRestaurantIsPublished =
     false;
+
+  currentRestaurantBranding =
+    null;
 
   currentDashboardAiEnabled =
     false;
@@ -8375,7 +9366,7 @@ const ROLE_LABELS = {
 };
 
 const ROLE_ALLOWED_SECTIONS = {
-  owner: new Set(["prehled", "grafy", "ai", "rezervace", "historie", "customers", "team", "kalendar", "stoly", "mapa", "provoz", "reservationSettings", "menu"]),
+  owner: new Set(["prehled", "grafy", "ai", "rezervace", "historie", "customers", "team", "kalendar", "stoly", "mapa", "provoz", "reservationSettings", "restaurace", "menu"]),
   manager: new Set(["prehled", "grafy", "rezervace", "historie", "customers", "kalendar", "stoly", "mapa", "provoz", "reservationSettings", "menu"]),
   staff: new Set(["prehled", "rezervace", "customers", "kalendar", "stoly", "mapa"])
 };
@@ -8664,6 +9655,7 @@ function showDashboardSection(sectionId, options = {}) {
         "mapa",
         "provoz",
         "reservationSettings",
+        "restaurace",
         "menu"
     ];
 
