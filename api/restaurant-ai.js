@@ -919,10 +919,6 @@ export default async function handler(
       return res.status(503).json({ error: "AI asistent ještě není aktivovaný." });
     }
 
-    if (!(await consumeDailyAiQuota(restaurant.id, "guest"))) {
-      return res.status(429).json({ error: "Denní limit AI dotazů této restaurace byl vyčerpán. Zkuste to prosím zítra." });
-    }
-
     const [
       menuRows,
       hoursRows,
@@ -965,6 +961,10 @@ export default async function handler(
       "-" +
       getClientHash(req)
         .slice(0, 32);
+
+    if (!(await consumeDailyAiQuota(restaurant.id, "guest"))) {
+      return res.status(429).json({ error: "Denní limit AI dotazů této restaurace byl vyčerpán. Zkuste to prosím zítra." });
+    }
 
     const answer =
       await askModel({
