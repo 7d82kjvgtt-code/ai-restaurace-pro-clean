@@ -69,6 +69,7 @@
   <div class="nav-links" id="navLinks">
     <a href="#funkce" data-saas-only>Funkce</a>
     <a href="#menu" data-restaurant-only>Menu</a>
+    <a href="#ai-asistent" data-restaurant-only data-restaurant-ai hidden>AI asistent</a>
     <a href="#rezervace" data-restaurant-only>Rezervace</a>
     <a href="#cenik" data-saas-only>Ceník</a>
     <a href="#kontakt" data-saas-only>Kontakt</a>
@@ -230,6 +231,67 @@
     class="grid"
   ></div>
 
+</section>
+
+
+<section
+  id="ai-asistent"
+  class="section restaurant-ai-section"
+  data-restaurant-only
+  data-restaurant-ai
+  hidden
+>
+  <div class="section-head">
+    <p class="badge">AI asistent</p>
+    <h2>🤖 Zeptejte se na menu nebo návštěvu</h2>
+    <p class="restaurant-ai-lead">
+      Asistent odpovídá z aktuálních údajů této restaurace.
+    </p>
+  </div>
+
+  <div class="restaurant-ai-card">
+    <div
+      id="restaurantAiAnswer"
+      class="restaurant-ai-answer"
+      role="status"
+      aria-live="polite"
+    >
+      Můžete se zeptat třeba na doporučení jídla, cenu, alergeny nebo otevírací dobu.
+    </div>
+
+    <div class="restaurant-ai-suggestions" aria-label="Rychlé dotazy">
+      <button type="button" data-ai-question="Co mi doporučíš z menu?">
+        Co doporučíš?
+      </button>
+      <button type="button" data-ai-question="Která jídla mají uvedené alergeny?">
+        Alergeny
+      </button>
+      <button type="button" data-ai-question="Jakou máte otevírací dobu?">
+        Otevírací doba
+      </button>
+    </div>
+
+    <form id="restaurantAiForm" class="restaurant-ai-form">
+      <label for="restaurantAiInput">Váš dotaz</label>
+      <div class="restaurant-ai-input-row">
+        <input
+          id="restaurantAiInput"
+          type="text"
+          maxlength="600"
+          autocomplete="off"
+          placeholder="Např. Máte něco bez masa?"
+          required
+        >
+        <button id="restaurantAiSendButton" type="submit">
+          Zeptat se
+        </button>
+      </div>
+    </form>
+
+    <p class="restaurant-ai-note">
+      Přesnou dostupnost stolů vždy ověřuje rezervační formulář níže.
+    </p>
+  </div>
 </section>
 
 
