@@ -1383,7 +1383,11 @@ async function getPublicRestaurantInfoOnServer(
         restaurant_date:
           restaurantNow.date,
         time_zone:
-          RESTAURANT_TIME_ZONE
+          RESTAURANT_TIME_ZONE,
+        ai_enabled:
+          Boolean(
+            process.env.OPENAI_API_KEY
+          )
       });
   } catch (error) {
     console.error(
