@@ -61,9 +61,23 @@ function isValidDateString(value) {
 function publicErrorMessage(error, fallback) {
   const status = mapReservationError(error);
 
-  return status >= 500
-    ? fallback
-    : String(error?.message || fallback);
+  if (status === 404) {
+    return "Restaurace není dostupná nebo není zveřejněná.";
+  }
+
+  if (status === 409) {
+    return "Požadovaný termín nebo stůl už není dostupný. Vyberte prosím jiný čas.";
+  }
+
+  if (status === 429) {
+    return "Bylo odesláno příliš mnoho požadavků. Zkuste to prosím později.";
+  }
+
+  if (status === 400 || status === 422) {
+    return "Zkontrolujte prosím zadané údaje.";
+  }
+
+  return fallback;
 }
 
 
