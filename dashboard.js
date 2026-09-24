@@ -8416,30 +8416,27 @@ function applyRolePermissions() {
     link.hidden = !canAccessSection(section);
   });
 
+  const dashboardAiAvailable =
+    currentUserRole ===
+      "owner" &&
+    currentDashboardAiEnabled ===
+      true;
+
   document
     .querySelectorAll(
       "[data-dashboard-ai]"
     )
     .forEach(element => {
+      element.hidden =
+        !dashboardAiAvailable;
+
       if (
         element.id ===
-        "ai"
+          "ai" &&
+        !dashboardAiAvailable
       ) {
-        if (
-          currentUserRole !==
-            "owner" ||
-          !currentDashboardAiEnabled
-        ) {
-          element.style.display =
-            "none";
-        }
-      } else {
-        element.hidden =
-          !(
-            currentUserRole ===
-              "owner" &&
-            currentDashboardAiEnabled
-          );
+        element.style.display =
+          "none";
       }
     });
 
