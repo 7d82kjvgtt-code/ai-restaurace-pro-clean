@@ -4116,3 +4116,178 @@ a.setup-step:hover {
     width: 100%;
   }
 }
+
+
+/* =========================================================
+   RESTAURANT BRANDING SETTINGS
+========================================================= */
+.restaurant-branding-panel {
+  overflow: hidden;
+}
+
+.restaurant-branding-help {
+  margin: 8px 0 0;
+  max-width: 720px;
+  color: #94a3b8;
+  line-height: 1.55;
+}
+
+.restaurant-branding-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+  align-items: start;
+  margin-top: 20px;
+}
+
+.restaurant-branding-form {
+  display: grid;
+  gap: 16px;
+}
+
+.restaurant-branding-form label {
+  display: grid;
+  gap: 7px;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.restaurant-branding-form input,
+.restaurant-branding-form textarea {
+  width: 100%;
+}
+
+.restaurant-branding-form input[readonly] {
+  opacity: .68;
+  cursor: not-allowed;
+}
+
+.restaurant-color-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+
+.restaurant-color-input-wrap input[type="color"] {
+  width: 58px;
+  min-width: 58px;
+  height: 42px;
+  padding: 3px;
+  cursor: pointer;
+}
+
+.restaurant-color-input-wrap code {
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.restaurant-publish-switch {
+  margin-top: 4px;
+}
+
+.restaurant-publish-switch span {
+  display: grid;
+  gap: 3px;
+}
+
+.restaurant-publish-switch small {
+  color: #94a3b8;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.restaurant-branding-preview {
+  position: sticky;
+  top: 18px;
+  padding: 22px;
+  border: 1px solid rgba(148, 163, 184, .16);
+  border-radius: 20px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(15, 23, 42, .9),
+      rgba(2, 6, 23, .76)
+    );
+}
+
+.restaurant-logo-preview {
+  --restaurant-accent: #f59e0b;
+  display: grid;
+  place-items: center;
+  width: 82px;
+  height: 82px;
+  margin: 16px 0;
+  overflow: hidden;
+  border: 2px solid
+    color-mix(
+      in srgb,
+      var(--restaurant-accent) 60%,
+      transparent
+    );
+  border-radius: 22px;
+  background:
+    color-mix(
+      in srgb,
+      var(--restaurant-accent) 18%,
+      #0f172a
+    );
+  box-shadow:
+    0 16px 34px
+    rgba(0, 0, 0, .24);
+}
+
+.restaurant-logo-preview span {
+  color: var(--restaurant-accent);
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.restaurant-logo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.restaurant-branding-preview h3 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.restaurant-branding-preview p {
+  margin: 0;
+  color: #94a3b8;
+  line-height: 1.55;
+}
+
+.restaurant-brand-preview-contact {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(148, 163, 184, .14);
+  color: #cbd5e1;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+@media (max-width: 900px) {
+  .restaurant-branding-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .restaurant-branding-preview {
+    position: static;
+  }
+}
+
+@media (max-width: 600px) {
+  .restaurant-branding-preview {
+    padding: 18px;
+  }
+
+  .restaurant-logo-preview {
+    width: 70px;
+    height: 70px;
+    border-radius: 18px;
+  }
+}
