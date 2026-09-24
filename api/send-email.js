@@ -241,7 +241,7 @@ async function getPublishedRestaurantBySlug(
   const rows = await supabaseServiceJson(
     `/rest/v1/restaurants?slug=eq.${encodeURIComponent(
       clean
-    )}&is_published=eq.true&select=id,name,slug&limit=1`,
+    )}&is_published=eq.true&select=id,name,slug,address,phone,email,logo_url,short_description,website_url,accent_color,is_published&limit=1`,
     {
       method: "GET"
     }
@@ -272,7 +272,7 @@ async function getRestaurantById(
   const rows = await supabaseServiceJson(
     `/rest/v1/restaurants?id=eq.${Number(
       restaurantId
-    )}&select=id,name,slug,is_published&limit=1`,
+    )}&select=id,name,slug,address,phone,email,logo_url,short_description,website_url,accent_color,is_published&limit=1`,
     {
       method: "GET"
     }
@@ -1414,6 +1414,40 @@ async function getDashboardRestaurantInfoOnServer(
           is_published:
             restaurant.is_published ===
             true,
+          address:
+            String(
+              restaurant.address || ""
+            ),
+          phone:
+            String(
+              restaurant.phone || ""
+            ),
+          email:
+            String(
+              restaurant.email || ""
+            ),
+          logo_url:
+            String(
+              restaurant.logo_url || ""
+            ),
+          short_description:
+            String(
+              restaurant.short_description || ""
+            ),
+          website_url:
+            String(
+              restaurant.website_url || ""
+            ),
+          accent_color:
+            /^#[0-9a-fA-F]{6}$/.test(
+              String(
+                restaurant.accent_color || ""
+              )
+            )
+              ? String(
+                  restaurant.accent_color
+                )
+              : "#f59e0b",
           ai_enabled:
             Boolean(
               process.env.OPENAI_API_KEY
@@ -1496,7 +1530,41 @@ async function getPublicRestaurantInfoOnServer(
             String(
               restaurant.slug ||
               cleanRestaurantSlug
+            ),
+          address:
+            String(
+              restaurant.address || ""
+            ),
+          phone:
+            String(
+              restaurant.phone || ""
+            ),
+          email:
+            String(
+              restaurant.email || ""
+            ),
+          logo_url:
+            String(
+              restaurant.logo_url || ""
+            ),
+          short_description:
+            String(
+              restaurant.short_description || ""
+            ),
+          website_url:
+            String(
+              restaurant.website_url || ""
+            ),
+          accent_color:
+            /^#[0-9a-fA-F]{6}$/.test(
+              String(
+                restaurant.accent_color || ""
+              )
             )
+              ? String(
+                  restaurant.accent_color
+                )
+              : "#f59e0b"
         },
         restaurant_date:
           restaurantNow.date,
