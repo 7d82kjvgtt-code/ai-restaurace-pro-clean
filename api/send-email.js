@@ -2732,6 +2732,391 @@ const ipRateKey =
 }
 
 
+function dashboardReservationsOverlap(
+  first,
+  second
+) {
+  if (
+    String(first?.date || "") !==
+    String(second?.date || "")
+  ) {
+    return false;
+  }
+
+  const firstStart =
+    timeToMinutes(
+      first?.time
+    );
+
+  const secondStart =
+    timeToMinutes(
+      second?.time
+    );
+
+  const firstDuration =
+    Math.max(
+      30,
+      Number(
+        first?.duration_minutes ||
+        120
+      ) || 120
+    );
+
+  const secondDuration =
+    Math.max(
+      30,
+      Number(
+        second?.duration_minutes ||
+        120
+      ) || 120
+    );
+
+  return (
+    firstStart <
+      secondStart +
+        secondDuration &&
+    secondStart <
+      firstStart +
+        firstDuration
+  );
+}
+
+
+async function validateDashboardReservationAvailabilityOnServer({
+  restaurantId,
+  reservationId,
+  date,
+  time,
+  durationMinutes,
+  tableId,
+  tableGroupId,
+  status
+}) {
+  if (
+    status === "Zrušeno"
+  ) {
+    return;
+  }
+
+  const dayOfWeek =
+    new Date(
+      `${date}T12:00:00`
+    ).getDay();
+
+  const [
+    hoursRows,
+    blocks,
+    tableGroups,
+    reservations
+  ] =
+    await Promise.all([
+      supabaseServiceJson(
+        `/rest/v1/opening_hours?restaurant_id=eq.${restaurantId}&day_of_week=eq.${dayOfWeek}&select=is_open,open_time,close_time&limit=1`,
+        {
+          method:
+            "GET"
+        }
+      ),
+      supabaseServiceJson(
+        `/rest/v1/blocked_times?restaurant_id=eq.${restaurantId}&date=eq.${encodeURIComponent(
+          date
+        )}&select=start_time,end_time,reason`,
+        {
+          method:
+            "GET"
+        }
+      ),
+      supabaseServiceJson(
+        `/rest/v1/table_groups?restaurant_id=eq.${restaurantId}&select=id,table_ids,active`,
+        {
+          method:
+            "GET"
+        }
+      ),
+      supabaseServiceJson(
+        `/rest/v1/reservations?restaurant_id=eq.${restaurantId}&date=eq.${encodeURIComponent(
+          date
+        )}&id=neq.${reservationId}&status=neq.${encodeURIComponent(
+          "Zrušeno"
+        )}&select=id,date,time,duration_minutes,table_id,table_group_id,status`,
+        {
+          method:
+            "GET"
+        }
+      )
+    ]);
+
+  const hours =
+    (
+      Array.isArray(
+        hoursRows
+      ) &&
+      hoursRows[0]
+    )
+      ? hoursRows[0]
+      : {
+          is_open:
+            true,
+          open_time:
+            "10:00",
+          close_time:
+            "22:00"
+        };
+
+  if (
+    hours.is_open ===
+    false
+  ) {
+    const error =
+      new Error(
+        "V tento den má restaurace zavřeno."
+      );
+
+    error.status = 409;
+    throw error;
+  }
+
+  const start =
+    timeToMinutes(time);
+
+  const end =
+    start +
+    Number(
+      durationMinutes
+    );
+
+  const open =
+    timeToMinutes(
+      hours.open_time ||
+      "10:00"
+    );
+
+  const close =
+    timeToMinutes(
+      hours.close_time ||
+      "22:00"
+    );
+
+  if (
+    start < open ||
+    end > close
+  ) {
+    const error =
+      new Error(
+        `Rezervace musí celá proběhnout mezi ${String(
+          hours.open_time ||
+          "10:00"
+        ).slice(0, 5)} a ${String(
+          hours.close_time ||
+          "22:00"
+        ).slice(0, 5)}.`
+      );
+
+    error.status = 409;
+    throw error;
+  }
+
+  const blocked =
+    (
+      Array.isArray(
+        blocks
+      )
+        ? blocks
+        : []
+    ).find(
+      block => {
+        const blockStart =
+          timeToMinutes(
+            block?.start_time
+          );
+
+        const blockEnd =
+          timeToMinutes(
+            block?.end_time
+          );
+
+        return (
+          start <
+            blockEnd &&
+          blockStart <
+            end
+        );
+      }
+    );
+
+  if (blocked) {
+    const error =
+      new Error(
+        blocked.reason
+          ? `Čas zasahuje do blokace: ${String(
+              blocked.reason
+            ).slice(0, 300)}`
+          : "Čas zasahuje do blokovaného období."
+      );
+
+    error.status = 409;
+    throw error;
+  }
+
+  if (
+    tableId === null &&
+    tableGroupId === null
+  ) {
+    return;
+  }
+
+  const groups =
+    Array.isArray(
+      tableGroups
+    )
+      ? tableGroups
+      : [];
+
+  const groupById =
+    new Map(
+      groups.map(
+        group => [
+          Number(
+            group.id
+          ),
+          group
+        ]
+      )
+    );
+
+  const getGroupMemberIds =
+    groupId => {
+      const group =
+        groupById.get(
+          Number(
+            groupId
+          )
+        );
+
+      return new Set(
+        Array.isArray(
+          group?.table_ids
+        )
+          ? group.table_ids
+              .map(Number)
+              .filter(
+                id =>
+                  Number.isInteger(
+                    id
+                  ) &&
+                  id > 0
+              )
+          : []
+      );
+    };
+
+  const proposedResourceIds =
+    tableGroupId !== null
+      ? getGroupMemberIds(
+          tableGroupId
+        )
+      : new Set([
+          Number(
+            tableId
+          )
+        ]);
+
+  if (
+    tableGroupId !== null &&
+    proposedResourceIds.size <
+      2
+  ) {
+    const error =
+      new Error(
+        "Vybraná skupina stolů není platná."
+      );
+
+    error.status = 409;
+    throw error;
+  }
+
+  const proposed = {
+    date,
+    time,
+    duration_minutes:
+      durationMinutes
+  };
+
+  const conflict =
+    (
+      Array.isArray(
+        reservations
+      )
+        ? reservations
+        : []
+    ).find(
+      existing => {
+        if (
+          !dashboardReservationsOverlap(
+            proposed,
+            existing
+          )
+        ) {
+          return false;
+        }
+
+        let existingResourceIds =
+          new Set();
+
+        if (
+          existing
+            ?.table_group_id !==
+            null &&
+          existing
+            ?.table_group_id !==
+            undefined
+        ) {
+          existingResourceIds =
+            getGroupMemberIds(
+              existing
+                .table_group_id
+            );
+        } else if (
+          existing?.table_id
+        ) {
+          existingResourceIds =
+            new Set([
+              Number(
+                existing
+                  .table_id
+              )
+            ]);
+        }
+
+        for (
+          const id of
+          proposedResourceIds
+        ) {
+          if (
+            existingResourceIds.has(
+              id
+            )
+          ) {
+            return true;
+          }
+        }
+
+        return false;
+      }
+    );
+
+  if (conflict) {
+    const error =
+      new Error(
+        "Vybraný stůl nebo skupina stolů je v tomto čase už obsazená."
+      );
+
+    error.status = 409;
+    throw error;
+  }
+}
+
+
 async function updateReservationOnServer(
   req,
   res
@@ -3092,6 +3477,17 @@ async function updateReservationOnServer(
           });
       }
     }
+
+    await validateDashboardReservationAvailabilityOnServer({
+      restaurantId,
+      reservationId,
+      date,
+      time,
+      durationMinutes,
+      tableId,
+      tableGroupId,
+      status
+    });
 
     const previousStatus =
       String(
