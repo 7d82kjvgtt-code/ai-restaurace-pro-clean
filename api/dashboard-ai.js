@@ -336,6 +336,68 @@ function shiftDate(
 }
 
 
+async function loadReservationWindow(
+  restaurantId,
+  fromDate,
+  toDate
+) {
+  const rows =
+    await serviceJson(
+      "/rest/v1/reservations" +
+      "?restaurant_id=eq." +
+      Number(
+        restaurantId
+      ) +
+      "&date=gte." +
+      fromDate +
+      "&date=lte." +
+      toDate +
+      "&select=date,time,people,status,duration_minutes" +
+      "&order=date.asc,time.asc"
+    );
+
+  return Array.isArray(
+    rows
+  )
+    ? rows
+    : [];
+}
+
+
+async function loadDashboardReservations(
+  restaurantId,
+  today
+) {
+  const windows = [
+    [-89, -60],
+    [-59, -30],
+    [-29, 0],
+    [1, 30],
+    [31, 60]
+  ];
+
+  const batches =
+    await Promise.all(
+      windows.map(
+        ([fromOffset, toOffset]) =>
+          loadReservationWindow(
+            restaurantId,
+            shiftDate(
+              today,
+              fromOffset
+            ),
+            shiftDate(
+              today,
+              toOffset
+            )
+          )
+      )
+    );
+
+  return batches.flat();
+}
+
+
 function weekdayIndex(
   dateString
 ) {
@@ -1357,18 +1419,6 @@ export default async function handler(
     const today =
       getRestaurantDate();
 
-    const fromDate =
-      shiftDate(
-        today,
-        -89
-      );
-
-    const toDate =
-      shiftDate(
-        today,
-        60
-      );
-
     const [
       restaurantRows,
       reservations,
@@ -1383,16 +1433,9 @@ export default async function handler(
           "&select=id,name" +
           "&limit=1"
         ),
-        serviceJson(
-          "/rest/v1/reservations" +
-          "?restaurant_id=eq." +
-          restaurantId +
-          "&date=gte." +
-          fromDate +
-          "&date=lte." +
-          toDate +
-          "&select=date,time,people,status,duration_minutes" +
-          "&order=date.asc,time.asc"
+        loadDashboardReservations(
+          restaurantId,
+          today
         ),
         serviceJson(
           "/rest/v1/menu" +
