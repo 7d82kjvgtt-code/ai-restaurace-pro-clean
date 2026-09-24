@@ -57,6 +57,7 @@
    <nav>
     <a href="#prehled" data-section="prehled">🏠 Přehled</a>
     <a href="#grafy" data-section="grafy">📊 Statistiky</a>
+    <a href="#ai" data-section="ai" data-dashboard-ai hidden>🤖 AI přehled</a>
     <a href="#rezervace" data-section="rezervace">📅 Rezervace</a>
     <a href="#historie" data-section="historie">🕘 Historie</a>
     <a href="#customers" data-section="customers">👤 Zákazníci</a>
@@ -282,6 +283,122 @@
 
       </article>
 
+    </section>
+
+    <section
+      class="panel dashboard-ai-panel"
+      id="ai"
+      data-dashboard-ai
+      hidden
+    >
+      <div class="section-heading panel-top dashboard-ai-head">
+        <div>
+          <span class="eyebrow">AI pro majitele</span>
+          <h2>🤖 AI provozní přehled</h2>
+          <p>
+            Ptej se na rezervace, vytížené dny, počty hostů nebo menu.
+            AI pracuje jen s agregovanými provozními daty restaurace.
+          </p>
+        </div>
+
+        <span class="dashboard-ai-privacy-badge">
+          🔒 Bez kontaktů hostů
+        </span>
+      </div>
+
+      <div class="dashboard-ai-snapshot" id="dashboardAiSnapshot">
+        <article>
+          <span>Dnes</span>
+          <strong id="dashboardAiTodayReservations">–</strong>
+          <small>aktivních rezervací</small>
+        </article>
+
+        <article>
+          <span>Hosté dnes</span>
+          <strong id="dashboardAiTodayGuests">–</strong>
+          <small>osob</small>
+        </article>
+
+        <article>
+          <span>30 dní</span>
+          <strong id="dashboardAiLast30">–</strong>
+          <small>aktivních rezervací</small>
+        </article>
+
+        <article>
+          <span>Dalších 7 dní</span>
+          <strong id="dashboardAiNext7">–</strong>
+          <small>aktivních rezervací</small>
+        </article>
+      </div>
+
+      <div class="dashboard-ai-card">
+        <div
+          class="dashboard-ai-answer"
+          id="dashboardAiAnswer"
+          role="status"
+          aria-live="polite"
+        >
+          Zeptej se třeba: „Jak si vede posledních 30 dní?“ nebo „Kdy máme nejvíc rezervací?“
+        </div>
+
+        <div class="dashboard-ai-suggestions" aria-label="Rychlé AI dotazy">
+          <button
+            type="button"
+            data-dashboard-ai-question="Shrň dnešní provoz a řekni mi, na co si dát pozor."
+          >
+            Shrň dnešek
+          </button>
+
+          <button
+            type="button"
+            data-dashboard-ai-question="Které dny a časy máme podle posledních 90 dní nejvytíženější?"
+          >
+            Nejvytíženější časy
+          </button>
+
+          <button
+            type="button"
+            data-dashboard-ai-question="Porovnej posledních 30 dní s předchozími 30 dny."
+          >
+            Trend 30 dní
+          </button>
+
+          <button
+            type="button"
+            data-dashboard-ai-question="Dej mi tři konkrétní návrhy, co z dostupných dat stojí za pozornost."
+          >
+            Co zlepšit?
+          </button>
+        </div>
+
+        <form id="dashboardAiForm" class="dashboard-ai-form">
+          <label for="dashboardAiInput">Dotaz pro AI</label>
+
+          <div class="dashboard-ai-input-row">
+            <input
+              id="dashboardAiInput"
+              type="text"
+              maxlength="600"
+              autocomplete="off"
+              placeholder="Např. Kolik hostů máme rezervovaných na příštích 7 dní?"
+              required
+            >
+
+            <button
+              id="dashboardAiSendButton"
+              type="submit"
+              class="primary-btn"
+            >
+              Zeptat se
+            </button>
+          </div>
+        </form>
+
+        <p class="dashboard-ai-note">
+          AI nedostává jména, telefony ani e-maily hostů. Doporučení vycházejí pouze z dat dostupných v systému.
+        </p>
+      </div>
     </section>
 
     <section class="panel reservations-panel" id="rezervace">
