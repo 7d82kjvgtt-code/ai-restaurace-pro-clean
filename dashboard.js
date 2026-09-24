@@ -1810,14 +1810,57 @@ function renderSetupChecklist() {
     return;
   }
 
+  const brandingReady =
+    Boolean(
+      currentRestaurantBranding &&
+      String(
+        currentRestaurantBranding.name ||
+        ""
+      ).trim() &&
+      (
+        String(
+          currentRestaurantBranding.address ||
+          ""
+        ).trim() ||
+        String(
+          currentRestaurantBranding.phone ||
+          ""
+        ).trim() ||
+        String(
+          currentRestaurantBranding.email ||
+          ""
+        ).trim() ||
+        String(
+          currentRestaurantBranding.logo_url ||
+          ""
+        ).trim() ||
+        String(
+          currentRestaurantBranding.short_description ||
+          ""
+        ).trim()
+      )
+    );
+
   const checks = {
-    tables: restaurantTables.some(table => table?.active === true),
-    hours: openingHoursConfigured,
-    settings: reservationSettingsConfigured,
-    menu: foods.length > 0,
+    tables:
+      restaurantTables.some(
+        table =>
+          table?.active ===
+          true
+      ),
+    hours:
+      openingHoursConfigured,
+    settings:
+      reservationSettingsConfigured,
+    menu:
+      foods.length > 0,
+    branding:
+      brandingReady,
     public:
       currentRestaurantIsPublished &&
-      Boolean(currentRestaurantSlug)
+      Boolean(
+        currentRestaurantSlug
+      )
   };
 
   const completed =
@@ -1860,11 +1903,30 @@ function renderSetupChecklist() {
       `${percentage}%`;
   }
 
-  setSetupStepState("setupStepTables", checks.tables);
-  setSetupStepState("setupStepHours", checks.hours);
-  setSetupStepState("setupStepSettings", checks.settings);
-  setSetupStepState("setupStepMenu", checks.menu);
-  setSetupStepState("setupStepPublic", checks.public);
+  setSetupStepState(
+    "setupStepTables",
+    checks.tables
+  );
+  setSetupStepState(
+    "setupStepHours",
+    checks.hours
+  );
+  setSetupStepState(
+    "setupStepSettings",
+    checks.settings
+  );
+  setSetupStepState(
+    "setupStepMenu",
+    checks.menu
+  );
+  setSetupStepState(
+    "setupStepBranding",
+    checks.branding
+  );
+  setSetupStepState(
+    "setupStepPublic",
+    checks.public
+  );
 
   const publicHint =
     document.getElementById("setupPublicHint");
