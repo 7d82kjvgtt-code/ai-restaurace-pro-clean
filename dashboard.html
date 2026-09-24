@@ -67,6 +67,7 @@
     <a href="#mapa" data-section="mapa">🗺️ Mapa stolů</a>
     <a href="#provoz" data-section="provoz">🕒 Provozní doba</a>
     <a href="#reservationSettings" data-section="reservationSettings">⚙️ Nastavení rezervací</a>
+    <a href="#restaurace" data-section="restaurace">🏪 Restaurace</a>
     <a href="#menu" data-section="menu">🍕 Menu</a>
 </nav>
 
@@ -935,6 +936,192 @@
         </div>
 
       </article>
+
+    </section>
+
+    <section class="panel restaurant-branding-panel" id="restaurace">
+
+      <div class="section-heading panel-top">
+        <div>
+          <span class="eyebrow">Veřejná prezentace</span>
+          <h2>🏪 Restaurace a branding</h2>
+          <p class="restaurant-branding-help">
+            Tyto údaje se zobrazí hostům na veřejné stránce restaurace.
+          </p>
+        </div>
+
+        <a
+          class="secondaryButton"
+          id="restaurantBrandingPublicLink"
+          href="#"
+          target="_blank"
+          rel="noopener"
+          hidden
+        >
+          ↗️ Náhled webu
+        </a>
+      </div>
+
+      <div class="restaurant-branding-layout">
+
+        <div class="restaurant-branding-form">
+
+          <div class="form-grid">
+
+            <label>
+              Název restaurace
+              <input
+                id="restaurantBrandName"
+                type="text"
+                maxlength="120"
+                placeholder="Název restaurace"
+              >
+            </label>
+
+            <label>
+              Veřejný slug
+              <input
+                id="restaurantBrandSlug"
+                type="text"
+                readonly
+                aria-readonly="true"
+              >
+            </label>
+
+            <label>
+              Telefon
+              <input
+                id="restaurantBrandPhone"
+                type="tel"
+                maxlength="40"
+                placeholder="+420 ..."
+              >
+            </label>
+
+            <label>
+              E-mail
+              <input
+                id="restaurantBrandEmail"
+                type="email"
+                maxlength="320"
+                placeholder="info@restaurace.cz"
+              >
+            </label>
+
+            <label>
+              Web
+              <input
+                id="restaurantBrandWebsite"
+                type="url"
+                maxlength="1000"
+                placeholder="https://..."
+              >
+            </label>
+
+            <label>
+              Barva značky
+              <span class="restaurant-color-input-wrap">
+                <input
+                  id="restaurantBrandAccent"
+                  type="color"
+                  value="#f59e0b"
+                >
+                <code id="restaurantBrandAccentValue">#f59e0b</code>
+              </span>
+            </label>
+
+          </div>
+
+          <label>
+            Adresa
+            <input
+              id="restaurantBrandAddress"
+              type="text"
+              maxlength="300"
+              placeholder="Ulice 123, Praha"
+            >
+          </label>
+
+          <label>
+            Krátký popis
+            <textarea
+              id="restaurantBrandDescription"
+              rows="4"
+              maxlength="500"
+              placeholder="Krátce představte restauraci hostům."
+            ></textarea>
+          </label>
+
+          <label class="file-label" for="restaurantBrandLogo">
+            Logo restaurace
+          </label>
+
+          <input
+            id="restaurantBrandLogo"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/avif"
+          >
+
+          <label class="switch-row restaurant-publish-switch">
+            <input
+              id="restaurantBrandPublished"
+              type="checkbox"
+            >
+            <span>
+              Veřejný web je aktivní
+              <small>
+                Pokud ho vypnete, veřejná stránka podle slugu nebude dostupná.
+              </small>
+            </span>
+          </label>
+
+          <div class="form-actions">
+            <button
+              id="restaurantBrandSaveButton"
+              type="button"
+              class="primary-btn"
+              onclick="saveRestaurantBranding()"
+            >
+              Uložit restauraci
+            </button>
+
+            <button
+              id="restaurantBrandRemoveLogoButton"
+              type="button"
+              class="neutralButton"
+              onclick="removeRestaurantLogo()"
+              hidden
+            >
+              Odebrat logo
+            </button>
+          </div>
+
+        </div>
+
+        <aside class="restaurant-branding-preview">
+          <span class="eyebrow">Náhled značky</span>
+
+          <div class="restaurant-logo-preview" id="restaurantLogoPreview">
+            <span id="restaurantLogoFallback">R</span>
+            <img
+              id="restaurantLogoPreviewImage"
+              src=""
+              alt="Logo restaurace"
+              hidden
+            >
+          </div>
+
+          <h3 id="restaurantBrandPreviewName">Restaurace</h3>
+          <p id="restaurantBrandPreviewDescription">
+            Krátký popis restaurace se zobrazí tady.
+          </p>
+
+          <div class="restaurant-brand-preview-contact" id="restaurantBrandPreviewContact">
+            Kontaktní údaje se doplní po uložení.
+          </div>
+        </aside>
+
+      </div>
 
     </section>
 
