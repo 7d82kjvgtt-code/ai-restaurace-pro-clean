@@ -1665,10 +1665,31 @@ function renderReservations(data) {
     document.getElementById("reservationTable");
 
   if (!data.length) {
+    const hasActiveFilter =
+      Boolean(
+        document
+          .getElementById("search")
+          ?.value
+          ?.trim()
+      ) ||
+      Boolean(
+        document
+          .getElementById("statusFilter")
+          ?.value
+      );
+
+    const emptyMessage =
+      reservations.length &&
+      hasActiveFilter
+        ? "Žádné rezervace neodpovídají aktuálnímu filtru."
+        : "Zatím tu nejsou žádné rezervace. Jakmile host odešle veřejný formulář, objeví se tady.";
+
     table.innerHTML = `
       <tr>
         <td colspan="10">
-          Žádné rezervace.
+          <div class="emptyState">
+            ${escapeHtml(emptyMessage)}
+          </div>
         </td>
       </tr>
     `;
@@ -2492,7 +2513,16 @@ function renderCustomers() {
   });
 
   if (!customers.length) {
-    list.innerHTML = `<div class="history-empty">Žádní zákazníci neodpovídají filtru.</div>`;
+    const hasCustomerFilter =
+      Boolean(search) ||
+      Boolean(filter);
+
+    list.innerHTML =
+      allCustomers.length &&
+      hasCustomerFilter
+        ? `<div class="history-empty">Žádní zákazníci neodpovídají filtru.</div>`
+        : `<div class="history-empty">Zákazníci se vytvoří automaticky z prvních rezervací.</div>`;
+
     return;
   }
 
@@ -3947,6 +3977,7 @@ tableGroups =
     renderTables();
     renderFloorMap();
     renderReservations(getFilteredReservations());
+    renderSetupChecklist();
   } catch (error) {
     console.error(error);
 
@@ -5425,7 +5456,7 @@ function renderTables() {
   if (!restaurantTables.length) {
     list.innerHTML = `
       <div class="emptyState">
-        Zatím nejsou vytvořené žádné stoly.
+        Zatím nejsou vytvořené žádné stoly. Přidej první stůl a nastav jeho kapacitu.
       </div>
     `;
 
@@ -6937,6 +6968,7 @@ async function loadFoods() {
     ).textContent = foods.length;
 
     renderFoods();
+    renderSetupChecklist();
   } catch (error) {
     console.error(error);
 
@@ -7137,7 +7169,9 @@ function renderFoods() {
 
   if (!foods.length) {
     list.innerHTML = `
-      <p>Žádná jídla.</p>
+      <div class="emptyState">
+        Menu je zatím prázdné. Přidej první jídlo ve formuláři výše.
+      </div>
     `;
 
     return;
