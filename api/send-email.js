@@ -3963,14 +3963,26 @@ async function updateReservationOnServer(
     if (
       tableGroupId !== null
     ) {
-      const groupRows =
-        await supabaseServiceJson(
-          `/rest/v1/table_groups?id=eq.${tableGroupId}&restaurant_id=eq.${restaurantId}&select=id,name,total_capacity,active&limit=1`,
-          {
-            method:
-              "GET"
-          }
-        );
+      const [
+        groupRows,
+        activeTables
+      ] =
+        await Promise.all([
+          supabaseServiceJson(
+            `/rest/v1/table_groups?id=eq.${tableGroupId}&restaurant_id=eq.${restaurantId}&select=id,name,total_capacity,active,table_ids&limit=1`,
+            {
+              method:
+                "GET"
+            }
+          ),
+          supabaseServiceJson(
+            `/rest/v1/restaurant_tables?restaurant_id=eq.${restaurantId}&active=eq.true&select=id`,
+            {
+              method:
+                "GET"
+            }
+          )
+        ]);
 
       const group =
         Array.isArray(
@@ -3978,6 +3990,44 @@ async function updateReservationOnServer(
         )
           ? groupRows[0]
           : null;
+
+      const preservingCurrentGroup =
+        Number(
+          existing
+            .table_group_id
+        ) ===
+        tableGroupId;
+
+      const memberIds =
+        Array.isArray(
+          group?.table_ids
+        )
+          ? group.table_ids
+              .map(Number)
+              .filter(
+                id =>
+                  Number.isInteger(
+                    id
+                  ) &&
+                  id > 0
+              )
+          : [];
+
+      const activeTableIds =
+        new Set(
+          (
+            Array.isArray(
+              activeTables
+            )
+              ? activeTables
+              : []
+          ).map(
+            table =>
+              Number(
+                table.id
+              )
+          )
+        );
 
       if (!group?.id) {
         return res
@@ -4005,19 +4055,24 @@ async function updateReservationOnServer(
       }
 
       if (
-        group.active ===
-          false &&
-        Number(
-          existing
-            .table_group_id
-        ) !==
-          tableGroupId
+        !preservingCurrentGroup &&
+        (
+          group.active ===
+            false ||
+          memberIds.length < 2 ||
+          !memberIds.every(
+            id =>
+              activeTableIds.has(
+                id
+              )
+          )
+        )
       ) {
         return res
           .status(409)
           .json({
             error:
-              "Vybraná skupina stolů není aktivní."
+              "Vybraná skupina stolů není aktivní nebo nemá platné aktivní stoly."
           });
       }
     }
