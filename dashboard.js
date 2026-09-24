@@ -3604,29 +3604,198 @@ async function saveReservationChanges() {
   }
 }
 
-async function updateReservation(id, data) {
-  try {
-    const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${Number(id)}&restaurant_id=eq.${currentRestaurantId}`,
-      {
-        method: "PATCH",
-        headers: getHeaders(),
-        body: JSON.stringify(data)
-      }
+async function updateReservation(id, data = {}) {
+  const reservationId =
+    Number(id);
+
+  const current =
+    reservations.find(
+      item =>
+        Number(item.id) ===
+        reservationId
     );
 
+  if (
+    !Number.isInteger(
+      reservationId
+    ) ||
+    reservationId < 1 ||
+    !current
+  ) {
+    showDashboardNotice(
+      "Rezervace nebyla nalezena."
+    );
+    return false;
+  }
+
+  const has =
+    key =>
+      Object.prototype
+        .hasOwnProperty
+        .call(
+          data,
+          key
+        );
+
+  const payload = {
+    action:
+      "update-reservation",
+    reservation_id:
+      reservationId,
+    name:
+      has("name")
+        ? String(
+            data.name || ""
+          ).trim()
+        : String(
+            current.name || ""
+          ).trim(),
+    last_name:
+      has("last_name")
+        ? data.last_name
+        : (
+            current.last_name ??
+            null
+          ),
+    people:
+      has("people")
+        ? Number(
+            data.people
+          )
+        : Number(
+            current.people
+          ),
+    date:
+      has("date")
+        ? String(
+            data.date || ""
+          )
+        : String(
+            current.date || ""
+          ),
+    time:
+      has("time")
+        ? String(
+            data.time || ""
+          )
+        : String(
+            current.time || ""
+          ).slice(0, 5),
+    duration_minutes:
+      has("duration_minutes")
+        ? Number(
+            data.duration_minutes
+          )
+        : Math.max(
+            30,
+            Number(
+              current.duration_minutes ||
+              120
+            ) || 120
+          ),
+    table_id:
+      has("table_id")
+        ? data.table_id
+        : (
+            current.table_id ??
+            null
+          ),
+    table_group_id:
+      has("table_group_id")
+        ? data.table_group_id
+        : (
+            current.table_group_id ??
+            null
+          ),
+    phone:
+      has("phone")
+        ? String(
+            data.phone || ""
+          )
+        : String(
+            current.phone || ""
+          ),
+    email:
+      has("email")
+        ? String(
+            data.email || ""
+          )
+        : String(
+            current.email || ""
+          ),
+    note:
+      has("note")
+        ? String(
+            data.note || ""
+          )
+        : String(
+            current.note || ""
+          ),
+    status:
+      has("status")
+        ? String(
+            data.status || ""
+          )
+        : String(
+            current.status ||
+            "Čeká"
+          )
+  };
+
+  try {
+    const response =
+      await authorizedFetch(
+        "/api/send-email",
+        {
+          method:
+            "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body:
+            JSON.stringify(
+              payload
+            )
+        }
+      );
+
+    const result =
+      await response
+        .json()
+        .catch(
+          () => ({})
+        );
+
     if (!response.ok) {
-      throw new Error(await response.text());
+      throw new Error(
+        result?.error ||
+        "Nepodařilo se upravit rezervaci."
+      );
     }
 
-    await loadReservations();
+    await Promise.all([
+      loadReservations(),
+      loadReservationHistory()
+    ]);
+
     return true;
   } catch (error) {
     console.error(error);
 
     showDashboardNotice(
-      "Nepodařilo se upravit rezervaci."
+      String(
+        error?.message ||
+        "Nepodařilo se upravit rezervaci."
+      ),
+      "error"
     );
+
+    await Promise.allSettled([
+      loadReservations(),
+      loadReservationHistory()
+    ]);
+
     return false;
   }
 }
@@ -6835,52 +7004,31 @@ async function assignTable(
     }
   }
 
-  try {
-    const response =
-      await authorizedFetch(
-        `${SUPABASE_URL}/rest/v1/reservations?id=eq.${Number(
-          reservationId
-        )}&restaurant_id=eq.${currentRestaurantId}`,
-        {
-          method:
-            "PATCH",
-          headers:
-            getHeaders(),
-          body:
-            JSON.stringify({
-              table_id:
-                selectedTable
-                  ? Number(
-                      selectedTable.id
-                    )
-                  : null,
-              table_group_id:
-                selectedGroup
-                  ? Number(
-                      selectedGroup.id
-                    )
-                  : null
-            })
-        }
-      );
-
-    if (!response.ok) {
-      throw new Error(
-        await response.text()
-      );
-    }
-
-    await loadReservations();
-    await loadReservationHistory();
-  } catch (error) {
-    console.error(
-      error
+  const saved =
+    await updateReservation(
+      reservationId,
+      {
+        table_id:
+          selectedTable
+            ? Number(
+                selectedTable.id
+              )
+            : null,
+        table_group_id:
+          selectedGroup
+            ? Number(
+                selectedGroup.id
+              )
+            : null
+      }
     );
 
+  if (saved) {
     showDashboardNotice(
-      "Nepodařilo se přiřadit stůl nebo skupinu."
+      "Přiřazení bylo uloženo.",
+      "success"
     );
-
+  } else {
     renderReservations(
       getFilteredReservations()
     );
