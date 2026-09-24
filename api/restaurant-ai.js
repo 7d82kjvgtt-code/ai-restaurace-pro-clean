@@ -891,7 +891,7 @@ export default async function handler(
       .status(400)
       .json({
         error:
-          "Zadej krátký dotaz k restauraci."
+          locale === "en" ? "Ask a short question about the restaurant." : "Zadej krátký dotaz k restauraci."
       });
   }
 
@@ -911,12 +911,12 @@ export default async function handler(
         .status(429)
         .json({
           error:
-            "AI asistent dostal příliš mnoho dotazů. Zkus to prosím za několik minut."
+            locale === "en" ? "Too many questions. Please try again in a few minutes." : "AI asistent dostal příliš mnoho dotazů. Zkus to prosím za několik minut."
         });
     }
 
     if (!OPENAI_API_KEY) {
-      return res.status(503).json({ error: "AI asistent ještě není aktivovaný." });
+      return res.status(503).json({ error: locale === "en" ? "The AI assistant is not available yet." : "AI asistent ještě není aktivovaný." });
     }
 
     const [
@@ -963,7 +963,7 @@ export default async function handler(
         .slice(0, 32);
 
     if (!(await consumeDailyAiQuota(restaurant.id, "guest"))) {
-      return res.status(429).json({ error: "Denní limit AI dotazů této restaurace byl vyčerpán. Zkuste to prosím zítra." });
+      return res.status(429).json({ error: locale === "en" ? "This restaurant has reached its daily AI question limit. Please try again tomorrow." : "Denní limit AI dotazů této restaurace byl vyčerpán. Zkuste to prosím zítra." });
     }
 
     const answer =
@@ -1002,12 +1002,16 @@ export default async function handler(
       )
       .json({
         error:
-          status >= 500
-            ? "AI asistent teď není dostupný. Zkus to prosím za chvíli."
-            : String(
-                error?.message ||
-                "AI asistent teď není dostupný."
-              )
+          locale === "en"
+            ? status === 404
+              ? "Restaurant not found or unavailable."
+              : "The AI assistant is unavailable right now. Please try again later."
+            : status >= 500
+              ? "AI asistent teď není dostupný. Zkus to prosím za chvíli."
+              : String(
+                  error?.message ||
+                  "AI asistent teď není dostupný."
+                )
       });
   }
 }
