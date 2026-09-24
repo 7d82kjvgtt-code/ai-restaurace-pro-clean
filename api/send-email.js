@@ -3953,7 +3953,7 @@ async function updateReservationOnServer(
 
     const rows =
       await supabaseServiceJson(
-        `/rest/v1/reservations?id=eq.${reservationId}&select=id,restaurant_id,status,table_id,table_group_id&limit=1`,
+        `/rest/v1/reservations?id=eq.${reservationId}&select=id,restaurant_id,status,date,time,duration_minutes,table_id,table_group_id&limit=1`,
         {
           method:
             "GET"
@@ -4224,11 +4224,18 @@ async function updateReservationOnServer(
         "Čeká"
       );
 
+    const previousTableFilter = existing.table_id == null
+      ? "is.null"
+      : `eq.${Number(existing.table_id)}`;
+    const previousGroupFilter = existing.table_group_id == null
+      ? "is.null"
+      : `eq.${Number(existing.table_group_id)}`;
+
     const changedRows =
       await supabaseUserJson(
         `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${restaurantId}&status=eq.${encodeURIComponent(
           previousStatus
-        )}&select=id,restaurant_id,name,last_name,people,date,time,duration_minutes,email,phone,note,table_id,table_group_id,status,locale`,
+        )}&date=eq.${encodeURIComponent(String(existing.date))}&time=eq.${encodeURIComponent(String(existing.time))}&duration_minutes=eq.${Number(existing.duration_minutes)}&table_id=${previousTableFilter}&table_group_id=${previousGroupFilter}&select=id,restaurant_id,name,last_name,people,date,time,duration_minutes,email,phone,note,table_id,table_group_id,status,locale`,
         callerToken,
         {
           method:
