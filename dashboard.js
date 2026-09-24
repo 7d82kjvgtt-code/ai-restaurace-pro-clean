@@ -2623,9 +2623,27 @@ async function login(event) {
   }
 }
 
-function logoutDashboard() {
+async function logoutDashboard() {
+  const accessToken = getAccessToken();
   clearSession();
-  location.reload();
+  showLogin();
+
+  try {
+    if (accessToken) {
+      await fetch(`${SUPABASE_URL}/auth/v1/logout?scope=local`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${accessToken}`
+        },
+        signal: AbortSignal.timeout(5000)
+      });
+    }
+  } catch (error) {
+    console.error("Odhlášení ze serveru se nepodařilo:", error);
+  } finally {
+    location.reload();
+  }
 }
 
 /* =========================================================
