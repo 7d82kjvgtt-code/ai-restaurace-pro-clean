@@ -1532,7 +1532,9 @@ async function ulozitRezervaci() {
     }
 
     showPublicReservationNotice(
-      "✅ Rezervace byla úspěšně vytvořena. Potvrzení jsme poslali na zadaný e-mail.",
+      createData.email?.sent === true
+        ? "Rezervace byla úspěšně vytvořena. Potvrzení jsme poslali na zadaný e-mail."
+        : "Rezervace byla úspěšně vytvořena, ale potvrzovací e-mail se nepodařilo odeslat. Kontaktujte prosím restauraci, pokud potřebujete potvrzení.",
       "success"
     );
 
