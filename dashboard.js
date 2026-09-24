@@ -5271,17 +5271,6 @@ async function saveNewReservation() {
   }
 
   if (
-    name.length > 120 ||
-    phone.length > 40 ||
-    note.length > 1000
-  ) {
-    showDashboardNotice(
-      "Jméno může mít maximálně 120 znaků, telefon 40 a poznámka 1000."
-    );
-    return;
-  }
-
-  if (
     !isValidOptionalEmail(
       email
     )
@@ -5499,25 +5488,52 @@ async function saveNewReservation() {
   try {
     const response =
       await authorizedFetch(
-        `${SUPABASE_URL}/rest/v1/reservations`,
+        "/api/send-email",
         {
           method:
             "POST",
-          headers:
-            getHeaders({
-              Prefer:
-                "return=minimal"
-            }),
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
           body:
-            JSON.stringify(
-              newReservation
-            )
+            JSON.stringify({
+              action:
+                "create-dashboard-reservation",
+              restaurant_id:
+                Number(
+                  currentRestaurantId
+                ),
+              name,
+              people,
+              date,
+              time,
+              duration_minutes:
+                durationMinutes,
+              table_id:
+                newReservation
+                  .table_id,
+              table_group_id:
+                newReservation
+                  .table_group_id,
+              phone,
+              email,
+              note
+            })
         }
       );
 
+    const result =
+      await response
+        .json()
+        .catch(
+          () => ({})
+        );
+
     if (!response.ok) {
       throw new Error(
-        await response.text()
+        result?.error ||
+        "Rezervaci se nepodařilo uložit."
       );
     }
 
@@ -5557,7 +5573,10 @@ async function saveNewReservation() {
     selectedTableId =
       null;
 
-    await loadReservations();
+    await Promise.all([
+      loadReservations(),
+      loadReservationHistory()
+    ]);
 
     showDashboardNotice(
       "Rezervace byla úspěšně uložena.",
@@ -5569,7 +5588,11 @@ async function saveNewReservation() {
     );
 
     showDashboardNotice(
-      "Rezervaci se nepodařilo uložit."
+      String(
+        error?.message ||
+        "Rezervaci se nepodařilo uložit."
+      ),
+      "error"
     );
   }
 }
