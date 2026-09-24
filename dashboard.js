@@ -10,6 +10,9 @@ let customerProfiles = [];
 let currentRestaurantId = null;
 let currentRestaurantName = "";
 let currentRestaurantSlug = "";
+let currentRestaurantIsPublished = false;
+let openingHoursConfigured = false;
+let reservationSettingsConfigured = false;
 let currentUserRole = null;
 let currentUserId = null;
 let teamMembers = [];
@@ -348,6 +351,9 @@ async function loadCurrentRestaurantInfo() {
     currentRestaurantSlug =
       "";
 
+    currentRestaurantIsPublished =
+      false;
+
     if (link) {
       link.hidden =
         true;
@@ -422,7 +428,7 @@ async function loadCurrentRestaurantInfo() {
         "Přehled provozu restaurace";
     }
 
-    const isPublished =
+    currentRestaurantIsPublished =
       data.restaurant
         .is_published ===
       true;
@@ -430,7 +436,7 @@ async function loadCurrentRestaurantInfo() {
     if (
       link &&
       currentRestaurantSlug &&
-      isPublished
+      currentRestaurantIsPublished
     ) {
       link.href =
         `/r/${encodeURIComponent(
@@ -463,6 +469,9 @@ async function loadCurrentRestaurantInfo() {
     currentRestaurantSlug =
       "";
 
+    currentRestaurantIsPublished =
+      false;
+
     if (link) {
       link.hidden =
         true;
@@ -474,6 +483,122 @@ async function loadCurrentRestaurantInfo() {
     }
 
     return null;
+  }
+}
+
+function setSetupStepState(elementId, completed) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+
+  element.classList.toggle("is-complete", Boolean(completed));
+
+  const status = element.querySelector(".setup-step-status");
+  if (status) {
+    status.textContent = completed ? "✓" : "○";
+  }
+
+  const action = element.querySelector(".setup-step-action:not(.setup-public-link)");
+  if (action) {
+    action.textContent = completed ? "Hotovo" : "Nastavit →";
+  }
+}
+
+function renderSetupChecklist() {
+  const panel = document.getElementById("setupChecklistPanel");
+  if (!panel) return;
+
+  const activeSection =
+    window.location.hash.replace("#", "") || "prehled";
+
+  if (
+    currentUserRole !== "owner" ||
+    activeSection !== "prehled"
+  ) {
+    panel.hidden = true;
+    return;
+  }
+
+  const checks = {
+    tables: restaurantTables.some(table => table?.active === true),
+    hours: openingHoursConfigured,
+    settings: reservationSettingsConfigured,
+    menu: foods.length > 0,
+    public:
+      currentRestaurantIsPublished &&
+      Boolean(currentRestaurantSlug)
+  };
+
+  const completed =
+    Object.values(checks).filter(Boolean).length;
+
+  const total =
+    Object.keys(checks).length;
+
+  if (completed >= total) {
+    panel.hidden = true;
+    return;
+  }
+
+  panel.hidden = false;
+
+  const percentage =
+    Math.round((completed / total) * 100);
+
+  const summary =
+    document.getElementById("setupChecklistSummary");
+
+  const progressValue =
+    document.getElementById("setupProgressValue");
+
+  const progressBar =
+    document.getElementById("setupProgressBar");
+
+  if (summary) {
+    summary.textContent =
+      `Hotovo ${completed} z ${total} kroků. Dokonči základní nastavení a restaurace bude připravená pro pilot.`;
+  }
+
+  if (progressValue) {
+    progressValue.textContent =
+      `${percentage} %`;
+  }
+
+  if (progressBar) {
+    progressBar.style.width =
+      `${percentage}%`;
+  }
+
+  setSetupStepState("setupStepTables", checks.tables);
+  setSetupStepState("setupStepHours", checks.hours);
+  setSetupStepState("setupStepSettings", checks.settings);
+  setSetupStepState("setupStepMenu", checks.menu);
+  setSetupStepState("setupStepPublic", checks.public);
+
+  const publicHint =
+    document.getElementById("setupPublicHint");
+
+  const publicLink =
+    document.getElementById("setupPublicLink");
+
+  if (publicHint) {
+    publicHint.textContent =
+      checks.public
+        ? "Veřejná stránka restaurace je aktivní."
+        : "Veřejný web aktivujeme při spuštění pilotu.";
+  }
+
+  if (publicLink) {
+    if (checks.public) {
+      publicLink.href =
+        `/r/${encodeURIComponent(currentRestaurantSlug)}`;
+      publicLink.hidden =
+        false;
+    } else {
+      publicLink.href =
+        "#";
+      publicLink.hidden =
+        true;
+    }
   }
 }
 
@@ -498,6 +623,7 @@ async function loadDashboardData() {
   ]);
 
   await loadReservations();
+  renderSetupChecklist();
 
   // Po načtení dat ještě jednou sjednotíme navigaci a oprávnění.
   applyRolePermissions();
@@ -631,6 +757,15 @@ function clearSession() {
 
   currentRestaurantSlug =
     "";
+
+  currentRestaurantIsPublished =
+    false;
+
+  openingHoursConfigured =
+    false;
+
+  reservationSettingsConfigured =
+    false;
 
   currentUserRole =
     null;
@@ -8035,6 +8170,8 @@ function showDashboardSection(sectionId, options = {}) {
     if (window.location.hash !== targetHash) {
         history.replaceState(null, "", targetHash);
     }
+
+    renderSetupChecklist();
 }
 
 document.querySelectorAll(".sidebar nav a[data-section]").forEach(link => {
@@ -8473,6 +8610,10 @@ async function loadOpeningHours() {
     const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/opening_hours?restaurant_id=eq.${currentRestaurantId}&select=*&order=day_of_week.asc`, { headers: getHeaders() });
     if (!response.ok) throw new Error(await response.text());
     openingHours = await response.json();
+    openingHoursConfigured =
+      Array.isArray(openingHours) &&
+      openingHours.length > 0;
+
     if (!openingHours.length) {
       openingHours = DAY_NAMES.map((_, day) => ({ day_of_week: day, is_open: true, open_time: "10:00", close_time: "22:00" }));
     }
@@ -8521,7 +8662,9 @@ async function saveOpeningHours() {
     });
     if (!response.ok) throw new Error(await response.text());
     openingHours = await response.json();
+    openingHoursConfigured = true;
     renderOpeningHours();
+    renderSetupChecklist();
     showDashboardNotice("Otevírací doba byla uložena.", "success");
   } catch (error) {
     console.error(error);
@@ -8693,6 +8836,10 @@ async function loadReservationSettings() {
     if (!response.ok) throw new Error(await response.text());
 
     const rows = await response.json();
+    reservationSettingsConfigured =
+      Array.isArray(rows) &&
+      Boolean(rows[0]);
+
     reservationSettings = normalizeReservationSettings(rows[0] || {});
     renderReservationSettings();
   } catch (error) {
@@ -8768,7 +8915,9 @@ async function saveReservationSettings() {
 
     const rows = await response.json();
     reservationSettings = normalizeReservationSettings(rows[0] || values);
+    reservationSettingsConfigured = true;
     renderReservationSettings();
+    renderSetupChecklist();
     showDashboardNotice("Nastavení rezervací bylo uloženo.", "success");
   } catch (error) {
     console.error(error);
