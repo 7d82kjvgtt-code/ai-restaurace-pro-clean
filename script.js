@@ -1404,7 +1404,10 @@ async function loadAvailableReservationTimes() {
 
 async function ulozitRezervaci() {
   if (reservationSubmissionInProgress) return;
-  await loadPublicReservationSettings();
+  if (!publicReservationSettingsLoaded) {
+    showPublicReservationNotice("Nastavení rezervací se ještě načítá. Zkus to prosím za chvíli.");
+    return;
+  }
 
   const name = document.getElementById("jmeno").value.trim();
   const lastName = document.getElementById("prijmeni").value.trim();
