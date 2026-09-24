@@ -4429,10 +4429,10 @@ async function updateReservationStatusOnServer(
       });
     }
 
-    // Podmíněný PATCH je hlavní ochrana proti dvojkliku / dvěma requestům.
-    // Jen request, který opravdu změnil řádek, smí pokračovat k e-mailu.
+    // Změň pouze stav, který jsme skutečně přečetli. Dva souběžné
+    // požadavky s různým cílovým stavem tak neodešlou protichůdné e-maily.
     const changedRows = await supabaseUserJson(
-      `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${Number(existing.restaurant_id)}&status=neq.${encodeURIComponent(status)}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status`,
+      `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${Number(existing.restaurant_id)}&status=eq.${encodeURIComponent(String(existing.status))}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status`,
       callerToken,
       {
         method: "PATCH",
