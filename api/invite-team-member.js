@@ -28,7 +28,7 @@ function serviceHeaders(
 ) {
   if (!SERVICE_ROLE_KEY) {
     throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY není nastavený na Vercelu."
+      "Serverová konfigurace pozvánek není dokončená."
     );
   }
 
@@ -337,10 +337,10 @@ module.exports =
     if (!SERVICE_ROLE_KEY) {
       return send(
         res,
-        500,
+        503,
         {
           error:
-            "SUPABASE_SERVICE_ROLE_KEY není nastavený na Vercelu."
+            "Pozvánky teď nejsou dostupné. Zkus to prosím později."
         }
       );
     }
@@ -435,6 +435,56 @@ module.exports =
       const restaurantId =
         ownerContext.restaurantId;
 
+      const activeMembershipsResponse =
+        await supabase(
+          `/rest/v1/restaurant_team?email=eq.${encodeURIComponent(
+            email
+          )}&active=eq.true&select=restaurant_id&limit=2`
+        );
+
+      if (
+        !activeMembershipsResponse.ok
+      ) {
+        throw new Error(
+          "Nepodařilo se ověřit stávající členství."
+        );
+      }
+
+      const activeMemberships =
+        await activeMembershipsResponse
+          .json()
+          .catch(
+            () => []
+          );
+
+      const activeElsewhere =
+        (
+          Array.isArray(
+            activeMemberships
+          )
+            ? activeMemberships
+            : []
+        ).some(
+          item =>
+            Number(
+              item?.restaurant_id
+            ) !==
+            Number(
+              restaurantId
+            )
+        );
+
+      if (activeElsewhere) {
+        return send(
+          res,
+          409,
+          {
+            error:
+              "Tento e-mail je už aktivně přiřazený k jiné restauraci. Pilotní V1 podporuje jednu aktivní restauraci na účet."
+          }
+        );
+      }
+
       const existingResponse =
         await supabase(
           `/rest/v1/restaurant_team?restaurant_id=eq.${restaurantId}&email=eq.${encodeURIComponent(
@@ -527,12 +577,22 @@ module.exports =
             "Pozvánku se nepodařilo odeslat."
           );
 
+        const inviteStatus =
+          Number(
+            inviteResponse.status ||
+            500
+          );
+
         return send(
           res,
-          inviteResponse.status,
+          inviteStatus >= 500
+            ? 502
+            : inviteStatus,
           {
             error:
-              message
+              inviteStatus >= 500
+                ? "Pozvánku se teď nepodařilo odeslat. Zkus to prosím později."
+                : message
           }
         );
       }
@@ -671,8 +731,12 @@ module.exports =
         status,
         {
           error:
-            error?.message ||
-            "Pozvánku se nepodařilo odeslat."
+            status >= 500
+              ? "Pozvánku se teď nepodařilo odeslat. Zkus to prosím později."
+              : String(
+                  error?.message ||
+                  "Pozvánku se nepodařilo odeslat."
+                )
         }
       );
     }
