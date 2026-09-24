@@ -1413,7 +1413,11 @@ async function getDashboardRestaurantInfoOnServer(
             ),
           is_published:
             restaurant.is_published ===
-            true
+            true,
+          ai_enabled:
+            Boolean(
+              process.env.OPENAI_API_KEY
+            )
         }
       });
   } catch (error) {
