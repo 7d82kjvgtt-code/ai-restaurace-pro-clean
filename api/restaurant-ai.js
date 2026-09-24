@@ -651,20 +651,35 @@ async function askModel({
       boundedRestaurantData
     );
 
-  const response =
-    await fetch(
-      OPENAI_API_URL,
-      {
-        method: "POST",
-        headers: {
-          Authorization:
-            "Bearer " +
-            OPENAI_API_KEY,
-          "Content-Type":
-            "application/json"
-        },
-        body:
-          JSON.stringify({
+  const controller =
+    new AbortController();
+
+  const timeoutId =
+    setTimeout(
+      () =>
+        controller.abort(),
+      20000
+    );
+
+  let response;
+
+  try {
+    response =
+      await fetch(
+        OPENAI_API_URL,
+        {
+          method: "POST",
+          signal:
+            controller.signal,
+          headers: {
+            Authorization:
+              "Bearer " +
+              OPENAI_API_KEY,
+            "Content-Type":
+              "application/json"
+          },
+          body:
+            JSON.stringify({
             model:
               OPENAI_MODEL,
             store:
@@ -707,8 +722,35 @@ async function askModel({
                 ]
               }
             ]
-          })
-      }
+            })
+        }
+      );
+  } catch (error) {
+    if (
+      error?.name ===
+      "AbortError"
+    ) {
+      const timeoutError =
+        new Error(
+          "AI asistent teď odpovídá příliš dlouho. Zkus to prosím za chvíli."
+        );
+
+      timeoutError.status =
+        504;
+
+      throw timeoutError;
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(
+      timeoutId
+    );
+  }
+
+  const requestId =
+    response.headers.get(
+      "x-request-id"
     );
 
   const payload =
@@ -722,7 +764,11 @@ async function askModel({
       response.status,
       payload?.error?.type ||
         payload?.error?.code ||
-        "unknown"
+        "unknown",
+      requestId
+        ? "request_id=" +
+          requestId
+        : ""
     );
 
     const error =
