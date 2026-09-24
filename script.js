@@ -211,7 +211,8 @@ async function askRestaurantAi(
             JSON.stringify({
               slug:
                 requirePublicRestaurantSlug(),
-              question
+              question,
+              locale: document.documentElement.lang === "en" ? "en" : "cs"
             })
         }
       );
@@ -1520,7 +1521,8 @@ async function ulozitRezervaci() {
         time,
         phone,
         email,
-        note
+        note,
+        locale: document.documentElement.lang === "en" ? "en" : "cs"
       })
     });
 
