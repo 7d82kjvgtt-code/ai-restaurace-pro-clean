@@ -3192,6 +3192,456 @@ async function validateDashboardReservationAvailabilityOnServer({
 }
 
 
+async function createDashboardReservationOnServer(
+  req,
+  res
+) {
+  const restaurantId =
+    Number(
+      req.body?.restaurant_id
+    );
+
+  const name =
+    String(
+      req.body?.name || ""
+    ).trim();
+
+  const people =
+    Number(
+      req.body?.people
+    );
+
+  const date =
+    String(
+      req.body?.date || ""
+    ).trim();
+
+  const time =
+    String(
+      req.body?.time || ""
+    )
+      .trim()
+      .slice(0, 5);
+
+  const durationMinutes =
+    Number(
+      req.body?.duration_minutes
+    );
+
+  const phone =
+    String(
+      req.body?.phone || ""
+    ).trim();
+
+  const email =
+    String(
+      req.body?.email || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  const note =
+    String(
+      req.body?.note || ""
+    ).trim();
+
+  const rawTableId =
+    req.body?.table_id;
+
+  const rawTableGroupId =
+    req.body?.table_group_id;
+
+  const tableId =
+    rawTableId === null ||
+    rawTableId === undefined ||
+    rawTableId === ""
+      ? null
+      : Number(
+          rawTableId
+        );
+
+  const tableGroupId =
+    rawTableGroupId === null ||
+    rawTableGroupId === undefined ||
+    rawTableGroupId === ""
+      ? null
+      : Number(
+          rawTableGroupId
+        );
+
+  if (
+    !Number.isInteger(
+      restaurantId
+    ) ||
+    restaurantId < 1 ||
+    !name ||
+    name.length > 120 ||
+    !Number.isInteger(
+      people
+    ) ||
+    people < 1 ||
+    people > 30 ||
+    !isValidDateString(
+      date
+    ) ||
+    !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(
+      time
+    ) ||
+    !Number.isFinite(
+      durationMinutes
+    ) ||
+    durationMinutes < 30 ||
+    durationMinutes > 360 ||
+    phone.length > 40 ||
+    email.length > 320 ||
+    note.length > 1000 ||
+    (
+      email &&
+      !isValidEmail(
+        email
+      )
+    ) ||
+    (
+      tableId !== null &&
+      (
+        !Number.isInteger(
+          tableId
+        ) ||
+        tableId < 1
+      )
+    ) ||
+    (
+      tableGroupId !== null &&
+      (
+        !Number.isInteger(
+          tableGroupId
+        ) ||
+        tableGroupId < 1
+      )
+    ) ||
+    (
+      tableId !== null &&
+      tableGroupId !== null
+    ) ||
+    (
+      tableId === null &&
+      tableGroupId === null
+    )
+  ) {
+    return res
+      .status(400)
+      .json({
+        error:
+          "Některé údaje nové rezervace nejsou platné."
+      });
+  }
+
+  try {
+    const user =
+      await getAuthenticatedUser(
+        req
+      );
+
+    const callerToken =
+      getRequestBearerToken(
+        req
+      );
+
+    await assertRestaurantAccess(
+      user.id,
+      restaurantId
+    );
+
+    if (
+      tableId !== null
+    ) {
+      const [
+        tableRows,
+        activeGroups
+      ] =
+        await Promise.all([
+          supabaseServiceJson(
+            `/rest/v1/restaurant_tables?id=eq.${tableId}&restaurant_id=eq.${restaurantId}&select=id,name,capacity,active&limit=1`,
+            {
+              method:
+                "GET"
+            }
+          ),
+          supabaseServiceJson(
+            `/rest/v1/table_groups?restaurant_id=eq.${restaurantId}&active=eq.true&select=id,table_ids`,
+            {
+              method:
+                "GET"
+            }
+          )
+        ]);
+
+      const table =
+        Array.isArray(
+          tableRows
+        )
+          ? tableRows[0]
+          : null;
+
+      if (
+        !table?.id ||
+        table.active ===
+          false
+      ) {
+        return res
+          .status(409)
+          .json({
+            error:
+              "Vybraný stůl není aktivní nebo nepatří této restauraci."
+          });
+      }
+
+      if (
+        people >
+        Number(
+          table.capacity || 0
+        )
+      ) {
+        return res
+          .status(409)
+          .json({
+            error:
+              "Vybraný stůl nemá dostatečnou kapacitu."
+          });
+      }
+
+      const grouped =
+        (
+          Array.isArray(
+            activeGroups
+          )
+            ? activeGroups
+            : []
+        ).some(
+          group =>
+            Array.isArray(
+              group?.table_ids
+            ) &&
+            group.table_ids
+              .map(Number)
+              .includes(
+                tableId
+              )
+        );
+
+      if (grouped) {
+        return res
+          .status(409)
+          .json({
+            error:
+              "Vybraný stůl je součástí aktivní skupiny stolů."
+          });
+      }
+    }
+
+    if (
+      tableGroupId !== null
+    ) {
+      const [
+        groupRows,
+        activeTables
+      ] =
+        await Promise.all([
+          supabaseServiceJson(
+            `/rest/v1/table_groups?id=eq.${tableGroupId}&restaurant_id=eq.${restaurantId}&select=id,name,total_capacity,active,table_ids&limit=1`,
+            {
+              method:
+                "GET"
+            }
+          ),
+          supabaseServiceJson(
+            `/rest/v1/restaurant_tables?restaurant_id=eq.${restaurantId}&active=eq.true&select=id`,
+            {
+              method:
+                "GET"
+            }
+          )
+        ]);
+
+      const group =
+        Array.isArray(
+          groupRows
+        )
+          ? groupRows[0]
+          : null;
+
+      const memberIds =
+        Array.isArray(
+          group?.table_ids
+        )
+          ? group.table_ids
+              .map(Number)
+              .filter(
+                id =>
+                  Number.isInteger(
+                    id
+                  ) &&
+                  id > 0
+              )
+          : [];
+
+      const activeTableIds =
+        new Set(
+          (
+            Array.isArray(
+              activeTables
+            )
+              ? activeTables
+              : []
+          ).map(
+            table =>
+              Number(
+                table.id
+              )
+          )
+        );
+
+      if (
+        !group?.id ||
+        group.active ===
+          false ||
+        memberIds.length < 2 ||
+        !memberIds.every(
+          id =>
+            activeTableIds.has(
+              id
+            )
+        )
+      ) {
+        return res
+          .status(409)
+          .json({
+            error:
+              "Vybraná skupina stolů není aktivní nebo nemá platné stoly."
+          });
+      }
+
+      if (
+        people >
+        Number(
+          group
+            .total_capacity ||
+          0
+        )
+      ) {
+        return res
+          .status(409)
+          .json({
+            error:
+              "Vybraná skupina stolů nemá dostatečnou kapacitu."
+          });
+      }
+    }
+
+    await validateDashboardReservationAvailabilityOnServer({
+      restaurantId,
+      reservationId:
+        0,
+      date,
+      time,
+      durationMinutes,
+      tableId,
+      tableGroupId,
+      status:
+        "Čeká"
+    });
+
+    const insertedRows =
+      await supabaseUserJson(
+        `/rest/v1/reservations?select=id,restaurant_id,name,last_name,people,date,time,duration_minutes,phone,email,note,table_id,table_group_id,status`,
+        callerToken,
+        {
+          method:
+            "POST",
+          headers: {
+            Prefer:
+              "return=representation"
+          },
+          body:
+            JSON.stringify({
+              restaurant_id:
+                restaurantId,
+              name,
+              last_name:
+                null,
+              people,
+              date,
+              time,
+              duration_minutes:
+                durationMinutes,
+              table_id:
+                tableId,
+              table_group_id:
+                tableGroupId,
+              phone,
+              email,
+              note,
+              status:
+                "Čeká"
+            })
+        }
+      );
+
+    const reservation =
+      Array.isArray(
+        insertedRows
+      )
+        ? insertedRows[0]
+        : null;
+
+    if (!reservation?.id) {
+      return res
+        .status(500)
+        .json({
+          error:
+            "Rezervaci se nepodařilo uložit."
+        });
+    }
+
+    return res
+      .status(200)
+      .json({
+        success:
+          true,
+        reservation
+      });
+  } catch (error) {
+    console.error(
+      "Chyba při vytvoření dashboard rezervace:",
+      error
+    );
+
+    const statusCode =
+      Number(
+        error?.status ||
+        500
+      );
+
+    return res
+      .status(
+        statusCode >= 400 &&
+        statusCode < 600
+          ? statusCode
+          : 500
+      )
+      .json({
+        error:
+          statusCode >= 500
+            ? "Rezervaci se nepodařilo uložit."
+            : String(
+                error?.message ||
+                "Rezervaci se nepodařilo uložit."
+              )
+      });
+  }
+}
+
+
 async function updateReservationOnServer(
   req,
   res
@@ -3958,6 +4408,16 @@ export default async function handler(
     "create-reservation"
   ) {
     return createReservationOnServer(
+      req,
+      res
+    );
+  }
+
+  if (
+    req.body?.action ===
+    "create-dashboard-reservation"
+  ) {
+    return createDashboardReservationOnServer(
       req,
       res
     );
