@@ -67,6 +67,45 @@ function publicErrorMessage(error, fallback) {
 }
 
 
+function dashboardErrorMessage(
+  error,
+  fallback
+) {
+  const status =
+    Number(
+      error?.status || 500
+    );
+
+  if (status === 401) {
+    return "Přihlášení není platné. Přihlas se prosím znovu.";
+  }
+
+  if (status === 403) {
+    return "K této akci nemáš oprávnění.";
+  }
+
+  if (status >= 500) {
+    return fallback;
+  }
+
+  const message =
+    String(
+      error?.message || ""
+    ).trim();
+
+  if (
+    !message ||
+    /(?:PGRST|row-level|row level|supabase|schema cache|relation |column |jwt)/i.test(
+      message
+    )
+  ) {
+    return fallback;
+  }
+
+  return message;
+}
+
+
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
     String(value || "").trim()
@@ -3631,12 +3670,10 @@ async function createDashboardReservationOnServer(
       )
       .json({
         error:
-          statusCode >= 500
-            ? "Rezervaci se nepodařilo uložit."
-            : String(
-                error?.message ||
-                "Rezervaci se nepodařilo uložit."
-              )
+          dashboardErrorMessage(
+            error,
+            "Rezervaci se nepodařilo uložit."
+          )
       });
   }
 }
@@ -4268,12 +4305,10 @@ async function updateReservationOnServer(
       )
       .json({
         error:
-          statusCode >= 500
-            ? "Rezervaci se nepodařilo upravit."
-            : String(
-                error?.message ||
-                "Rezervaci se nepodařilo upravit."
-              )
+          dashboardErrorMessage(
+            error,
+            "Rezervaci se nepodařilo upravit."
+          )
       });
   }
 }
@@ -4385,7 +4420,7 @@ async function updateReservationStatusOnServer(
         success: true,
         changed: true,
         email_sent: false,
-        email_error: emailError?.message || "E-mail se nepodařilo odeslat.",
+        email_error: "Stav byl změněn, ale e-mail se nepodařilo odeslat.",
         reservation_id: reservationId,
         status
       });
@@ -4400,9 +4435,10 @@ async function updateReservationStatusOnServer(
 
     return res.status(statusCode).json({
       error:
-        statusCode >= 500
-          ? "Stav rezervace se nepodařilo změnit."
-          : error?.message || "Stav rezervace se nepodařilo změnit."
+        dashboardErrorMessage(
+          error,
+          "Stav rezervace se nepodařilo změnit."
+        )
     });
   }
 }
@@ -4412,6 +4448,11 @@ export default async function handler(
   req,
   res
 ) {
+  res.setHeader(
+    "Cache-Control",
+    "no-store"
+  );
+
   if (
     req.method !== "POST"
   ) {
