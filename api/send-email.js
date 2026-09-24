@@ -865,7 +865,8 @@ async function sendResendEmail({
   to,
   subject,
   html,
-  replyTo
+  replyTo,
+  idempotencyKey
 }) {
   const apiKey =
     String(
@@ -896,8 +897,10 @@ async function sendResendEmail({
             `Bearer ${apiKey}`,
 
           "Content-Type":
-            "application/json"
+            "application/json",
+          ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {})
         },
+        signal: AbortSignal.timeout(8000),
 
         body: JSON.stringify({
           from:
@@ -954,6 +957,7 @@ async function sendResendEmail({
 
 async function sendReservationCreatedEmail({
   restaurant,
+  reservationId,
   email,
   locale = "cs",
   name,
@@ -965,6 +969,7 @@ async function sendReservationCreatedEmail({
 }) {
   return sendResendEmail({
     to: email,
+    idempotencyKey: `reservation-created/${Number(restaurant.id)}/${Number(reservationId)}`,
 
     subject:
       locale === "en"
@@ -2817,6 +2822,7 @@ const ipRateKey =
     try {
       await sendReservationCreatedEmail({
         restaurant,
+        reservationId: inserted.id,
         locale: cleanLocale,
         email:
           cleanEmail,
