@@ -1127,6 +1127,11 @@ function renderRestaurantBrandingForm(
     );
 
   if (logoImage) {
+    logoImage.onerror = () => {
+      logoImage.hidden = true;
+      if (logoFallback) logoFallback.hidden = false;
+    };
+
     logoImage.hidden =
       !logoUrl;
 
@@ -1653,6 +1658,15 @@ async function removeRestaurantLogo() {
 
     currentRestaurantBranding =
       rows[0];
+
+    const fileInput =
+      document.getElementById(
+        "restaurantBrandLogo"
+      );
+
+    if (fileInput) {
+      fileInput.value = "";
+    }
 
     renderRestaurantBrandingForm(
       currentRestaurantBranding
