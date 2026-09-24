@@ -712,3 +712,132 @@ body.restaurant-public-mode #reservationSubmitButton {
     padding: 20px;
   }
 }
+
+
+/* =========================================================
+   PUBLIC RESTAURANT AI — PILOT V1
+========================================================= */
+body.restaurant-public-mode .restaurant-ai-section {
+  max-width: 1040px;
+}
+
+.restaurant-ai-lead {
+  margin-top: 8px;
+  color: #94a3b8;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.restaurant-ai-card {
+  max-width: 820px;
+  padding: 28px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(15,23,42,.92), rgba(2,6,23,.82));
+  box-shadow: 0 26px 70px rgba(0,0,0,.28);
+}
+
+.restaurant-ai-answer {
+  min-height: 96px;
+  padding: 20px;
+  border: 1px solid rgba(245,158,11,.18);
+  border-radius: 18px;
+  background: rgba(2,6,23,.72);
+  color: #e5e7eb;
+  font-size: 16px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.restaurant-ai-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.restaurant-ai-suggestions button {
+  padding: 9px 13px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 999px;
+  background: rgba(255,255,255,.055);
+  color: #e5e7eb;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.restaurant-ai-suggestions button:hover {
+  background: rgba(245,158,11,.12);
+  border-color: rgba(245,158,11,.34);
+  transform: translateY(-1px);
+}
+
+.restaurant-ai-form label {
+  display: block;
+  margin-bottom: 8px;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.restaurant-ai-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.restaurant-ai-input-row input {
+  margin: 0;
+  min-height: 52px;
+}
+
+.restaurant-ai-input-row button {
+  min-width: 128px;
+  min-height: 52px;
+  padding: 0 18px;
+}
+
+.restaurant-ai-input-row button:disabled,
+.restaurant-ai-input-row input:disabled {
+  opacity: .68;
+  cursor: wait;
+}
+
+.restaurant-ai-note {
+  margin-top: 14px;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+[data-restaurant-ai][hidden] {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  .restaurant-ai-card {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .restaurant-ai-answer {
+    min-height: 110px;
+    padding: 16px;
+    font-size: 15px;
+  }
+
+  .restaurant-ai-suggestions {
+    gap: 8px;
+  }
+
+  .restaurant-ai-input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .restaurant-ai-input-row button {
+    width: 100%;
+  }
+}
