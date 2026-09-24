@@ -308,6 +308,224 @@ function setupRestaurantAi() {
 }
 
 
+function getSafePublicHttpUrl(
+  value
+) {
+  const raw =
+    String(
+      value || ""
+    ).trim();
+
+  if (!raw) {
+    return "";
+  }
+
+  try {
+    const url =
+      new URL(
+        raw,
+        window.location.origin
+      );
+
+    const safe =
+      url.protocol ===
+        "https:" ||
+      (
+        url.protocol ===
+          "http:" &&
+        [
+          "localhost",
+          "127.0.0.1"
+        ].includes(
+          url.hostname
+        )
+      );
+
+    return safe
+      ? url.href
+      : "";
+  } catch {
+    return "";
+  }
+}
+
+
+function renderPublicRestaurantContact(
+  restaurant = {}
+) {
+  const container =
+    document.getElementById(
+      "publicRestaurantContact"
+    );
+
+  if (!container) {
+    return;
+  }
+
+  container.replaceChildren();
+
+  const address =
+    String(
+      restaurant.address || ""
+    ).trim();
+
+  const phone =
+    String(
+      restaurant.phone || ""
+    ).trim();
+
+  const email =
+    String(
+      restaurant.email || ""
+    ).trim();
+
+  const website =
+    getSafePublicHttpUrl(
+      restaurant.website_url
+    );
+
+  const appendItem =
+    ({
+      icon,
+      text,
+      href = ""
+    }) => {
+      if (!text) {
+        return;
+      }
+
+      const element =
+        href
+          ? document.createElement(
+              "a"
+            )
+          : document.createElement(
+              "span"
+            );
+
+      element.className =
+        "restaurant-contact-item";
+
+      if (href) {
+        element.href =
+          href;
+
+        if (
+          href.startsWith(
+            "http"
+          )
+        ) {
+          element.target =
+            "_blank";
+
+          element.rel =
+            "noopener";
+        }
+      }
+
+      const iconSpan =
+        document.createElement(
+          "span"
+        );
+
+      iconSpan.setAttribute(
+        "aria-hidden",
+        "true"
+      );
+
+      iconSpan.textContent =
+        icon;
+
+      const textSpan =
+        document.createElement(
+          "span"
+        );
+
+      textSpan.textContent =
+        text;
+
+      element.append(
+        iconSpan,
+        textSpan
+      );
+
+      container.appendChild(
+        element
+      );
+    };
+
+  appendItem({
+    icon: "📍",
+    text:
+      address
+  });
+
+  if (phone) {
+    const hrefPhone =
+      phone.replace(
+        /[^+0-9]/g,
+        ""
+      );
+
+    appendItem({
+      icon: "☎️",
+      text:
+        phone,
+      href:
+        hrefPhone
+          ? "tel:" +
+            hrefPhone
+          : ""
+    });
+  }
+
+  if (
+    email &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+      email
+    )
+  ) {
+    appendItem({
+      icon: "✉️",
+      text:
+        email,
+      href:
+        "mailto:" +
+        email
+    });
+  }
+
+  if (website) {
+    let websiteLabel =
+      "Web restaurace";
+
+    try {
+      websiteLabel =
+        new URL(
+          website
+        ).hostname.replace(
+          /^www\./,
+          ""
+        );
+    } catch {
+      // Fallback label stays.
+    }
+
+    appendItem({
+      icon: "🌐",
+      text:
+        websiteLabel,
+      href:
+        website
+    });
+  }
+
+  container.hidden =
+    container.children.length ===
+    0;
+}
+
+
 async function loadPublicRestaurantInfo() {
   const slug =
     requirePublicRestaurantSlug();
@@ -384,6 +602,11 @@ async function loadPublicRestaurantInfo() {
       "publicRestaurantMonogram"
     );
 
+  const brandLogo =
+    document.getElementById(
+      "publicRestaurantLogo"
+    );
+
   const brandAccent =
     document.getElementById(
       "publicRestaurantBrandAccent"
@@ -394,12 +617,35 @@ async function loadPublicRestaurantInfo() {
       name;
   }
 
+  const safeLogoUrl =
+    getSafePublicHttpUrl(
+      data.restaurant.logo_url
+    );
+
+  if (brandLogo) {
+    brandLogo.src =
+      safeLogoUrl || "";
+
+    brandLogo.alt =
+      safeLogoUrl
+        ? `${name} – logo`
+        : "";
+
+    brandLogo.hidden =
+      !safeLogoUrl;
+  }
+
   if (brandMonogram) {
     const initial =
       Array.from(name)[0] || "R";
 
     brandMonogram.textContent =
       initial.toLocaleUpperCase("cs-CZ");
+
+    brandMonogram.hidden =
+      Boolean(
+        safeLogoUrl
+      );
   }
 
   if (brandAccent) {
@@ -416,6 +662,29 @@ async function loadPublicRestaurantInfo() {
         )
       )}`;
   }
+
+  const accentColor =
+    /^#[0-9a-fA-F]{6}$/.test(
+      String(
+        data.restaurant
+          .accent_color ||
+        ""
+      )
+    )
+      ? String(
+          data.restaurant
+            .accent_color
+        )
+      : "#f59e0b";
+
+  document.body.style.setProperty(
+    "--restaurant-accent",
+    accentColor
+  );
+
+  renderPublicRestaurantContact(
+    data.restaurant
+  );
 
   const badge =
     document.getElementById(
@@ -444,6 +713,11 @@ async function loadPublicRestaurantInfo() {
 
   if (subtitle) {
     subtitle.textContent =
+      String(
+        data.restaurant
+          .short_description ||
+        ""
+      ).trim() ||
       "Prohlédněte si aktuální menu a rezervujte si stůl online.";
   }
 
@@ -517,6 +791,11 @@ function showPublicRestaurantUnavailable(
       "publicRestaurantMonogram"
     );
 
+  const brandLogo =
+    document.getElementById(
+      "publicRestaurantLogo"
+    );
+
   const brandAccent =
     document.getElementById(
       "publicRestaurantBrandAccent"
@@ -527,10 +806,39 @@ function showPublicRestaurantUnavailable(
       "AI Restaurace";
   }
 
+  if (brandLogo) {
+    brandLogo.src =
+      "";
+
+    brandLogo.alt =
+      "";
+
+    brandLogo.hidden =
+      true;
+  }
+
   if (brandMonogram) {
     brandMonogram.textContent =
       "🍽️";
+
+    brandMonogram.hidden =
+      false;
   }
+
+  const contact =
+    document.getElementById(
+      "publicRestaurantContact"
+    );
+
+  if (contact) {
+    contact.replaceChildren();
+    contact.hidden =
+      true;
+  }
+
+  document.body.style.removeProperty(
+    "--restaurant-accent"
+  );
 
   if (brandAccent) {
     brandAccent.hidden =
