@@ -5,7 +5,19 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle
 
 .navbar{display:flex;justify-content:space-between;align-items:center;padding:22px 8%;background:rgba(2,6,23,.78);backdrop-filter:blur(16px);position:sticky;top:0;z-index:10;border-bottom:1px solid rgba(255,255,255,.08)}
 .brand{font-size:24px;font-weight:900;color:white;text-decoration:none}
-.brand span{color:#f59e0b}
+.brand{display:inline-flex;align-items:center;gap:8px}
+.brand .brand-accent{color:#f59e0b}
+.brand-monogram{display:inline-grid;place-items:center;flex:0 0 auto}
+body.restaurant-public-mode .brand-monogram{
+  width:38px;height:38px;border-radius:12px;
+  background:linear-gradient(135deg,#f59e0b,#f97316);
+  color:#111827;font-size:18px;font-weight:900;
+  box-shadow:0 10px 24px rgba(249,115,22,.22)
+}
+body.restaurant-public-mode .brand-name{
+  max-width:min(58vw,520px);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
 .nav-links{display:flex;gap:20px;align-items:center}
 .nav-links a{color:#e5e7eb;text-decoration:none;font-weight:700}
 .nav-links a:hover{color:#fbbf24}
