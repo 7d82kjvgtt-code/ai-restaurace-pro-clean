@@ -3131,6 +3131,16 @@ async function updateReservationOnServer(
       req.body?.name || ""
     ).trim();
 
+  const lastName =
+    req.body?.last_name ===
+      null ||
+    req.body?.last_name ===
+      undefined
+      ? null
+      : String(
+          req.body.last_name
+        ).trim();
+
   const people =
     Number(
       req.body?.people
@@ -3212,6 +3222,10 @@ async function updateReservationOnServer(
   if (
     !name ||
     name.length > 120 ||
+    (
+      lastName !== null &&
+      lastName.length > 120
+    ) ||
     !Number.isInteger(
       people
     ) ||
@@ -3511,7 +3525,7 @@ async function updateReservationOnServer(
             JSON.stringify({
               name,
               last_name:
-                null,
+                lastName,
               people,
               date,
               time,
