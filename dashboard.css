@@ -3747,3 +3747,168 @@ tbody tr:hover {
     font-size: 12px !important;
   }
 }
+
+
+/* =========================================================
+   PILOT V1 — FIRST SETUP CHECKLIST
+========================================================= */
+.setup-checklist-panel {
+  margin-bottom: 22px;
+  overflow: hidden;
+}
+
+.setup-checklist-panel[hidden] {
+  display: none !important;
+}
+
+.setup-checklist-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.setup-checklist-head h2 {
+  margin: 3px 0 7px;
+}
+
+.setup-checklist-head p {
+  margin: 0;
+  max-width: 720px;
+  color: var(--muted, #94a3b8);
+  line-height: 1.55;
+}
+
+.setup-progress-wrap {
+  width: min(220px, 34vw);
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.setup-progress-wrap strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+.setup-progress-track {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, .16);
+}
+
+.setup-progress-track span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #22c55e, #84cc16);
+  transition: width .25s ease;
+}
+
+.setup-checklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.setup-step {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 78px;
+  padding: 14px 16px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, .46);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+
+a.setup-step:hover {
+  transform: translateY(-1px);
+  border-color: rgba(249, 115, 22, .48);
+  background: rgba(15, 23, 42, .72);
+}
+
+.setup-step.is-complete {
+  border-color: rgba(34, 197, 94, .28);
+  background: rgba(20, 83, 45, .13);
+}
+
+.setup-step-status {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, .13);
+  color: #cbd5e1;
+  font-weight: 900;
+}
+
+.setup-step.is-complete .setup-step-status {
+  background: rgba(34, 197, 94, .16);
+  color: #86efac;
+}
+
+.setup-step strong,
+.setup-step small {
+  display: block;
+}
+
+.setup-step strong {
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.setup-step small {
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.setup-step-action {
+  color: #fb923c;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.setup-step.is-complete .setup-step-action {
+  color: #86efac;
+}
+
+.setup-public-link[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  .setup-checklist-head {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .setup-progress-wrap {
+    width: 100%;
+    text-align: left;
+  }
+
+  .setup-checklist {
+    grid-template-columns: 1fr;
+  }
+
+  .setup-step {
+    grid-template-columns: 32px minmax(0, 1fr);
+    min-height: 72px;
+    padding: 13px;
+  }
+
+  .setup-step-action {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
