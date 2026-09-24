@@ -8099,9 +8099,10 @@ async function inviteTeamMember(event) {
   } catch (error) {
     console.error(error);
     const msg = String(error.message || 'Pozvánku se nepodařilo odeslat.');
-    showDashboardNotice(msg.includes('SUPABASE_SERVICE_ROLE_KEY')
-      ? 'Na Vercelu chybí bezpečný klíč pro pozvánky. Přidej SUPABASE_SERVICE_ROLE_KEY do Environment Variables.'
-      : msg);
+    showDashboardNotice(
+      msg,
+      "error"
+    );
   } finally {
     button.disabled = false;
     button.textContent = oldText;
