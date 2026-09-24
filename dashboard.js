@@ -11,6 +11,8 @@ let currentRestaurantId = null;
 let currentRestaurantName = "";
 let currentRestaurantSlug = "";
 let currentRestaurantIsPublished = false;
+let currentDashboardAiEnabled = false;
+let dashboardAiRequestInProgress = false;
 let openingHoursConfigured = false;
 let reservationSettingsConfigured = false;
 let currentUserRole = null;
@@ -292,6 +294,7 @@ function setReservationStatusButtonsBusy(id, busy) {
 document.addEventListener("DOMContentLoaded", async () => {
   setupNavigation();
   setupMobileNavigation();
+  setupDashboardAi();
 document.querySelectorAll(".room-switch").forEach((button) => {
     button.addEventListener("click", () => {
         selectedRoom = button.dataset.room;
@@ -352,6 +355,9 @@ async function loadCurrentRestaurantInfo() {
       "";
 
     currentRestaurantIsPublished =
+      false;
+
+    currentDashboardAiEnabled =
       false;
 
     if (link) {
@@ -433,6 +439,11 @@ async function loadCurrentRestaurantInfo() {
         .is_published ===
       true;
 
+    currentDashboardAiEnabled =
+      data.restaurant
+        .ai_enabled ===
+      true;
+
     if (
       link &&
       currentRestaurantSlug &&
@@ -472,6 +483,9 @@ async function loadCurrentRestaurantInfo() {
     currentRestaurantIsPublished =
       false;
 
+    currentDashboardAiEnabled =
+      false;
+
     if (link) {
       link.hidden =
         true;
@@ -485,6 +499,296 @@ async function loadCurrentRestaurantInfo() {
     return null;
   }
 }
+
+function setDashboardAiBusy(
+  busy
+) {
+  dashboardAiRequestInProgress =
+    Boolean(busy);
+
+  const button =
+    document.getElementById(
+      "dashboardAiSendButton"
+    );
+
+  const input =
+    document.getElementById(
+      "dashboardAiInput"
+    );
+
+  if (button) {
+    button.disabled =
+      dashboardAiRequestInProgress;
+
+    button.textContent =
+      dashboardAiRequestInProgress
+        ? "Analyzuji…"
+        : "Zeptat se";
+  }
+
+  if (input) {
+    input.disabled =
+      dashboardAiRequestInProgress;
+  }
+
+  document
+    .querySelectorAll(
+      "[data-dashboard-ai-question]"
+    )
+    .forEach(buttonElement => {
+      buttonElement.disabled =
+        dashboardAiRequestInProgress;
+    });
+}
+
+
+function renderDashboardAiSnapshot(
+  snapshot = {}
+) {
+  const values = {
+    dashboardAiTodayReservations:
+      snapshot
+        .today_active_reservations,
+    dashboardAiTodayGuests:
+      snapshot
+        .today_guests,
+    dashboardAiLast30:
+      snapshot
+        .last_30_days_active_reservations,
+    dashboardAiNext7:
+      snapshot
+        .next_7_days_active_reservations
+  };
+
+  Object.entries(
+    values
+  ).forEach(
+    ([id, value]) => {
+      const element =
+        document.getElementById(
+          id
+        );
+
+      if (!element) {
+        return;
+      }
+
+      element.textContent =
+        Number.isFinite(
+          Number(value)
+        )
+          ? String(
+              Number(value)
+            )
+          : "–";
+    }
+  );
+}
+
+
+async function askDashboardAi(
+  questionOverride = ""
+) {
+  if (
+    currentUserRole !==
+      "owner" ||
+    !currentDashboardAiEnabled ||
+    !currentRestaurantId ||
+    dashboardAiRequestInProgress
+  ) {
+    return;
+  }
+
+  const input =
+    document.getElementById(
+      "dashboardAiInput"
+    );
+
+  const answer =
+    document.getElementById(
+      "dashboardAiAnswer"
+    );
+
+  const question =
+    String(
+      questionOverride ||
+      input?.value ||
+      ""
+    )
+      .trim()
+      .slice(
+        0,
+        601
+      );
+
+  if (!question) {
+    if (answer) {
+      answer.textContent =
+        "Napiš prosím dotaz k provozu restaurace.";
+    }
+
+    input?.focus();
+    return;
+  }
+
+  if (
+    question.length >
+    600
+  ) {
+    if (answer) {
+      answer.textContent =
+        "Dotaz může mít maximálně 600 znaků.";
+    }
+
+    return;
+  }
+
+  if (answer) {
+    answer.textContent =
+      "Analyzuji aktuální provozní data restaurace…";
+  }
+
+  setDashboardAiBusy(
+    true
+  );
+
+  try {
+    const response =
+      await authorizedFetch(
+        "/api/dashboard-ai",
+        {
+          method:
+            "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body:
+            JSON.stringify({
+              restaurant_id:
+                Number(
+                  currentRestaurantId
+                ),
+              question
+            })
+        }
+      );
+
+    const data =
+      await response
+        .json()
+        .catch(
+          () => ({})
+        );
+
+    if (
+      !response.ok ||
+      !data?.answer
+    ) {
+      throw new Error(
+        data?.error ||
+        "AI přehled teď není dostupný."
+      );
+    }
+
+    if (answer) {
+      answer.textContent =
+        String(
+          data.answer
+        );
+    }
+
+    renderDashboardAiSnapshot(
+      data.snapshot ||
+      {}
+    );
+
+    if (
+      input &&
+      !questionOverride
+    ) {
+      input.value =
+        "";
+    }
+  } catch (error) {
+    console.error(
+      "Dashboard AI:",
+      error
+    );
+
+    if (answer) {
+      answer.textContent =
+        String(
+          error?.message ||
+          "AI přehled teď není dostupný. Zkus to prosím za chvíli."
+        );
+    }
+  } finally {
+    setDashboardAiBusy(
+      false
+    );
+  }
+}
+
+
+function setupDashboardAi() {
+  const form =
+    document.getElementById(
+      "dashboardAiForm"
+    );
+
+  if (
+    form &&
+    form.dataset.bound !==
+      "true"
+  ) {
+    form.dataset.bound =
+      "true";
+
+    form.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
+        askDashboardAi();
+      }
+    );
+  }
+
+  document
+    .querySelectorAll(
+      "[data-dashboard-ai-question]"
+    )
+    .forEach(button => {
+      if (
+        button.dataset.bound ===
+        "true"
+      ) {
+        return;
+      }
+
+      button.dataset.bound =
+        "true";
+
+      button.addEventListener(
+        "click",
+        () => {
+          const question =
+            String(
+              button.dataset
+                .dashboardAiQuestion ||
+              ""
+            ).trim();
+
+          if (question) {
+            askDashboardAi(
+              question
+            );
+          }
+        }
+      );
+    });
+}
+
 
 function setSetupStepState(elementId, completed) {
   const element = document.getElementById(elementId);
@@ -759,6 +1063,12 @@ function clearSession() {
     "";
 
   currentRestaurantIsPublished =
+    false;
+
+  currentDashboardAiEnabled =
+    false;
+
+  dashboardAiRequestInProgress =
     false;
 
   openingHoursConfigured =
@@ -8065,7 +8375,7 @@ const ROLE_LABELS = {
 };
 
 const ROLE_ALLOWED_SECTIONS = {
-  owner: new Set(["prehled", "grafy", "rezervace", "historie", "customers", "team", "kalendar", "stoly", "mapa", "provoz", "reservationSettings", "menu"]),
+  owner: new Set(["prehled", "grafy", "ai", "rezervace", "historie", "customers", "team", "kalendar", "stoly", "mapa", "provoz", "reservationSettings", "menu"]),
   manager: new Set(["prehled", "grafy", "rezervace", "historie", "customers", "kalendar", "stoly", "mapa", "provoz", "reservationSettings", "menu"]),
   staff: new Set(["prehled", "rezervace", "customers", "kalendar", "stoly", "mapa"])
 };
@@ -8075,8 +8385,29 @@ function roleLabel(role) {
 }
 
 function canAccessSection(sectionId) {
-  const allowed = ROLE_ALLOWED_SECTIONS[currentUserRole] || ROLE_ALLOWED_SECTIONS.staff;
-  return allowed.has(sectionId);
+  const allowed =
+    ROLE_ALLOWED_SECTIONS[
+      currentUserRole
+    ] ||
+    ROLE_ALLOWED_SECTIONS.staff;
+
+  if (
+    sectionId === "ai"
+  ) {
+    return (
+      currentUserRole ===
+        "owner" &&
+      currentDashboardAiEnabled ===
+        true &&
+      allowed.has(
+        sectionId
+      )
+    );
+  }
+
+  return allowed.has(
+    sectionId
+  );
 }
 
 function applyRolePermissions() {
@@ -8084,6 +8415,33 @@ function applyRolePermissions() {
     const section = link.dataset.section;
     link.hidden = !canAccessSection(section);
   });
+
+  document
+    .querySelectorAll(
+      "[data-dashboard-ai]"
+    )
+    .forEach(element => {
+      if (
+        element.id ===
+        "ai"
+      ) {
+        if (
+          currentUserRole !==
+            "owner" ||
+          !currentDashboardAiEnabled
+        ) {
+          element.style.display =
+            "none";
+        }
+      } else {
+        element.hidden =
+          !(
+            currentUserRole ===
+              "owner" &&
+            currentDashboardAiEnabled
+          );
+      }
+    });
 
   const badge = document.getElementById('currentUserRoleBadge');
   if (badge) badge.textContent = roleLabel(currentUserRole);
@@ -8298,6 +8656,7 @@ function showDashboardSection(sectionId, options = {}) {
     const sectionIds = [
         "prehled",
         "grafy",
+        "ai",
         "rezervace",
         "historie",
         "customers",
