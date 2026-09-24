@@ -969,8 +969,9 @@ async function loadPublicReservationSettings(force = false) {
     };
   } catch (error) {
     console.error("Veřejné nastavení rezervací se nepodařilo načíst:", error);
-    publicReservationSettings = { ...DEFAULT_PUBLIC_RESERVATION_SETTINGS };
-    showPublicReservationNotice?.(error.message || "Restauraci se nepodařilo načíst.");
+    publicReservationSettingsLoaded = false;
+    showPublicReservationNotice("Nastavení rezervací není dostupné. Zkuste to prosím za chvíli.");
+    return null;
   }
 
   publicReservationSettingsLoaded = true;
@@ -1306,12 +1307,19 @@ async function loadAvailableReservationTimes() {
   if (availabilityAbortController) availabilityAbortController.abort();
   availabilityAbortController = new AbortController();
 
-  await loadPublicReservationSettings();
+  const settings = await loadPublicReservationSettings();
   if (requestId !== availabilityRequestSequence) return;
   const dateInput = document.getElementById("datum");
   const peopleInput = document.getElementById("osoby");
   const timeSelect = document.getElementById("cas");
   if (!dateInput || !peopleInput || !timeSelect) return;
+
+  if (!settings) {
+    timeSelect.innerHTML = '<option value="">Časy nejsou dostupné</option>';
+    timeSelect.disabled = true;
+    setAvailableTimesStatus("Nastavení rezervací se nepodařilo načíst. Zkuste to prosím znovu.", "error");
+    return;
+  }
 
   const date = dateInput.value;
   const people = Number(peopleInput.value);
