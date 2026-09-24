@@ -213,6 +213,36 @@ function getClientHash(req) {
 }
 
 
+async function consumeDailyAiQuota(restaurantId, kind) {
+  if (!SERVICE_ROLE_KEY) {
+    const error = new Error("Serverová konfigurace AI není dokončená.");
+    error.status = 503;
+    throw error;
+  }
+
+  const response = await fetch(
+    SUPABASE_URL + "/rest/v1/rpc/consume_ai_daily_quota",
+    {
+      method: "POST",
+      headers: jsonHeaders(SERVICE_ROLE_KEY),
+      body: JSON.stringify({
+        p_restaurant_id: Number(restaurantId),
+        p_kind: kind
+      }),
+      signal: AbortSignal.timeout(5000)
+    }
+  );
+
+  if (!response.ok) {
+    const error = new Error("Limit AI nyní nelze ověřit.");
+    error.status = 503;
+    throw error;
+  }
+
+  return (await response.json()) === true;
+}
+
+
 function allowRequest(
   req,
   restaurantId
@@ -878,6 +908,14 @@ export default async function handler(
           error:
             "AI asistent dostal příliš mnoho dotazů. Zkus to prosím za několik minut."
         });
+    }
+
+    if (!OPENAI_API_KEY) {
+      return res.status(503).json({ error: "AI asistent ještě není aktivovaný." });
+    }
+
+    if (!(await consumeDailyAiQuota(restaurant.id, "guest"))) {
+      return res.status(429).json({ error: "Denní limit AI dotazů této restaurace byl vyčerpán. Zkuste to prosím zítra." });
     }
 
     const [
