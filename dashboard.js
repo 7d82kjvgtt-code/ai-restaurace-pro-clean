@@ -3504,20 +3504,21 @@ async function saveReservationChanges() {
   try {
     const response =
       await authorizedFetch(
-        `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}&restaurant_id=eq.${currentRestaurantId}`,
+        "/api/send-email",
         {
           method:
-            "PATCH",
-          headers:
-            getHeaders({
-              Prefer:
-                "return=minimal"
-            }),
+            "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
           body:
             JSON.stringify({
+              action:
+                "update-reservation",
+              reservation_id:
+                id,
               name,
-              last_name:
-                null,
               people,
               date,
               time,
@@ -3529,69 +3530,24 @@ async function saveReservationChanges() {
                 tableGroupId,
               phone,
               email,
-              note
+              note,
+              status
             })
         }
       );
 
+    const statusResult =
+      await response
+        .json()
+        .catch(
+          () => ({})
+        );
+
     if (!response.ok) {
       throw new Error(
-        await response.text()
+        statusResult?.error ||
+        "Rezervaci se nepodařilo upravit."
       );
-    }
-
-    const previousStatus =
-      String(
-        currentReservation.status ||
-        "Čeká"
-      );
-
-    let statusResult =
-      null;
-
-    if (
-      status !==
-      previousStatus
-    ) {
-      if (
-        [
-          "Potvrzeno",
-          "Zrušeno"
-        ].includes(status)
-      ) {
-        statusResult =
-          await updateReservationStatusRequest(
-            id,
-            status
-          );
-      } else {
-        const statusResponse =
-          await authorizedFetch(
-            `${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}&restaurant_id=eq.${currentRestaurantId}`,
-            {
-              method:
-                "PATCH",
-              headers:
-                getHeaders({
-                  Prefer:
-                    "return=minimal"
-                }),
-              body:
-                JSON.stringify({
-                  status:
-                    "Čeká"
-                })
-            }
-          );
-
-        if (
-          !statusResponse.ok
-        ) {
-          throw new Error(
-            await statusResponse.text()
-          );
-        }
-      }
     }
 
     closeReservationModal();
@@ -3634,7 +3590,11 @@ async function saveReservationChanges() {
     );
 
     showDashboardNotice(
-      "Rezervaci se nepodařilo kompletně upravit."
+      String(
+        error?.message ||
+        "Rezervaci se nepodařilo kompletně upravit."
+      ),
+      "error"
     );
 
     await Promise.allSettled([
