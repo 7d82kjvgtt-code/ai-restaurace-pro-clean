@@ -1008,7 +1008,7 @@ async function sendReservationStatusEmail({
 }
 
 
-async function getAuthenticatedUser(
+function getRequestBearerToken(
   req
 ) {
   const authorization =
@@ -1032,9 +1032,84 @@ async function getAuthenticatedUser(
       );
 
     error.status = 401;
+    throw error;
+  }
+
+  return token;
+}
+
+
+async function supabaseUserJson(
+  path,
+  accessToken,
+  options = {}
+) {
+  const response =
+    await fetch(
+      `${SUPABASE_URL}${path}`,
+      {
+        ...options,
+        headers: {
+          apikey:
+            SUPABASE_PUBLIC_KEY,
+          Authorization:
+            `Bearer ${accessToken}`,
+          "Content-Type":
+            "application/json",
+          ...(
+            options.headers ||
+            {}
+          )
+        }
+      }
+    );
+
+  const text =
+    await response.text();
+
+  let data = null;
+
+  try {
+    data =
+      text
+        ? JSON.parse(text)
+        : null;
+  } catch {
+    data = text;
+  }
+
+  if (!response.ok) {
+    const error =
+      new Error(
+        typeof data ===
+          "string"
+          ? data
+          : data?.message ||
+            data?.error ||
+            data?.hint ||
+            `Supabase chyba ${response.status}`
+      );
+
+    error.status =
+      response.status;
+
+    error.data =
+      data;
 
     throw error;
   }
+
+  return data;
+}
+
+
+async function getAuthenticatedUser(
+  req
+) {
+  const token =
+    getRequestBearerToken(
+      req
+    );
 
   const response =
     await fetch(
@@ -3291,6 +3366,11 @@ async function updateReservationOnServer(
         req
       );
 
+    const callerToken =
+      getRequestBearerToken(
+        req
+      );
+
     const rows =
       await supabaseServiceJson(
         `/rest/v1/reservations?id=eq.${reservationId}&select=id,restaurant_id,status,table_id,table_group_id&limit=1`,
@@ -3510,10 +3590,11 @@ async function updateReservationOnServer(
       );
 
     const changedRows =
-      await supabaseServiceJson(
+      await supabaseUserJson(
         `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${restaurantId}&status=eq.${encodeURIComponent(
           previousStatus
         )}&select=id,restaurant_id,name,last_name,people,date,time,duration_minutes,email,phone,note,table_id,table_group_id,status`,
+        callerToken,
         {
           method:
             "PATCH",
@@ -3710,6 +3791,7 @@ async function updateReservationStatusOnServer(
 
   try {
     const user = await getAuthenticatedUser(req);
+    const callerToken = getRequestBearerToken(req);
 
     // Nejdřív načteme rezervaci jen kvůli autorizaci restaurace.
     const rows = await supabaseServiceJson(
@@ -3737,8 +3819,9 @@ async function updateReservationStatusOnServer(
 
     // Podmíněný PATCH je hlavní ochrana proti dvojkliku / dvěma requestům.
     // Jen request, který opravdu změnil řádek, smí pokračovat k e-mailu.
-    const changedRows = await supabaseServiceJson(
+    const changedRows = await supabaseUserJson(
       `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${Number(existing.restaurant_id)}&status=neq.${encodeURIComponent(status)}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status`,
+      callerToken,
       {
         method: "PATCH",
         headers: { Prefer: "return=representation" },
