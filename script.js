@@ -623,6 +623,11 @@ async function loadPublicRestaurantInfo() {
     );
 
   if (brandLogo) {
+    brandLogo.onerror = () => {
+      brandLogo.hidden = true;
+      if (brandMonogram) brandMonogram.hidden = false;
+    };
+
     brandLogo.src =
       safeLogoUrl || "";
 
