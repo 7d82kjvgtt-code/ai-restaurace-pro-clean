@@ -179,6 +179,54 @@
 
     </section>
 
+    <section class="panel setup-checklist-panel" id="setupChecklistPanel" hidden>
+      <div class="setup-checklist-head">
+        <div>
+          <span class="eyebrow">První nastavení</span>
+          <h2>🚀 Připrav restauraci ke spuštění</h2>
+          <p id="setupChecklistSummary">Kontroluji, co ještě chybí k ostrému pilotu…</p>
+        </div>
+        <div class="setup-progress-wrap" aria-label="Průběh prvního nastavení">
+          <strong id="setupProgressValue">0 %</strong>
+          <div class="setup-progress-track" aria-hidden="true">
+            <span id="setupProgressBar"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="setup-checklist" id="setupChecklist">
+        <a class="setup-step" id="setupStepTables" href="#stoly">
+          <span class="setup-step-status" aria-hidden="true">○</span>
+          <span><strong>Přidej stoly</strong><small>Stačí alespoň jeden aktivní stůl.</small></span>
+          <span class="setup-step-action">Nastavit →</span>
+        </a>
+
+        <a class="setup-step" id="setupStepHours" href="#provoz">
+          <span class="setup-step-status" aria-hidden="true">○</span>
+          <span><strong>Nastav provozní dobu</strong><small>Ulož dny a časy, kdy přijímáš rezervace.</small></span>
+          <span class="setup-step-action">Nastavit →</span>
+        </a>
+
+        <a class="setup-step" id="setupStepSettings" href="#reservationSettings">
+          <span class="setup-step-status" aria-hidden="true">○</span>
+          <span><strong>Nastav pravidla rezervací</strong><small>Délka rezervace, předstih a počet hostů.</small></span>
+          <span class="setup-step-action">Nastavit →</span>
+        </a>
+
+        <a class="setup-step" id="setupStepMenu" href="#menu">
+          <span class="setup-step-status" aria-hidden="true">○</span>
+          <span><strong>Přidej menu</strong><small>Alespoň jedno jídlo, které hosté uvidí na webu.</small></span>
+          <span class="setup-step-action">Nastavit →</span>
+        </a>
+
+        <div class="setup-step" id="setupStepPublic">
+          <span class="setup-step-status" aria-hidden="true">○</span>
+          <span><strong>Veřejný web</strong><small id="setupPublicHint">Kontroluji stav veřejného webu…</small></span>
+          <a class="setup-step-action setup-public-link" id="setupPublicLink" href="#" target="_blank" rel="noopener" hidden>Otevřít →</a>
+        </div>
+      </div>
+    </section>
+
     <section class="panel reservation-alert-panel" id="reservationAlertOverview">
       <div class="reservation-alert-overview-copy">
         <span class="reservation-alert-overview-icon">🔔</span>
