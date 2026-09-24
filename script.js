@@ -1135,12 +1135,12 @@ function renderPublicMenu() {
     section.style.cssText = "width:100%;margin-bottom:70px;";
 
     const heading = document.createElement("h2");
-    heading.style.cssText = "font-size:36px;color:#f59e0b;margin-bottom:25px;border-left:6px solid #f59e0b;padding-left:15px;text-transform:uppercase;";
+    heading.style.cssText = "font-size:clamp(26px,5vw,36px);color:var(--restaurant-accent,#f59e0b);margin-bottom:25px;border-left:6px solid var(--restaurant-accent,#f59e0b);padding-left:15px;text-transform:uppercase;";
     heading.textContent = category;
     section.appendChild(heading);
 
     const grid = document.createElement("div");
-    grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,260px));justify-content:center;gap:30px;";
+    grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),260px));justify-content:center;gap:30px;";
 
     items.forEach(item => {
       const card = document.createElement("div");
