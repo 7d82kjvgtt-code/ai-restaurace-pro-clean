@@ -66,6 +66,16 @@ function applyPublicPageMode() {
       "restaurant-public-mode"
     );
   }
+
+  const brandAccent =
+    document.getElementById(
+      "publicRestaurantBrandAccent"
+    );
+
+  if (brandAccent) {
+    brandAccent.hidden =
+      hasRestaurant;
+  }
 }
 
 async function loadPublicRestaurantInfo() {
@@ -130,10 +140,40 @@ async function loadPublicRestaurantInfo() {
       "publicRestaurantBrand"
     );
 
-  if (brand) {
-    brand.textContent =
-      `🍽️ ${name}`;
+  const brandName =
+    document.getElementById(
+      "publicRestaurantBrandName"
+    );
 
+  const brandMonogram =
+    document.getElementById(
+      "publicRestaurantMonogram"
+    );
+
+  const brandAccent =
+    document.getElementById(
+      "publicRestaurantBrandAccent"
+    );
+
+  if (brandName) {
+    brandName.textContent =
+      name;
+  }
+
+  if (brandMonogram) {
+    const initial =
+      Array.from(name)[0] || "R";
+
+    brandMonogram.textContent =
+      initial.toLocaleUpperCase("cs-CZ");
+  }
+
+  if (brandAccent) {
+    brandAccent.hidden =
+      true;
+  }
+
+  if (brand) {
     brand.href =
       `/r/${encodeURIComponent(
         String(
@@ -229,10 +269,37 @@ function showPublicRestaurantUnavailable(
       "publicRestaurantBrand"
     );
 
-  if (brand) {
-    brand.textContent =
-      "🍽️ AI Restaurace PRO";
+  const brandName =
+    document.getElementById(
+      "publicRestaurantBrandName"
+    );
 
+  const brandMonogram =
+    document.getElementById(
+      "publicRestaurantMonogram"
+    );
+
+  const brandAccent =
+    document.getElementById(
+      "publicRestaurantBrandAccent"
+    );
+
+  if (brandName) {
+    brandName.textContent =
+      "AI Restaurace";
+  }
+
+  if (brandMonogram) {
+    brandMonogram.textContent =
+      "🍽️";
+  }
+
+  if (brandAccent) {
+    brandAccent.hidden =
+      false;
+  }
+
+  if (brand) {
     brand.href =
       "/";
   }
