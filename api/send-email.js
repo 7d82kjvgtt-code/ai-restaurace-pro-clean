@@ -3804,14 +3804,11 @@ async function updateReservationOnServer(
     ).trim();
 
   const lastName =
-    req.body?.last_name ===
-      null ||
-    req.body?.last_name ===
-      undefined
-      ? null
-      : String(
-          req.body.last_name
-        ).trim();
+    req.body?.last_name === undefined
+      ? undefined
+      : req.body.last_name === null
+        ? null
+        : String(req.body.last_name).trim();
 
   const people =
     Number(
@@ -3891,6 +3888,7 @@ async function updateReservationOnServer(
     name.length > 120 ||
     (
       lastName !== null &&
+      lastName !== undefined &&
       lastName.length > 120
     ) ||
     !Number.isInteger(
@@ -3965,7 +3963,7 @@ async function updateReservationOnServer(
 
     const rows =
       await supabaseServiceJson(
-        `/rest/v1/reservations?id=eq.${reservationId}&select=id,restaurant_id,status,date,time,duration_minutes,table_id,table_group_id&limit=1`,
+        `/rest/v1/reservations?id=eq.${reservationId}&select=id,restaurant_id,status,date,time,duration_minutes,table_id,table_group_id,last_name&limit=1`,
         {
           method:
             "GET"
@@ -4260,7 +4258,7 @@ async function updateReservationOnServer(
             JSON.stringify({
               name,
               last_name:
-                lastName,
+                lastName === undefined ? existing.last_name : lastName,
               people,
               date,
               time,
