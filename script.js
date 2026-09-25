@@ -55,7 +55,7 @@ function applyPublicLocale() {
   if (toggle) {
     toggle.hidden = false;
     toggle.textContent = PUBLIC_LOCALE === "en" ? "English → Čeština" : "Čeština → English";
-    toggle.setAttribute("aria-label", PUBLIC_LOCALE === "en" ? "Přepnout do češtiny" : "Switch to English");
+    toggle.setAttribute("aria-label", PUBLIC_LOCALE === "en" ? "Switch to Czech" : "Přepnout do angličtiny");
     toggle.addEventListener("click", () => {
       const url = new URL(window.location.href);
       if (PUBLIC_LOCALE === "en") url.searchParams.delete("lang");
