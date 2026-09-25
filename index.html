@@ -43,7 +43,7 @@
 
 <title>AI Restaurace PRO</title>
 
-<link rel="stylesheet" href="/style.css?v=pilot-v1-20260924-r3">
+<link rel="stylesheet" href="/style.css?v=pilot-v1-20260925-r4">
 </head>
 
 <body>
@@ -67,7 +67,7 @@
     class="menu-toggle"
     id="menuToggle"
     type="button"
-    aria-label="Otevřít navigaci"
+    aria-label="Otevřít navigaci" data-en-aria="Open navigation"
     aria-expanded="false"
   >
     ☰
@@ -76,9 +76,10 @@
   <div class="nav-links" id="navLinks">
     <a href="#funkce" data-saas-only>Funkce</a>
     <a href="#menu" data-restaurant-only>Menu</a>
-    <a href="#ai-asistent" data-restaurant-only data-restaurant-ai hidden>AI asistent</a>
-    <a href="#rezervace" data-restaurant-only>Rezervace</a>
-    <a href="/dashboard.html" data-restaurant-only>Správa restaurace</a>
+    <a href="#ai-asistent" data-restaurant-only data-restaurant-ai data-en="AI assistant" hidden>AI asistent</a>
+    <a href="#rezervace" data-restaurant-only data-en="Reservations">Rezervace</a>
+    <a href="/dashboard.html" data-restaurant-only data-en="Restaurant dashboard">Správa restaurace</a>
+    <button id="publicLanguageToggle" type="button" data-restaurant-only aria-label="Switch to English" hidden>English</button>
     <a href="#cenik" data-saas-only>Pilot</a>
     <a href="#kontakt" data-saas-only>Kontakt</a>
     <a class="admin-link" href="/dashboard.html" data-saas-only>Dashboard</a>
@@ -109,7 +110,7 @@
 
     <div class="actions">
 
-      <a class="btn" href="#rezervace" data-restaurant-only>
+      <a class="btn" href="#rezervace" data-restaurant-only data-en="Book a table">
         Rezervovat stůl
       </a>
 
@@ -231,11 +232,11 @@
 
   <div class="section-head">
 
-    <p class="badge">
+    <p class="badge" data-en="Food menu">
       Jídelní lístek
     </p>
 
-    <h2>
+    <h2 data-en="🍕 Our menu">
       🍕 Naše menu
     </h2>
 
@@ -257,9 +258,9 @@
   hidden
 >
   <div class="section-head">
-    <p class="badge">AI asistent</p>
-    <h2>🤖 Zeptejte se na menu nebo návštěvu</h2>
-    <p class="restaurant-ai-lead">
+    <p class="badge" data-en="AI assistant">AI asistent</p>
+    <h2 data-en="🤖 Ask about the menu or your visit">🤖 Zeptejte se na menu nebo návštěvu</h2>
+    <p class="restaurant-ai-lead" data-en="The assistant answers using this restaurant's current information.">
       Asistent odpovídá z aktuálních údajů této restaurace.
     </p>
   </div>
@@ -268,42 +269,43 @@
     <div
       id="restaurantAiAnswer"
       class="restaurant-ai-answer"
+      data-en="Ask about a dish recommendation, price, allergens or opening hours."
       role="status"
       aria-live="polite"
     >
       Můžete se zeptat třeba na doporučení jídla, cenu, alergeny nebo otevírací dobu.
     </div>
 
-    <div class="restaurant-ai-suggestions" aria-label="Rychlé dotazy">
-      <button type="button" data-ai-question="Co mi doporučíš z menu?">
+    <div class="restaurant-ai-suggestions" aria-label="Rychlé dotazy" data-en-aria="Quick questions">
+      <button type="button" data-ai-question="Co mi doporučíš z menu?" data-en-question="What do you recommend from the menu?" data-en="What do you recommend?">
         Co doporučíš?
       </button>
-      <button type="button" data-ai-question="Která jídla mají uvedené alergeny?">
+      <button type="button" data-ai-question="Která jídla mají uvedené alergeny?" data-en-question="Which dishes list allergens?" data-en="Allergens">
         Alergeny
       </button>
-      <button type="button" data-ai-question="Jakou máte otevírací dobu?">
+      <button type="button" data-ai-question="Jakou máte otevírací dobu?" data-en-question="What are your opening hours?" data-en="Opening hours">
         Otevírací doba
       </button>
     </div>
 
     <form id="restaurantAiForm" class="restaurant-ai-form">
-      <label for="restaurantAiInput">Váš dotaz</label>
+      <label for="restaurantAiInput" data-en="Your question">Váš dotaz</label>
       <div class="restaurant-ai-input-row">
         <input
           id="restaurantAiInput"
           type="text"
           maxlength="600"
           autocomplete="off"
-          placeholder="Např. Máte něco bez masa?"
+          placeholder="Např. Máte něco bez masa?" data-en-placeholder="E.g. Do you have vegetarian options?"
           required
         >
-        <button id="restaurantAiSendButton" type="submit">
+        <button id="restaurantAiSendButton" type="submit" data-en="Ask">
           Zeptat se
         </button>
       </div>
     </form>
 
-    <p class="restaurant-ai-note">
+    <p class="restaurant-ai-note" data-en="The booking form below always checks live table availability.">
       Přesnou dostupnost stolů vždy ověřuje rezervační formulář níže.
     </p>
   </div>
@@ -314,11 +316,11 @@
 
   <div class="section-head">
 
-    <p class="badge">
+    <p class="badge" data-en="Reservations PRO">
       Rezervace PRO
     </p>
 
-    <h2>
+    <h2 data-en="📅 Book a table">
       📅 Rezervovat stůl
     </h2>
 
@@ -327,29 +329,29 @@
 
   <div class="reservation-box">
 
-    <label for="jmeno">
+    <label for="jmeno" data-en="First name">
       Jméno
     </label>
 
     <input
       id="jmeno"
-      placeholder="Jméno"
+      placeholder="Jméno" data-en-placeholder="First name"
       autocomplete="given-name"
     >
 
 
-    <label for="prijmeni">
+    <label for="prijmeni" data-en="Last name">
       Příjmení
     </label>
 
     <input
       id="prijmeni"
-      placeholder="Příjmení"
+      placeholder="Příjmení" data-en-placeholder="Last name"
       autocomplete="family-name"
     >
 
 
-    <label for="osoby">
+    <label for="osoby" data-en="Number of guests">
       Počet osob
     </label>
 
@@ -358,12 +360,12 @@
       type="number"
       min="1"
       max="20"
-      placeholder="Počet osob"
+      placeholder="Počet osob" data-en-placeholder="Number of guests"
       required
     >
 
 
-    <label for="datum">
+    <label for="datum" data-en="Date">
       Datum
     </label>
 
@@ -374,7 +376,7 @@
     >
 
 
-    <label for="cas">
+    <label for="cas" data-en="Available time">
       Dostupný čas
     </label>
 
@@ -383,7 +385,7 @@
       required
       disabled
     >
-      <option value="">
+      <option value="" data-en="Choose a date and number of guests first">
         Nejdřív vyber datum a počet osob
       </option>
     </select>
@@ -396,13 +398,13 @@
     ></p>
 
 
-    <label for="telefon">
+    <label for="telefon" data-en="Phone">
       Telefon
     </label>
 
     <input
       id="telefon"
-      placeholder="Telefon"
+      placeholder="Telefon" data-en-placeholder="Phone"
       autocomplete="tel"
     >
 
@@ -419,13 +421,13 @@
     >
 
 
-    <label for="poznamka">
+    <label for="poznamka" data-en="Note">
       Poznámka
     </label>
 
     <textarea
       id="poznamka"
-      placeholder="Poznámka"
+      placeholder="Poznámka" data-en-placeholder="Note"
       rows="4"
     ></textarea>
 
@@ -440,7 +442,7 @@
 
 
     <button
-      id="reservationSubmitButton"
+      id="reservationSubmitButton" data-en="Confirm reservation"
       type="button"
       onclick="ulozitRezervaci()"
     >
@@ -620,7 +622,7 @@
 </script>
 
 
-<script src="/script.js?v=pilot-v1-20260925-r1"></script>
+<script src="/script.js?v=pilot-v1-20260925-r2"></script>
 
 
 <div
@@ -634,7 +636,7 @@
       class="food-modal-close"
       type="button"
       onclick="closeFoodDetail()"
-      aria-label="Zavřít detail jídla"
+      aria-label="Zavřít detail jídla" data-en-aria="Close dish details"
     >
       ×
     </button>
@@ -642,27 +644,27 @@
     <h2 id="modalFoodName"></h2>
 
     <p>
-      <strong>Cena:</strong>
+      <strong data-en="Price:">Cena:</strong>
       <span id="modalFoodPrice"></span>
     </p>
 
     <p>
-      <strong>Popis:</strong>
+      <strong data-en="Description:">Popis:</strong>
       <span id="modalFoodDescription"></span>
     </p>
 
     <p>
-      <strong>Ingredience:</strong>
+      <strong data-en="Ingredients:">Ingredience:</strong>
       <span id="modalFoodIngredients"></span>
     </p>
 
     <p>
-      <strong>Alergeny:</strong>
+      <strong data-en="Allergens:">Alergeny:</strong>
       <span id="modalFoodAllergens"></span>
     </p>
 
     <p>
-      <strong id="modalWeightLabel">
+      <strong id="modalWeightLabel" data-en="Weight:">
         Gramáž:
       </strong>
 
