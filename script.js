@@ -1332,8 +1332,9 @@ async function loadAvailableReservationTimes() {
     return;
   }
 
+  const restaurantToday = publicRestaurantToday || localDateString(new Date());
   const maxAllowedDate = localDateString(
-    addLocalDays(new Date(), publicReservationSettings.max_advance_days)
+    addLocalDays(new Date(`${restaurantToday}T12:00:00`), publicReservationSettings.max_advance_days)
   );
 
   if (date > maxAllowedDate) {
