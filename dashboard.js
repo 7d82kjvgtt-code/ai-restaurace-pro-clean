@@ -2760,6 +2760,7 @@ async function loadReservations() {
     renderUpcomingReservations();
     startUpcomingReservationTimer();
     renderCustomers();
+    return true;
   } catch (error) {
     console.error(
       error
@@ -2774,6 +2775,7 @@ async function loadReservations() {
         </tr>
       `;
     }
+    return false;
   }
 }
 
@@ -7000,14 +7002,16 @@ async function saveNewReservation() {
     selectedTableId =
       null;
 
-    await Promise.all([
+    const [reservationsLoaded] = await Promise.all([
       loadReservations(),
       loadReservationHistory()
     ]);
 
     showDashboardNotice(
-      "Rezervace byla úspěšně uložena.",
-      "success"
+      reservationsLoaded
+        ? "Rezervace byla úspěšně uložena."
+        : "Rezervace byla uložena, ale přehled se nepodařilo obnovit. Obnov stránku.",
+      reservationsLoaded ? "success" : "info"
     );
   } catch (error) {
     console.error(
