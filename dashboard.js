@@ -2789,16 +2789,33 @@ function setReservationReadThroughId(id) {
   localStorage.setItem(reservationNotificationStorageKey(), String(Number(id) || 0));
 }
 
+function getIndividuallyReadReservationIds() {
+  try {
+    const ids = JSON.parse(localStorage.getItem(reservationNotificationStorageKey() + ":items") || "[]");
+    return new Set(Array.isArray(ids) ? ids.filter(id => Number.isSafeInteger(id) && id > 0) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function markReservationNotificationRead(id) {
+  const readThrough = getReservationReadThroughId();
+  if (!Number.isSafeInteger(id) || id <= readThrough) return;
+  const ids = getIndividuallyReadReservationIds();
+  ids.add(id);
+  localStorage.setItem(reservationNotificationStorageKey() + ":items", JSON.stringify([...ids]));
+}
+
 function getReservationNotificationItems() {
   const readThrough = getReservationReadThroughId();
+  const individuallyRead = getIndividuallyReadReservationIds();
   const sorted = [...reservations]
-    .filter(item => Number(item?.id) > 0)
+    .filter(item => Number(item?.id) > 0 && Number(item.id) > readThrough && !individuallyRead.has(Number(item.id)))
     .sort((a, b) => Number(b.id) - Number(a.id));
 
   // Při prvním spuštění upozornění zobrazíme jen několik nejnovějších,
   // aby staré testovací rezervace nezaplnily celý zvonek.
-  if (!readThrough) return sorted.slice(0, 8);
-  return sorted.filter(item => Number(item.id) > readThrough).slice(0, 20);
+  return sorted.slice(0, readThrough ? 20 : 8);
 }
 
 function refreshReservationNotifications() {
@@ -2811,8 +2828,9 @@ function refreshReservationNotifications() {
 
   const unread = getReservationNotificationItems();
   const readThrough = getReservationReadThroughId();
+  const individuallyRead = getIndividuallyReadReservationIds();
   const count = readThrough
-    ? reservations.filter(item => Number(item?.id) > readThrough).length
+    ? reservations.filter(item => Number(item?.id) > readThrough && !individuallyRead.has(Number(item.id))).length
     : unread.length;
 
   badge.textContent = String(count);
@@ -2872,6 +2890,7 @@ function toggleReservationNotifications(event) {
 function markAllReservationNotificationsRead() {
   const maxId = reservations.reduce((max, item) => Math.max(max, Number(item?.id) || 0), 0);
   setReservationReadThroughId(maxId);
+  localStorage.removeItem(reservationNotificationStorageKey() + ":items");
   refreshReservationNotifications();
 }
 
@@ -2879,8 +2898,7 @@ function openReservationFromNotification(id) {
   const reservation = reservations.find(item => Number(item.id) === Number(id));
   if (!reservation) return;
 
-  const current = getReservationReadThroughId();
-  if (Number(id) > current) setReservationReadThroughId(Number(id));
+  markReservationNotificationRead(Number(id));
   refreshReservationNotifications();
 
   showDashboardSection("rezervace", { notifyDenied: false });
