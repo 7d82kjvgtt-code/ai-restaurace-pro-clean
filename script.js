@@ -1416,7 +1416,12 @@ async function loadAvailableReservationTimes() {
     const slots = Array.isArray(data.slots) ? data.slots : [];
     if (!slots.length) {
       timeSelect.innerHTML = `<option value="">${publicText("Žádný volný čas", "No available times")}</option>`;
-      setAvailableTimesStatus(PUBLIC_LOCALE === "en" ? "No tables are available for this date and party size." : data.message || "Pro zvolený den a počet osob už není volný termín.", "error");
+      const englishUnavailable = data.unavailable_reason === "closed"
+        ? "The restaurant is closed on this day."
+        : data.unavailable_reason === "capacity"
+          ? "No suitable table is available for this party size."
+          : "No booking times are available for this date and party size.";
+      setAvailableTimesStatus(PUBLIC_LOCALE === "en" ? englishUnavailable : data.message || "Pro zvolený den a počet osob už není volný termín.", "error");
       return;
     }
 
