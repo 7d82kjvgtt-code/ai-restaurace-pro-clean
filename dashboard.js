@@ -6603,7 +6603,14 @@ function createReservationFromTable() {
         block: "start"
     });
 }
+let saveNewReservationInProgress = false;
+
 async function saveNewReservation() {
+  if (saveNewReservationInProgress) return;
+  saveNewReservationInProgress = true;
+  const saveButton = document.querySelector("#novaRezervace .successButton");
+  if (saveButton) saveButton.disabled = true;
+  try {
   const name =
     document
       .getElementById(
@@ -7025,6 +7032,10 @@ async function saveNewReservation() {
       ),
       "error"
     );
+  }
+  } finally {
+    saveNewReservationInProgress = false;
+    if (saveButton) saveButton.disabled = false;
   }
 }
 
