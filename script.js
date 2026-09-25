@@ -1710,6 +1710,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     );
   }
+
+  // Host mohl vyplnit formulář dříve, než se načetlo nastavení restaurace.
+  if (dateInput?.value && peopleInput?.value) {
+    loadAvailableReservationTimes();
+  }
 });
 
 document.addEventListener("DOMContentLoaded", () => {
