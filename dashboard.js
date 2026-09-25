@@ -3267,7 +3267,7 @@ function renderReservations(data) {
                 ❌
               </button>
 
-              <button
+              ${currentUserRole === "owner" ? `<button
                 class="deleteBtn"
                 type="button"
                 title="Smazat rezervaci"
@@ -3276,7 +3276,7 @@ function renderReservations(data) {
                 )"
               >
                 🗑️
-              </button>
+              </button>` : ""}
 
             </div>
           </td>
@@ -3575,6 +3575,11 @@ async function updateStatus(id, status) {
 }
 
 async function deleteReservation(id) {
+  if (currentUserRole !== "owner") {
+    showDashboardNotice("Rezervaci může smazat jen vlastník restaurace.");
+    return;
+  }
+
   if (!confirm("Opravdu smazat rezervaci?")) {
     return;
   }
@@ -3584,12 +3589,17 @@ async function deleteReservation(id) {
       `${SUPABASE_URL}/rest/v1/reservations?id=eq.${Number(id)}&restaurant_id=eq.${currentRestaurantId}`,
       {
         method: "DELETE",
-        headers: getHeaders()
+        headers: { ...getHeaders(), Prefer: "return=representation" }
       }
     );
 
     if (!response.ok) {
       throw new Error(await response.text());
+    }
+
+    const deleted = await response.json();
+    if (!Array.isArray(deleted) || deleted.length !== 1) {
+      throw new Error("Rezervace nebyla smazána.");
     }
 
     await loadReservations();
