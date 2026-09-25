@@ -1176,6 +1176,11 @@ function renderRestaurantBrandingForm(
 }
 
 
+function isPlaceholderRestaurantName(value) {
+  const normalized = String(value || "").trim().toLocaleLowerCase("cs");
+  return normalized === "moje restaurace" || normalized === "my restaurant";
+}
+
 function canPublishRestaurantFromDashboard() {
   return (
     restaurantTables.some(
@@ -1401,6 +1406,18 @@ async function saveRestaurantBranding() {
   ) {
     showDashboardNotice(
       "Web musí začínat http:// nebo https://.",
+      "error"
+    );
+    return;
+  }
+
+  if (
+    published &&
+    !currentRestaurantIsPublished &&
+    isPlaceholderRestaurantName(name)
+  ) {
+    showDashboardNotice(
+      "Před zveřejněním zadej skutečný název restaurace místo výchozího názvu.",
       "error"
     );
     return;
@@ -1831,6 +1848,7 @@ function renderSetupChecklist() {
         currentRestaurantBranding.name ||
         ""
       ).trim() &&
+      !isPlaceholderRestaurantName(currentRestaurantBranding.name) &&
       (
         String(
           currentRestaurantBranding.address ||
