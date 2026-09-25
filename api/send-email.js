@@ -4482,6 +4482,18 @@ async function updateReservationStatusOnServer(
     const reservation = Array.isArray(changedRows) ? changedRows[0] : null;
 
     if (!reservation?.id) {
+      const latestRows = await supabaseServiceJson(
+        `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${Number(existing.restaurant_id)}&select=id,status&limit=1`,
+        { method: "GET" }
+      );
+      const latest = Array.isArray(latestRows) ? latestRows[0] : null;
+
+      if (String(latest?.status || "") !== status) {
+        return res.status(409).json({
+          error: "Stav rezervace se mezitím změnil. Obnov přehled a zkontroluj aktuální stav."
+        });
+      }
+
       return res.status(200).json({
         success: true,
         changed: false,
