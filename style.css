@@ -21,6 +21,8 @@ body.restaurant-public-mode .brand-name{
 .nav-links{display:flex;gap:20px;align-items:center}
 .nav-links a{color:#e5e7eb;text-decoration:none;font-weight:700}
 .nav-links a:hover{color:#fbbf24}
+.nav-links #publicLanguageToggle{color:#e5e7eb;background:transparent;border:1px solid #64748b;border-radius:8px;padding:7px 10px;font:inherit;font-weight:700;cursor:pointer}
+.nav-links #publicLanguageToggle:hover,.nav-links #publicLanguageToggle:focus-visible{color:#fbbf24;border-color:#fbbf24}
 .admin-link{background:#f59e0b!important;color:#111827!important;padding:10px 16px;border-radius:12px}
 
 .hero{display:grid;grid-template-columns:1.4fr .8fr;gap:50px;align-items:center;min-height:76vh;padding:80px 8%}
