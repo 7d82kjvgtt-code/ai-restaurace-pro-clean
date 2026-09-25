@@ -2810,7 +2810,10 @@ function refreshReservationNotifications() {
   if (!badge || !list) return;
 
   const unread = getReservationNotificationItems();
-  const count = unread.length;
+  const readThrough = getReservationReadThroughId();
+  const count = readThrough
+    ? reservations.filter(item => Number(item?.id) > readThrough).length
+    : unread.length;
 
   badge.textContent = String(count);
   badge.hidden = count === 0;
@@ -2850,7 +2853,8 @@ function refreshReservationNotifications() {
   if (text) {
     const newest = unread[0];
     const guest = getReservationGuestName(newest) === "-" ? "Nový host" : getReservationGuestName(newest);
-    text.textContent = `${guest} · ${String(newest.time || "").slice(0,5)} · ${getReservationTableLabel(newest)}`;
+    text.textContent = `${guest} · ${String(newest.time || "").slice(0,5)} · ${getReservationTableLabel(newest)}` +
+      (count > unread.length ? ` · Ve zvonku je zobrazeno ${unread.length} nejnovějších.` : "");
   }
 }
 
