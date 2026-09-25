@@ -42,6 +42,14 @@ function cleanSlug(value) {
 }
 
 
+function normalizeReservationTime(value) {
+  const raw = String(value || "").trim();
+  return /^(?:[01]?[0-9]|2[0-3]):[0-5][0-9](?::00)?$/.test(raw)
+    ? raw.slice(0, 5)
+    : "";
+}
+
+
 function isValidDateString(value) {
   const raw = String(value || "").trim();
 
@@ -2282,15 +2290,7 @@ async function createReservationOnServer(
   const peopleNumber =
     Number(people);
 
-  const cleanTime =
-    String(
-      time || ""
-    )
-      .trim()
-      .slice(
-        0,
-        5
-      );
+  const cleanTime = normalizeReservationTime(time);
 
   if (
     !cleanRestaurantSlug ||
@@ -3368,12 +3368,7 @@ async function createDashboardReservationOnServer(
       req.body?.date || ""
     ).trim();
 
-  const time =
-    String(
-      req.body?.time || ""
-    )
-      .trim()
-      .slice(0, 5);
+  const time = normalizeReservationTime(req.body?.time);
 
   const durationMinutes =
     Number(
@@ -3826,12 +3821,7 @@ async function updateReservationOnServer(
       req.body?.date || ""
     ).trim();
 
-  const time =
-    String(
-      req.body?.time || ""
-    )
-      .trim()
-      .slice(0, 5);
+  const time = normalizeReservationTime(req.body?.time);
 
   const durationMinutes =
     Number(
