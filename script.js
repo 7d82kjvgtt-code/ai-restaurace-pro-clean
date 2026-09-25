@@ -29,6 +29,41 @@ function resolvePublicRestaurantSlug() {
 }
 
 const PUBLIC_RESTAURANT_SLUG = resolvePublicRestaurantSlug();
+const PUBLIC_LOCALE = new URLSearchParams(window.location.search).get("lang") === "en" ? "en" : "cs";
+
+function publicText(cs, en) {
+  return PUBLIC_LOCALE === "en" ? en : cs;
+}
+
+function applyPublicLocale() {
+  if (!PUBLIC_RESTAURANT_SLUG) return;
+  document.documentElement.lang = PUBLIC_LOCALE;
+  document.querySelectorAll("[data-en]").forEach(element => {
+    element.textContent = PUBLIC_LOCALE === "en" ? element.dataset.en : element.textContent;
+  });
+  document.querySelectorAll("[data-en-placeholder]").forEach(element => {
+    if (PUBLIC_LOCALE === "en") element.placeholder = element.dataset.enPlaceholder;
+  });
+  document.querySelectorAll("[data-en-aria]").forEach(element => {
+    if (PUBLIC_LOCALE === "en") element.setAttribute("aria-label", element.dataset.enAria);
+  });
+  document.querySelectorAll("[data-en-question]").forEach(element => {
+    if (PUBLIC_LOCALE === "en") element.dataset.aiQuestion = element.dataset.enQuestion;
+  });
+
+  const toggle = document.getElementById("publicLanguageToggle");
+  if (toggle) {
+    toggle.hidden = false;
+    toggle.textContent = PUBLIC_LOCALE === "en" ? "Čeština" : "English";
+    toggle.setAttribute("aria-label", PUBLIC_LOCALE === "en" ? "Přepnout do češtiny" : "Switch to English");
+    toggle.addEventListener("click", () => {
+      const url = new URL(window.location.href);
+      if (PUBLIC_LOCALE === "en") url.searchParams.delete("lang");
+      else url.searchParams.set("lang", "en");
+      window.location.assign(url.href);
+    });
+  }
+}
 
 let publicRestaurantInfo = null;
 let publicRestaurantToday = "";
@@ -128,8 +163,8 @@ function setRestaurantAiBusy(
 
     button.textContent =
       restaurantAiRequestInProgress
-        ? "Přemýšlím…"
-        : "Zeptat se";
+        ? publicText("Přemýšlím…", "Thinking…")
+        : publicText("Zeptat se", "Ask");
   }
 
   if (input) {
@@ -171,7 +206,7 @@ async function askRestaurantAi(
   if (!question) {
     if (answer) {
       answer.textContent =
-        "Napište prosím dotaz.";
+        publicText("Napište prosím dotaz.", "Please enter a question.");
     }
 
     input?.focus();
@@ -181,7 +216,7 @@ async function askRestaurantAi(
   if (question.length > 600) {
     if (answer) {
       answer.textContent =
-        "Dotaz může mít maximálně 600 znaků.";
+        publicText("Dotaz může mít maximálně 600 znaků.", "Your question can be at most 600 characters.");
     }
 
     return;
@@ -189,7 +224,7 @@ async function askRestaurantAi(
 
   if (answer) {
     answer.textContent =
-      "Hledám odpověď v aktuálních údajích restaurace…";
+      publicText("Hledám odpověď v aktuálních údajích restaurace…", "Checking the restaurant's current information…");
   }
 
   setRestaurantAiBusy(
@@ -227,8 +262,8 @@ async function askRestaurantAi(
       !data?.answer
     ) {
       throw new Error(
-        data?.error ||
-        "AI asistent teď není dostupný."
+        (PUBLIC_LOCALE === "en" ? null : data?.error) ||
+        publicText("AI asistent teď není dostupný.", "The AI assistant is unavailable right now.")
       );
     }
 
@@ -256,7 +291,7 @@ async function askRestaurantAi(
       answer.textContent =
         String(
           error?.message ||
-          "AI asistent teď není dostupný. Zkuste to prosím za chvíli."
+          publicText("AI asistent teď není dostupný. Zkuste to prosím za chvíli.", "The AI assistant is unavailable. Please try again shortly.")
         );
     }
   } finally {
@@ -560,8 +595,8 @@ async function loadPublicRestaurantInfo() {
     !data?.restaurant
   ) {
     throw new Error(
-      data?.error ||
-      "Restauraci se nepodařilo načíst."
+      (PUBLIC_LOCALE === "en" ? null : data?.error) ||
+      publicText("Restauraci se nepodařilo načíst.", "The restaurant could not be loaded.")
     );
   }
 
@@ -586,7 +621,7 @@ async function loadPublicRestaurantInfo() {
     "Restaurace";
 
   document.title =
-    `${name} | Rezervace a menu`;
+    `${name} | ${publicText("Rezervace a menu", "Reservations and menu")}`;
 
   const brand =
     document.getElementById(
@@ -666,7 +701,7 @@ async function loadPublicRestaurantInfo() {
           data.restaurant.slug ||
           slug
         )
-      )}`;
+      )}${PUBLIC_LOCALE === "en" ? "?lang=en" : ""}`;
   }
 
   const accentColor =
@@ -699,7 +734,7 @@ async function loadPublicRestaurantInfo() {
 
   if (badge) {
     badge.textContent =
-      "Online rezervace a aktuální menu";
+      publicText("Online rezervace a aktuální menu", "Online reservations and current menu");
   }
 
   const title =
@@ -724,7 +759,7 @@ async function loadPublicRestaurantInfo() {
           .short_description ||
         ""
       ).trim() ||
-      "Prohlédněte si aktuální menu a rezervujte si stůl online.";
+      publicText("Prohlédněte si aktuální menu a rezervujte si stůl online.", "Browse the current menu and book a table online.");
   }
 
   return data.restaurant;
@@ -738,7 +773,7 @@ function showPublicRestaurantUnavailable(
   );
 
   document.title =
-    "Restaurace není dostupná | AI Restaurace PRO";
+    publicText("Restaurace není dostupná | AI Restaurace PRO", "Restaurant unavailable | AI Restaurace PRO");
 
   document
     .querySelectorAll(
@@ -756,7 +791,7 @@ function showPublicRestaurantUnavailable(
 
   if (badge) {
     badge.textContent =
-      "Veřejná stránka není dostupná";
+      publicText("Veřejná stránka není dostupná", "Public page unavailable");
   }
 
   const title =
@@ -766,7 +801,7 @@ function showPublicRestaurantUnavailable(
 
   if (title) {
     title.textContent =
-      "Restaurace není dostupná";
+      publicText("Restaurace není dostupná", "Restaurant unavailable");
   }
 
   const subtitle =
@@ -776,10 +811,9 @@ function showPublicRestaurantUnavailable(
 
   if (subtitle) {
     subtitle.textContent =
-      String(
-        message ||
-        "Zkontrolujte prosím odkaz restaurace."
-      );
+      PUBLIC_LOCALE === "en"
+        ? "Please check the restaurant link."
+        : String(message || "Zkontrolujte prosím odkaz restaurace.");
   }
 
   const brand =
@@ -970,7 +1004,7 @@ async function loadPublicReservationSettings(force = false) {
   } catch (error) {
     console.error("Veřejné nastavení rezervací se nepodařilo načíst:", error);
     publicReservationSettingsLoaded = false;
-    showPublicReservationNotice("Nastavení rezervací není dostupné. Zkuste to prosím za chvíli.");
+    showPublicReservationNotice(publicText("Nastavení rezervací není dostupné. Zkuste to prosím za chvíli.", "Booking settings are unavailable. Please try again shortly."));
     return null;
   }
 
@@ -1099,7 +1133,7 @@ function renderPublicMenu() {
 
   if (!menu.length) {
     const empty = document.createElement("p");
-    empty.textContent = "Menu je prázdné.";
+    empty.textContent = publicText("Menu je prázdné.", "The menu is empty.");
     container.appendChild(empty);
     return;
   }
@@ -1138,7 +1172,7 @@ function renderPublicMenu() {
 
     const heading = document.createElement("h2");
     heading.style.cssText = "font-size:clamp(26px,5vw,36px);color:var(--restaurant-accent,#f59e0b);margin-bottom:25px;border-left:6px solid var(--restaurant-accent,#f59e0b);padding-left:15px;text-transform:uppercase;";
-    heading.textContent = category;
+    heading.textContent = publicText(category, ({ "Předkrm": "Starters", "Hlavní jídlo": "Main courses", "Těstoviny": "Pasta", "Dezert": "Desserts", "Sladká jídla": "Sweet dishes", "Nápoj": "Drinks" })[category] || category);
     section.appendChild(heading);
 
     const grid = document.createElement("div");
@@ -1155,7 +1189,7 @@ function renderPublicMenu() {
           if (imageUrl.protocol === "https:" || (imageUrl.protocol === "http:" && ["localhost", "127.0.0.1"].includes(imageUrl.hostname))) {
             const img = document.createElement("img");
             img.src = imageUrl.href;
-            img.alt = String(item.name || "Jídlo");
+            img.alt = String(item.name || publicText("Jídlo", "Dish"));
             img.loading = "lazy";
             img.style.cssText = "width:100%;height:180px;object-fit:cover;border-radius:18px;margin-bottom:18px;display:block;";
             card.appendChild(img);
@@ -1245,13 +1279,13 @@ function setPublicReservationSubmitting(isSubmitting) {
   if (!button) return;
 
   if (!button.dataset.originalText) {
-    button.dataset.originalText = button.textContent.trim() || "Potvrdit rezervaci";
+    button.dataset.originalText = button.textContent.trim() || publicText("Potvrdit rezervaci", "Confirm reservation");
   }
 
   button.disabled = isSubmitting;
   button.setAttribute("aria-busy", String(isSubmitting));
   button.textContent = isSubmitting
-    ? "Ukládám rezervaci…"
+    ? publicText("Ukládám rezervaci…", "Saving reservation…")
     : button.dataset.originalText;
 }
 
@@ -1282,7 +1316,7 @@ function showPublicReservationNotice(message, type = null) {
   const closeButton = document.createElement("button");
   closeButton.type = "button";
   closeButton.className = "reservation-notice-close";
-  closeButton.setAttribute("aria-label", "Zavřít");
+  closeButton.setAttribute("aria-label", publicText("Zavřít", "Close"));
   closeButton.textContent = "×";
   closeButton.addEventListener("click", () => {
     notice.hidden = true;
@@ -1315,9 +1349,9 @@ async function loadAvailableReservationTimes() {
   if (!dateInput || !peopleInput || !timeSelect) return;
 
   if (!settings) {
-    timeSelect.innerHTML = '<option value="">Časy nejsou dostupné</option>';
+    timeSelect.innerHTML = `<option value="">${publicText("Časy nejsou dostupné", "Times unavailable")}</option>`;
     timeSelect.disabled = true;
-    setAvailableTimesStatus("Nastavení rezervací se nepodařilo načíst. Zkuste to prosím znovu.", "error");
+    setAvailableTimesStatus(publicText("Nastavení rezervací se nepodařilo načíst. Zkuste to prosím znovu.", "Booking settings could not be loaded. Please try again."), "error");
     return;
   }
 
@@ -1326,7 +1360,7 @@ async function loadAvailableReservationTimes() {
   const previousValue = timeSelect.value;
 
   if (!date || !Number.isInteger(people) || people < publicReservationSettings.min_people || people > publicReservationSettings.max_people) {
-    timeSelect.innerHTML = '<option value="">Nejdřív vyber datum a počet osob</option>';
+    timeSelect.innerHTML = `<option value="">${publicText("Nejdřív vyber datum a počet osob", "Choose a date and number of guests first")}</option>`;
     timeSelect.disabled = true;
     setAvailableTimesStatus("");
     return;
@@ -1338,18 +1372,18 @@ async function loadAvailableReservationTimes() {
   );
 
   if (date > maxAllowedDate) {
-    timeSelect.innerHTML = '<option value="">Datum je mimo povolený rozsah</option>';
+    timeSelect.innerHTML = `<option value="">${publicText("Datum je mimo povolený rozsah", "Date is outside the booking window")}</option>`;
     timeSelect.disabled = true;
     setAvailableTimesStatus(
-      `Rezervaci lze vytvořit maximálně ${publicReservationSettings.max_advance_days} dní dopředu.`,
+      publicText(`Rezervaci lze vytvořit maximálně ${publicReservationSettings.max_advance_days} dní dopředu.`, `Bookings can be made up to ${publicReservationSettings.max_advance_days} days ahead.`),
       "error"
     );
     return;
   }
 
   timeSelect.disabled = true;
-  timeSelect.innerHTML = '<option value="">Načítám volné časy…</option>';
-  setAvailableTimesStatus("Kontroluji otevírací dobu a skutečně volné stoly…");
+  timeSelect.innerHTML = `<option value="">${publicText("Načítám volné časy…", "Loading available times…")}</option>`;
+  setAvailableTimesStatus(publicText("Kontroluji otevírací dobu a skutečně volné stoly…", "Checking opening hours and available tables…"));
 
   try {
     // DŮLEŽITÉ: dostupnost počítá server se SERVICE ROLE klíčem.
@@ -1376,20 +1410,20 @@ async function loadAvailableReservationTimes() {
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(data.error || "Volné časy se nepodařilo načíst.");
+      throw new Error(PUBLIC_LOCALE === "en" ? "Available times could not be loaded." : data.error || "Volné časy se nepodařilo načíst.");
     }
 
     const slots = Array.isArray(data.slots) ? data.slots : [];
     if (!slots.length) {
-      timeSelect.innerHTML = '<option value="">Žádný volný čas</option>';
-      setAvailableTimesStatus(data.message || "Pro zvolený den a počet osob už není volný termín.", "error");
+      timeSelect.innerHTML = `<option value="">${publicText("Žádný volný čas", "No available times")}</option>`;
+      setAvailableTimesStatus(PUBLIC_LOCALE === "en" ? "No tables are available for this date and party size." : data.message || "Pro zvolený den a počet osob už není volný termín.", "error");
       return;
     }
 
     timeSelect.replaceChildren();
     const placeholderOption = document.createElement("option");
     placeholderOption.value = "";
-    placeholderOption.textContent = "Vyber čas";
+    placeholderOption.textContent = publicText("Vyber čas", "Choose a time");
     timeSelect.appendChild(placeholderOption);
 
     slots.forEach(slot => {
@@ -1402,19 +1436,19 @@ async function loadAvailableReservationTimes() {
     });
     timeSelect.disabled = timeSelect.options.length <= 1;
     if (slots.includes(previousValue)) timeSelect.value = previousValue;
-    setAvailableTimesStatus(data.message || `${slots.length} volných termínů`, "success");
+    setAvailableTimesStatus(PUBLIC_LOCALE === "en" ? `${slots.length} available times` : data.message || `${slots.length} volných termínů`, "success");
   } catch (error) {
     if (error?.name === "AbortError" || requestId !== availabilityRequestSequence) return;
     console.error(error);
-    timeSelect.innerHTML = '<option value="">Časy se nepodařilo načíst</option>';
-    setAvailableTimesStatus(error.message || "Volné časy se nepodařilo načíst. Zkus to znovu.", "error");
+    timeSelect.innerHTML = `<option value="">${publicText("Časy se nepodařilo načíst", "Times could not be loaded")}</option>`;
+    setAvailableTimesStatus(PUBLIC_LOCALE === "en" ? "Available times could not be loaded. Please try again." : error.message || "Volné časy se nepodařilo načíst. Zkus to znovu.", "error");
   }
 }
 
 async function ulozitRezervaci() {
   if (reservationSubmissionInProgress) return;
   if (!publicReservationSettingsLoaded) {
-    showPublicReservationNotice("Nastavení rezervací se ještě načítá. Zkus to prosím za chvíli.");
+    showPublicReservationNotice(publicText("Nastavení rezervací se ještě načítá. Zkus to prosím za chvíli.", "Booking settings are still loading. Please try again shortly."));
     return;
   }
 
@@ -1429,13 +1463,13 @@ async function ulozitRezervaci() {
   const namePattern = /^[\p{L}\p{M}][\p{L}\p{M}\s.'’\-]{1,79}$/u;
 
   if (!namePattern.test(name)) {
-    showPublicReservationNotice("Zadej platné jméno alespoň o 2 písmenech.");
+    showPublicReservationNotice(publicText("Zadej platné jméno alespoň o 2 písmenech.", "Enter a valid first name with at least 2 letters."));
     document.getElementById("jmeno").value = "";
     return;
   }
 
   if (!namePattern.test(lastName)) {
-    showPublicReservationNotice("Zadej platné příjmení alespoň o 2 písmenech.");
+    showPublicReservationNotice(publicText("Zadej platné příjmení alespoň o 2 písmenech.", "Enter a valid last name with at least 2 letters."));
     document.getElementById("prijmeni").value = "";
     return;
   }
@@ -1453,17 +1487,17 @@ async function ulozitRezervaci() {
       .split("T")[0];
 
   if (!date) {
-    showPublicReservationNotice("Zadej platné datum rezervace.");
+    showPublicReservationNotice(publicText("Zadej platné datum rezervace.", "Choose a valid booking date."));
     return;
   }
 
   if (!time) {
-    showPublicReservationNotice("Vyber volný čas rezervace.");
+    showPublicReservationNotice(publicText("Vyber volný čas rezervace.", "Choose an available booking time."));
     return;
   }
 
   if (date < localToday) {
-    showPublicReservationNotice("Nelze vytvořit rezervaci na minulý den.");
+    showPublicReservationNotice(publicText("Nelze vytvořit rezervaci na minulý den.", "You cannot book a date in the past."));
     return;
   }
 
@@ -1481,31 +1515,31 @@ async function ulozitRezervaci() {
     );
 
   if (date > localMaxDate) {
-    showPublicReservationNotice(`Rezervaci lze vytvořit maximálně ${publicReservationSettings.max_advance_days} dní dopředu.`);
+    showPublicReservationNotice(publicText(`Rezervaci lze vytvořit maximálně ${publicReservationSettings.max_advance_days} dní dopředu.`, `Bookings can be made up to ${publicReservationSettings.max_advance_days} days ahead.`));
     return;
   }
 
 
   const peopleNumber = Number(people);
   if (!Number.isInteger(peopleNumber) || peopleNumber < publicReservationSettings.min_people || peopleNumber > publicReservationSettings.max_people) {
-    showPublicReservationNotice(`Počet osob musí být od ${publicReservationSettings.min_people} do ${publicReservationSettings.max_people}.`);
+    showPublicReservationNotice(publicText(`Počet osob musí být od ${publicReservationSettings.min_people} do ${publicReservationSettings.max_people}.`, `The number of guests must be between ${publicReservationSettings.min_people} and ${publicReservationSettings.max_people}.`));
     return;
   }
 
   const phoneClean = phone.replace(/\s+/g, "");
   if (!/^\+?\d{9,15}$/.test(phoneClean)) {
-    showPublicReservationNotice("Zadej platné telefonní číslo.");
+    showPublicReservationNotice(publicText("Zadej platné telefonní číslo.", "Enter a valid phone number."));
     return;
   }
 
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailPattern.test(email)) {
-    showPublicReservationNotice("Zadej platnou e-mailovou adresu.");
+    showPublicReservationNotice(publicText("Zadej platnou e-mailovou adresu.", "Enter a valid email address."));
     return;
   }
 
   if (!name || !lastName || !people || !date || !time || !phone || !email) {
-    showPublicReservationNotice("Vyplň jméno, příjmení, počet osob, datum, čas, telefon a e-mail.");
+    showPublicReservationNotice(publicText("Vyplň jméno, příjmení, počet osob, datum, čas, telefon a e-mail.", "Fill in your name, number of guests, date, time, phone and email."));
     return;
   }
 
@@ -1540,15 +1574,15 @@ async function ulozitRezervaci() {
 
     const createData = await createResponse.json().catch(() => ({}));
     if (!createResponse.ok) {
-      showPublicReservationNotice(createData.error || "Rezervaci se nepodařilo uložit.");
+      showPublicReservationNotice(PUBLIC_LOCALE === "en" ? (createResponse.status === 409 ? "This time is no longer available. Please choose another." : "The reservation could not be saved. Please check your details and try again.") : createData.error || "Rezervaci se nepodařilo uložit.");
       await loadAvailableReservationTimes();
       return;
     }
 
     showPublicReservationNotice(
       createData.email?.sent === true
-        ? "Rezervace byla úspěšně vytvořena. Potvrzení jsme poslali na zadaný e-mail."
-        : "Rezervace byla úspěšně vytvořena, ale potvrzovací e-mail se nepodařilo odeslat. Kontaktujte prosím restauraci, pokud potřebujete potvrzení.",
+        ? publicText("Rezervace byla úspěšně vytvořena. Potvrzení jsme poslali na zadaný e-mail.", "Your reservation was created. We sent a confirmation to your email.")
+        : publicText("Rezervace byla úspěšně vytvořena, ale potvrzovací e-mail se nepodařilo odeslat. Kontaktujte prosím restauraci, pokud potřebujete potvrzení.", "Your reservation was created, but we could not send the email. Contact the restaurant if you need confirmation."),
       "success"
     );
 
@@ -1560,7 +1594,7 @@ async function ulozitRezervaci() {
     loadAvailableReservationTimes();
   } catch (error) {
     console.error(error);
-    showPublicReservationNotice(error.message || "Rezervaci se nepodařilo uložit.");
+    showPublicReservationNotice(PUBLIC_LOCALE === "en" ? "The reservation could not be saved. Please try again." : error.message || "Rezervaci se nepodařilo uložit.");
   } finally {
     setPublicReservationSubmitting(false);
   }
@@ -1569,6 +1603,7 @@ async function ulozitRezervaci() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   applyPublicPageMode();
+  applyPublicLocale();
   setupRestaurantAi();
 
   if (
@@ -1590,8 +1625,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     );
 
     showPublicRestaurantUnavailable(
-      error?.message ||
-      "Zkontrolujte prosím odkaz restaurace."
+      (PUBLIC_LOCALE === "en" ? null : error?.message) ||
+      publicText("Zkontrolujte prosím odkaz restaurace.", "Please check the restaurant link.")
     );
 
     return;
@@ -1706,22 +1741,22 @@ function openFoodDetail(id) {
   document.getElementById("modalFoodName").textContent = item.name;
   document.getElementById("modalFoodPrice").textContent = `${item.price} Kč`;
   document.getElementById("modalFoodDescription").textContent =
-    item.description || "Neuvedeno";
+    item.description || publicText("Neuvedeno", "Not provided");
   const ingredientsText = item.ingredients
   ? item.ingredients
       .split(",")
       .map(ingredient => ingredient.trim())
       .filter(Boolean)
       .join(", ")
-  : "Neuvedeno";
+  : publicText("Neuvedeno", "Not provided");
 
 document.getElementById("modalFoodIngredients").textContent =
   ingredientsText;
   const weightLabel =
-  item.category === "Nápoj" ? "Objem:" : "Gramáž:";
+  item.category === "Nápoj" ? publicText("Objem:", "Volume:") : publicText("Gramáž:", "Weight:");
 
 document.getElementById("modalWeightLabel").textContent = weightLabel;
-  let weightText = item.weight || "Neuvedeno";
+  let weightText = item.weight || publicText("Neuvedeno", "Not provided");
 
 weightText = weightText
   .replace(/(\d)(g|kg|ml|l)\b/gi, "$1 $2")
@@ -1730,7 +1765,7 @@ weightText = weightText
 
 document.getElementById("modalFoodWeight").textContent =
   weightText;
-  const allergenNames = {
+const allergenNames = {
   1: "obiloviny obsahující lepek",
   2: "korýši",
   3: "vejce",
@@ -1746,8 +1781,14 @@ document.getElementById("modalFoodWeight").textContent =
   13: "vlčí bob",
   14: "měkkýši"
 };
+const englishAllergenNames = {
+  1: "cereals containing gluten", 2: "crustaceans", 3: "eggs", 4: "fish",
+  5: "peanuts", 6: "soybeans", 7: "milk", 8: "tree nuts",
+  9: "celery", 10: "mustard", 11: "sesame", 12: "sulphur dioxide and sulphites",
+  13: "lupin", 14: "molluscs"
+};
 
-let allergensText = item.allergens || "Neuvedeno";
+let allergensText = item.allergens || publicText("Neuvedeno", "Not provided");
 
 if (/^[\d,\s]+$/.test(allergensText)) {
   allergensText = allergensText
@@ -1756,7 +1797,7 @@ if (/^[\d,\s]+$/.test(allergensText)) {
     .filter(Boolean)
     .map(number =>
       allergenNames[number]
-        ? `${number} – ${allergenNames[number]}`
+        ? `${number} – ${(PUBLIC_LOCALE === "en" ? englishAllergenNames : allergenNames)[number]}`
         : number
     )
     .join(", ");
