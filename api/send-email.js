@@ -1772,6 +1772,7 @@ async function getAvailableTimesOnServer(
         .json({
           success: true,
           slots: [],
+          unavailable_reason: "closed",
 
           message:
             "V tento den má restaurace zavřeno."
@@ -1972,6 +1973,7 @@ async function getAvailableTimesOnServer(
         .json({
           success: true,
           slots: [],
+          unavailable_reason: "capacity",
 
           message:
             `Pro ${peopleNumber} osob není k dispozici vhodný stůl ani povolená skupina stolů.`
