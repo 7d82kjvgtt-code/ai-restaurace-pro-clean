@@ -4336,20 +4336,14 @@ async function updateReservationOnServer(
         });
     }
 
-    const [
-      restaurant,
-      placeName
-    ] =
-      await Promise.all([
-        getRestaurantById(
-          restaurantId
-        ),
-        getReservationPlaceName(
-          reservation
-        )
-      ]);
-
     try {
+      const [
+        restaurant,
+        placeName
+      ] = await Promise.all([
+        getRestaurantById(restaurantId),
+        getReservationPlaceName(reservation)
+      ]);
       const emailResult =
         await sendReservationStatusEmail({
           restaurant,
@@ -4514,12 +4508,11 @@ async function updateReservationStatusOnServer(
       });
     }
 
-    const [restaurant, placeName] = await Promise.all([
-      getRestaurantById(reservation.restaurant_id),
-      getReservationPlaceName(reservation)
-    ]);
-
     try {
+      const [restaurant, placeName] = await Promise.all([
+        getRestaurantById(reservation.restaurant_id),
+        getReservationPlaceName(reservation)
+      ]);
       const emailResult = await sendReservationStatusEmail({
         restaurant,
         reservation,
