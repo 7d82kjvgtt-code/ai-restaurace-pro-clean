@@ -2846,7 +2846,7 @@ function refreshReservationNotifications() {
       </button>`;
   }).join("");
 
-  if (title) title.textContent = count === 1 ? "1 nová rezervace" : `${count} nových rezervací`;
+  if (title) title.textContent = count === 1 ? "1 nepřečtené upozornění" : `${count} nepřečtených upozornění`;
   if (text) {
     const newest = unread[0];
     const guest = getReservationGuestName(newest) === "-" ? "Nový host" : getReservationGuestName(newest);
