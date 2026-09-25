@@ -3357,10 +3357,12 @@ async function updateReservationStatusRequest(id, status) {
         );
 
     if (!response.ok) {
-      throw new Error(
+      const requestError = new Error(
         data?.error ||
         "Stav rezervace se nepodařilo změnit."
       );
+      requestError.status = response.status;
+      throw requestError;
     }
 
     return data;
@@ -3573,6 +3575,10 @@ async function updateStatus(id, status) {
       renderCalendar();
       renderUpcomingReservations();
       renderCustomers();
+    }
+
+    if (Number(error?.status) === 409) {
+      await loadReservations();
     }
 
     showDashboardNotice(
