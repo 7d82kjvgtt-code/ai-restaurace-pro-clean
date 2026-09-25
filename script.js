@@ -1574,7 +1574,16 @@ async function ulozitRezervaci() {
 
     const createData = await createResponse.json().catch(() => ({}));
     if (!createResponse.ok) {
-      showPublicReservationNotice(PUBLIC_LOCALE === "en" ? (createResponse.status === 409 ? "This time is no longer available. Please choose another." : "The reservation could not be saved. Please check your details and try again.") : createData.error || "Rezervaci se nepodařilo uložit.");
+      const englishError = createResponse.status === 409
+        ? "This time is no longer available. Please choose another."
+        : createResponse.status === 429
+          ? "Too many booking requests. Please wait before trying again."
+          : createResponse.status === 400
+            ? "Please check your booking details and try again."
+            : createResponse.status === 404
+              ? "This restaurant is not available for online bookings."
+              : "The reservation could not be saved. Please try again later.";
+      showPublicReservationNotice(PUBLIC_LOCALE === "en" ? englishError : createData.error || "Rezervaci se nepodařilo uložit.");
       await loadAvailableReservationTimes();
       return;
     }
