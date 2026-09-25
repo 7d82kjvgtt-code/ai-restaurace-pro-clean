@@ -4592,7 +4592,14 @@ function closeReservationModal() {
         .classList.remove("show");
 }
 
+let saveReservationChangesInProgress = false;
+
 async function saveReservationChanges() {
+  if (saveReservationChangesInProgress) return;
+  saveReservationChangesInProgress = true;
+  const saveButton = document.querySelector('#reservationModal button[onclick="saveReservationChanges()"]');
+  if (saveButton) saveButton.disabled = true;
+  try {
   const id =
     Number(
       document.getElementById(
@@ -4988,12 +4995,20 @@ async function saveReservationChanges() {
     closeReservationModal();
     closeTableModal();
 
-    await Promise.all([
+    const [reservationsLoaded] = await Promise.all([
       loadReservations(),
       loadReservationHistory()
     ]);
 
     renderTables();
+
+    if (!reservationsLoaded) {
+      showDashboardNotice(
+        "Rezervace byla uložena, ale přehled se nepodařilo obnovit. Obnov stránku a zkontroluj aktuální stav.",
+        "info"
+      );
+      return;
+    }
 
     if (
       statusResult &&
@@ -5036,6 +5051,10 @@ async function saveReservationChanges() {
       loadReservations(),
       loadReservationHistory()
     ]);
+  }
+  } finally {
+    saveReservationChangesInProgress = false;
+    if (saveButton) saveButton.disabled = false;
   }
 }
 
