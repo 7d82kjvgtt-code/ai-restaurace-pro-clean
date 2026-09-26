@@ -546,6 +546,13 @@ module.exports =
         inviteData.user?.id ||
         null;
 
+      if (!userId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(userId))) {
+        console.error("Supabase invite response did not include a valid user ID.");
+        return send(res, 502, {
+          error: "Pozvánka možná odešla, ale účet se nepodařilo přiřadit k týmu. Zkus pozvání zopakovat."
+        });
+      }
+
       const teamResponse =
         await supabase(
           `/rest/v1/restaurant_team?on_conflict=restaurant_id,email`,
