@@ -870,8 +870,6 @@ function updateRestaurantBrandingPreview() {
       ""
     ).trim();
 
-  const slug = String(document.getElementById("restaurantBrandSlug")?.value || "").trim().toLowerCase();
-
   const address =
     String(
       document
@@ -1286,6 +1284,8 @@ async function saveRestaurantBranding() {
         ?.value ||
       ""
     ).trim();
+
+  const slug = String(document.getElementById("restaurantBrandSlug")?.value || "").trim().toLowerCase();
 
   const address =
     String(
