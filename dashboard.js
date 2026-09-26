@@ -1893,6 +1893,8 @@ function renderSetupChecklist() {
       )
   };
 
+  const readyToPublish = checks.tables && checks.hours && checks.settings && checks.menu && checks.branding;
+
   const completed =
     Object.values(checks).filter(Boolean).length;
 
@@ -1968,8 +1970,13 @@ function renderSetupChecklist() {
     publicHint.textContent =
       checks.public
         ? "Veřejná stránka restaurace je aktivní."
-        : "Veřejný web aktivujeme při spuštění pilotu.";
+        : readyToPublish
+          ? "V sekci Restaurace zapni veřejný web a ulož změny."
+          : "Nejdřív dokonči nastavení restaurace, pak ji zveřejni.";
   }
+
+  const publishLink = document.getElementById("setupPublishLink");
+  if (publishLink) publishLink.hidden = checks.public;
 
   if (publicLink) {
     if (checks.public) {
@@ -10505,7 +10512,7 @@ async function loadOpeningHours() {
     openingHours = await response.json();
     openingHoursConfigured =
       Array.isArray(openingHours) &&
-      openingHours.length > 0;
+      openingHours.some(row => row.is_open === true && row.open_time && row.close_time);
 
     if (!openingHours.length) {
       openingHours = DAY_NAMES.map((_, day) => ({ day_of_week: day, is_open: true, open_time: "10:00", close_time: "22:00" }));
@@ -10555,7 +10562,7 @@ async function saveOpeningHours() {
     });
     if (!response.ok) throw new Error(await response.text());
     openingHours = await response.json();
-    openingHoursConfigured = true;
+    openingHoursConfigured = openingHours.some(row => row.is_open === true && row.open_time && row.close_time);
     renderOpeningHours();
     renderSetupChecklist();
     showDashboardNotice("Otevírací doba byla uložena.", "success");
