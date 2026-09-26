@@ -208,66 +208,10 @@ async function getOwnerContext(
     };
   }
 
-  // Historický owner může být vedený pouze v profiles.
-  // Fallback je povolen výhradně pro ownera.
-  const profileResponse =
-    await supabase(
-      `/rest/v1/profiles?id=eq.${encodeURIComponent(
-        userId
-      )}&role=eq.owner&select=restaurant_id,role&limit=1`
-    );
-
-  if (!profileResponse.ok) {
-    const errorText =
-      await profileResponse
-        .text()
-        .catch(
-          () => ""
-        );
-
-    throw new Error(
-      errorText ||
-      "Nepodařilo se ověřit profil majitele."
-    );
-  }
-
-  const profiles =
-    await profileResponse.json();
-
-  const profile =
-    Array.isArray(
-      profiles
-    )
-      ? profiles[0]
-      : null;
-
-  if (
-    !profile?.restaurant_id
-  ) {
-    const error =
-      new Error(
-        "Pozvat zaměstnance může pouze majitel."
-      );
-
-    error.status = 403;
-
-    throw error;
-  }
-
-  return {
-    restaurantId:
-      Number(
-        profile.restaurant_id
-      ),
-
-    role:
-      "owner",
-
-    source:
-      "profiles"
-  };
+  const error = new Error("Pozvat zaměstnance může pouze aktivní majitel.");
+  error.status = 403;
+  throw error;
 }
-
 
 function getInviteRedirectUrl(req) {
   // Redirect nesmí být odvozený z Host / X-Forwarded-Host hlaviček,
