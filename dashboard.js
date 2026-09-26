@@ -870,6 +870,8 @@ function updateRestaurantBrandingPreview() {
       ""
     ).trim();
 
+  const slug = String(document.getElementById("restaurantBrandSlug")?.value || "").trim().toLowerCase();
+
   const address =
     String(
       document
@@ -1363,6 +1365,9 @@ async function saveRestaurantBranding() {
   if (
     !name ||
     name.length > 120 ||
+    slug.length < 3 ||
+    slug.length > 80 ||
+    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ||
     address.length > 300 ||
     phone.length > 40 ||
     email.length > 320 ||
@@ -1475,6 +1480,7 @@ async function saveRestaurantBranding() {
           body:
             JSON.stringify({
               name,
+              slug,
               address:
                 address ||
                 null,
@@ -1510,14 +1516,12 @@ async function saveRestaurantBranding() {
 
     if (
       !response.ok ||
-      !Array.isArray(
-        rows
-      ) ||
+      !Array.isArray(rows) ||
       !rows[0]
     ) {
-      throw new Error(
-        "Restauraci se nepodařilo uložit."
-      );
+      throw new Error(response.status === 409
+        ? "Tento veřejný slug už používá jiná restaurace."
+        : "Restauraci se nepodařilo uložit.");
     }
 
     currentRestaurantBranding =
