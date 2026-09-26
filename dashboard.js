@@ -339,9 +339,7 @@ document.querySelectorAll(".room-switch").forEach((button) => {
       history.replaceState(null, "", "#prehled");
       await loadDashboardData();
     } else {
-      clearSession();
-      showLogin();
-      showDashboardNotice("Účet není přiřazený k žádné aktivní restauraci.");
+      showCreateRestaurant();
     }
   } else {
     showLogin();
@@ -2080,6 +2078,93 @@ function setupNavigation() {
 
 function showLogin() {
   document.getElementById("loginScreen").style.display = "flex";
+  document.getElementById("loginForm").style.display = "";
+  document.getElementById("signupForm").style.display = "none";
+  document.getElementById("createRestaurantForm").style.display = "none";
+}
+
+function showSignup() {
+  showLogin();
+  document.getElementById("loginForm").style.display = "none";
+  document.getElementById("signupForm").style.display = "";
+}
+
+function showCreateRestaurant() {
+  document.getElementById("loginScreen").style.display = "flex";
+  document.getElementById("loginForm").style.display = "none";
+  document.getElementById("signupForm").style.display = "none";
+  document.getElementById("createRestaurantForm").style.display = "";
+}
+
+async function signupOwner(event) {
+  event.preventDefault();
+  const form = document.getElementById("signupForm");
+  const email = document.getElementById("signupEmail").value.trim();
+  const password = document.getElementById("signupPassword").value;
+  const status = document.getElementById("signupStatus");
+  const button = form.querySelector('button[type="submit"]');
+  if (password.length < 12) {
+    status.textContent = "Heslo musí mít alespoň 12 znaků.";
+    return;
+  }
+  button.disabled = true;
+  status.textContent = "Vytvářím účet...";
+  try {
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    if (!response.ok) {
+      status.textContent = response.status === 429
+        ? "Příliš mnoho pokusů. Zkuste to později."
+        : "Registrace se nepodařila. Zkontrolujte e-mail a zkuste to znovu.";
+      return;
+    }
+    form.reset();
+    status.textContent = "Zkontrolujte e-mail a potvrďte účet. Pak se přihlaste a založte restauraci.";
+  } catch {
+    status.textContent = "Spojení se nezdařilo. Zkuste to znovu.";
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function createOwnerRestaurant(event) {
+  event.preventDefault();
+  const name = document.getElementById("newRestaurantName").value.trim();
+  const status = document.getElementById("createRestaurantStatus");
+  const button = document.querySelector('#createRestaurantForm button[type="submit"]');
+  if (name.length < 2 || name.length > 120) {
+    status.textContent = "Zadejte název restaurace (2–120 znaků).";
+    return;
+  }
+  button.disabled = true;
+  status.textContent = "Zakládám restauraci...";
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/create_owner_restaurant`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ p_name: name })
+    });
+    if (!response.ok) {
+      status.textContent = response.status === 401
+        ? "Platnost přihlášení vypršela. Přihlaste se znovu."
+        : "Restauraci se nepodařilo založit. Účet může být už přiřazený k týmu nebo e-mail není potvrzený.";
+      return;
+    }
+    if (!await loadRestaurantContextWithRetry()) {
+      status.textContent = "Restaurace byla vytvořena. Obnovte stránku a pokračujte.";
+      return;
+    }
+    hideLogin();
+    history.replaceState(null, "", "#restaurace");
+    await loadDashboardData();
+  } catch {
+    status.textContent = "Spojení se nezdařilo. Zkuste to znovu.";
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function hideLogin() {
@@ -2622,9 +2707,7 @@ async function login(event) {
     // až po ručním refreshi.
     const restaurantLoaded = await loadRestaurantContextWithRetry();
     if (!restaurantLoaded) {
-      clearSession();
-      showLogin();
-      error.textContent = "Účet není přiřazený k aktivní restauraci.";
+      showCreateRestaurant();
       return;
     }
 
