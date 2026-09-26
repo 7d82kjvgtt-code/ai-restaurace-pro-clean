@@ -339,7 +339,7 @@ document.querySelectorAll(".room-switch").forEach((button) => {
       history.replaceState(null, "", "#prehled");
       await loadDashboardData();
     } else {
-      showCreateRestaurant();
+      await showUnassignedAccountState();
     }
   } else {
     showLogin();
@@ -2083,6 +2083,39 @@ function showLogin() {
   document.getElementById("createRestaurantForm").style.display = "none";
 }
 
+async function showUnassignedAccountState() {
+  const userId = parseJwt(getAccessToken())?.sub;
+  const error = document.getElementById("error");
+  if (!userId) {
+    clearSession();
+    showLogin();
+    error.textContent = "Platnost přihlášení vypršela. Přihlaste se znovu.";
+    return;
+  }
+  try {
+    const [teamResponse, profileResponse] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/restaurant_team?user_id=eq.${encodeURIComponent(userId)}&select=id&limit=1`, { headers: getHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=restaurant_id&limit=1`, { headers: getHeaders() })
+    ]);
+    if (!teamResponse.ok || !profileResponse.ok) {
+      throw new Error("membership check failed");
+    }
+    const [memberships, profiles] = await Promise.all([
+      teamResponse.json(), profileResponse.json()
+    ]);
+    if (!memberships.length && !profiles.some(profile => profile.restaurant_id)) {
+      showCreateRestaurant();
+      return;
+    }
+    clearSession();
+    showLogin();
+    error.textContent = "Účet je již přiřazený k restauraci, ale nemá aktivní přístup. Kontaktujte majitele.";
+  } catch {
+    showLogin();
+    error.textContent = "Nepodařilo se ověřit přístup. Zkuste to znovu.";
+  }
+}
+
 function showSignup() {
   showLogin();
   document.getElementById("loginForm").style.display = "none";
@@ -2121,8 +2154,16 @@ async function signupOwner(event) {
         : "Registrace se nepodařila. Zkontrolujte e-mail a zkuste to znovu.";
       return;
     }
+    const data = await response.json();
     form.reset();
-    status.textContent = "Zkontrolujte e-mail a potvrďte účet. Pak se přihlaste a založte restauraci.";
+    if (data.access_token && data.refresh_token) {
+      sessionStorage.setItem("dashboardLoggedIn", "true");
+      sessionStorage.setItem("supabaseAccessToken", data.access_token);
+      sessionStorage.setItem("supabaseRefreshToken", data.refresh_token);
+      showCreateRestaurant();
+    } else {
+      status.textContent = "Zkontrolujte e-mail a potvrďte účet. Pak se přihlaste a založte restauraci.";
+    }
   } catch {
     status.textContent = "Spojení se nezdařilo. Zkuste to znovu.";
   } finally {
@@ -2707,7 +2748,7 @@ async function login(event) {
     // až po ručním refreshi.
     const restaurantLoaded = await loadRestaurantContextWithRetry();
     if (!restaurantLoaded) {
-      showCreateRestaurant();
+      await showUnassignedAccountState();
       return;
     }
 
