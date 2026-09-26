@@ -3678,6 +3678,10 @@ async function deleteReservation(id) {
 
 
 let reservationHistory = [];
+let historyHasMore = false;
+let historyOldestId = null;
+let historyLoadVersion = 0;
+let historyLoadingMore = false;
 
 function historyActionLabel(action) {
   if (action === "created") return "Vytvořeno";
@@ -3755,8 +3759,17 @@ function renderReservationHistory() {
   const filter = document.getElementById("historyActionFilter")?.value || "";
   const data = filter ? reservationHistory.filter(item => item.action === filter) : reservationHistory;
 
+  const moreButton = document.getElementById("loadMoreReservationHistoryButton");
+  if (moreButton) {
+    moreButton.hidden = !historyHasMore;
+    moreButton.disabled = historyLoadingMore;
+    moreButton.textContent = historyLoadingMore ? "Načítám…" : "Načíst starší změny";
+  }
+
   if (!data.length) {
-    list.innerHTML = `<div class="history-empty">Zatím tu není žádná historie.</div>`;
+    list.innerHTML = `<div class="history-empty">${historyHasMore
+      ? "V načtené části nejsou položky tohoto typu. Načti starší změny."
+      : filter ? "Pro zvolený filtr nejsou záznamy." : "Zatím tu není žádná historie."}</div>`;
     return;
   }
 
@@ -3802,24 +3815,68 @@ function renderReservationHistory() {
 
 async function loadReservationHistory() {
   if (!currentRestaurantId) return;
+  const version = ++historyLoadVersion;
+  const restaurantId = Number(currentRestaurantId);
   const list = document.getElementById("reservationHistoryList");
+  historyLoadingMore = false;
 
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/reservation_history?restaurant_id=eq.${currentRestaurantId}&select=*&order=created_at.desc&limit=300`,
+      `${SUPABASE_URL}/rest/v1/reservation_history?restaurant_id=eq.${restaurantId}&select=*&order=id.desc&limit=100`,
       { headers: getHeaders() }
     );
+    if (!response.ok) throw new Error("Historii rezervací se nepodařilo načíst.");
+    const rows = await response.json();
+    if (!Array.isArray(rows)) throw new Error("Neplatná odpověď historie.");
+    if (version !== historyLoadVersion || restaurantId !== Number(currentRestaurantId)) return;
 
-    if (!response.ok) {
-      throw new Error(await response.text());
-    }
-
-    reservationHistory = await response.json();
+    reservationHistory = rows;
+    historyHasMore = rows.length === 100;
+    historyOldestId = rows.length ? Number(rows[rows.length - 1].id) : null;
     renderReservationHistory();
   } catch (error) {
+    if (version !== historyLoadVersion) return;
     console.error("Historii rezervací se nepodařilo načíst:", error);
-    if (list) {
-      list.innerHTML = `<div class="history-empty">Historii rezervací se teď nepodařilo načíst. Zkus stránku obnovit.</div>`;
+    historyHasMore = false;
+    historyOldestId = null;
+    const moreButton = document.getElementById("loadMoreReservationHistoryButton");
+    if (moreButton) moreButton.hidden = true;
+    if (list) list.innerHTML = `<div class="history-empty">Historii rezervací se teď nepodařilo načíst. Zkus stránku obnovit.</div>`;
+  }
+}
+
+async function loadMoreReservationHistory() {
+  if (!historyHasMore || historyLoadingMore || !historyOldestId || !currentRestaurantId) return;
+  const version = historyLoadVersion;
+  const restaurantId = Number(currentRestaurantId);
+  const beforeId = historyOldestId;
+  historyLoadingMore = true;
+  renderReservationHistory();
+
+  try {
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/reservation_history?restaurant_id=eq.${restaurantId}&id=lt.${beforeId}&select=*&order=id.desc&limit=100`,
+      { headers: getHeaders() }
+    );
+    if (!response.ok) throw new Error("Starší historii se nepodařilo načíst.");
+    const rows = await response.json();
+    if (!Array.isArray(rows) || rows.some(row => Number(row.id) >= beforeId)) {
+      throw new Error("Neplatná odpověď historie.");
+    }
+    if (version !== historyLoadVersion || restaurantId !== Number(currentRestaurantId)) return;
+
+    reservationHistory.push(...rows);
+    historyHasMore = rows.length === 100;
+    if (rows.length) historyOldestId = Number(rows[rows.length - 1].id);
+  } catch (error) {
+    if (version === historyLoadVersion) {
+      console.error("Starší historii se nepodařilo načíst:", error);
+      showDashboardNotice("Starší historii se nepodařilo načíst. Zkus to znovu.", "error");
+    }
+  } finally {
+    if (version === historyLoadVersion) {
+      historyLoadingMore = false;
+      renderReservationHistory();
     }
   }
 }
