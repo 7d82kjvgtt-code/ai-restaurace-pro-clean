@@ -10,7 +10,7 @@
 <body>
 
   <div id="loginScreen">
-    <form class="login-box" onsubmit="login(event)">
+    <form class="login-box" id="loginForm" onsubmit="login(event)">
       <div class="login-icon">🔐</div>
 
       <h2>Přihlášení do administrace</h2>
@@ -39,6 +39,27 @@
       </button>
 
       <p id="error" role="alert"></p>
+      <button type="button" onclick="showSignup()">Nový majitel? Založit účet</button>
+    </form>
+    <form class="login-box" id="signupForm" onsubmit="signupOwner(event)" style="display:none">
+      <h2>Nový účet majitele</h2>
+      <p>Po potvrzení e-mailu se přihlaste a založte restauraci.</p>
+      <label for="signupEmail">E-mail</label>
+      <input id="signupEmail" type="email" autocomplete="email" required>
+      <label for="signupPassword">Heslo (alespoň 12 znaků)</label>
+      <input id="signupPassword" type="password" autocomplete="new-password" minlength="12" required>
+      <button type="submit">Vytvořit účet</button>
+      <p id="signupStatus" role="status"></p>
+      <button type="button" onclick="showLogin()">Zpět na přihlášení</button>
+    </form>
+    <form class="login-box" id="createRestaurantForm" onsubmit="createOwnerRestaurant(event)" style="display:none">
+      <h2>Založit restauraci</h2>
+      <p>Restaurace zůstane neveřejná, dokud nedokončíte nastavení a nezveřejníte ji.</p>
+      <label for="newRestaurantName">Název restaurace</label>
+      <input id="newRestaurantName" type="text" minlength="2" maxlength="120" autocomplete="organization" required>
+      <button type="submit">Založit restauraci</button>
+      <p id="createRestaurantStatus" role="alert"></p>
+      <button type="button" onclick="logoutDashboard()">Odhlásit</button>
     </form>
   </div>
 
@@ -1392,7 +1413,7 @@
     </div>
 </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="dashboard.js?v=pilot-v1-20260926-r21"></script>
+  <script src="dashboard.js?v=pilot-v1-20260926-r22"></script>
 
 </body>
 </html>
