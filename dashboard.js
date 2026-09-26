@@ -2531,77 +2531,7 @@ async function loadRestaurantContext() {
       }
     }
 
-    // 2) Když aktivní team membership není nalezený,
-    // zkontrolujeme profiles.
-    //
-    // DŮLEŽITÉ:
-    // fallback přes profiles dovolujeme JEN ownerovi.
-    // Manager/staff tímto nesmí obejít deaktivaci v restaurant_team.
-    const profileResponse =
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(
-          payload.sub
-        )}&select=restaurant_id,role`,
-        {
-          method: "GET",
-          headers: getHeaders()
-        }
-      );
-
-    if (!profileResponse.ok) {
-      throw new Error(
-        await profileResponse.text()
-      );
-    }
-
-    const profiles =
-      await profileResponse.json();
-
-    const profile =
-      profiles?.[0];
-
-    const profileRole =
-      String(
-        profile?.role || ""
-      )
-        .toLowerCase()
-        .trim();
-
-    if (
-      profile?.restaurant_id &&
-      profileRole === "owner"
-    ) {
-      currentUserId =
-        payload.sub;
-
-      currentRestaurantId =
-        profile.restaurant_id;
-
-      currentUserRole =
-        "owner";
-
-      return true;
-    }
-
-    // Pokud je uživatel manager/staff bez aktivního membershipu,
-    // přístup zůstane správně zablokovaný.
-    if (
-      profile?.restaurant_id &&
-      [
-        "manager",
-        "staff"
-      ].includes(profileRole)
-    ) {
-      console.error(
-        "Uživatel nemá aktivní členství v restaurant_team."
-      );
-
-      return false;
-    }
-
-    console.error(
-      "Uživatel není přiřazený k aktivní restauraci."
-    );
+    console.error("Uživatel není přiřazený k aktivní restauraci.");
 
     return false;
   } catch (error) {
