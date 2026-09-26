@@ -604,44 +604,6 @@ module.exports =
         );
       }
 
-      // Profily používají i stávající RLS pravidla aplikace,
-      // proto profil připravíme hned, pokud Supabase vrátil user ID.
-      if (userId) {
-        const profileResponse =
-          await supabase(
-            `/rest/v1/profiles?on_conflict=id`,
-            {
-              method:
-                "POST",
-
-              headers: {
-                Prefer:
-                  "resolution=merge-duplicates"
-              },
-
-              body:
-                JSON.stringify({
-                  id:
-                    userId,
-
-                  restaurant_id:
-                    restaurantId,
-
-                  role
-                })
-            }
-          );
-
-        if (
-          !profileResponse.ok
-        ) {
-          console.error(
-            "Pozvánka a team row byly vytvořeny, ale profil se nepodařilo připravit:",
-            await profileResponse.text()
-          );
-        }
-      }
-
       return send(
         res,
         200,
