@@ -2323,9 +2323,8 @@ async function createOwnerRestaurant(event) {
       status.textContent = "Restaurace byla vytvořena. Obnovte stránku a pokračujte.";
       return;
     }
-    hideLogin();
     history.replaceState(null, "", "#restaurace");
-    await loadDashboardData();
+    location.reload();
   } catch {
     status.textContent = "Spojení se nezdařilo. Zkuste to znovu.";
   } finally {
@@ -2807,9 +2806,8 @@ async function login(event) {
       return;
     }
 
-    hideLogin();
     history.replaceState(null, "", "#prehled");
-    await loadDashboardData();
+    location.reload();
   } catch (loginError) {
     console.error(loginError);
 
