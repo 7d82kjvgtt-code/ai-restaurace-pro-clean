@@ -40,6 +40,7 @@
 
       <p id="error" role="alert"></p>
       <button type="button" onclick="showSignup()">Nový majitel? Založit účet</button>
+      <button type="button" onclick="showForgotPassword()">Zapomenuté heslo</button>
     </form>
     <form class="login-box" id="signupForm" onsubmit="signupOwner(event)" style="display:none">
       <h2>Nový účet majitele</h2>
@@ -51,6 +52,24 @@
       <button type="submit">Vytvořit účet</button>
       <p id="signupStatus" role="status"></p>
       <button type="button" onclick="showLogin()">Zpět na přihlášení</button>
+    </form>
+    <form class="login-box" id="forgotPasswordForm" onsubmit="requestPasswordReset(event)" style="display:none">
+      <h2>Obnova hesla</h2>
+      <p>Pošleme odkaz pro nastavení nového hesla.</p>
+      <label for="recoveryEmail">E-mail účtu</label>
+      <input id="recoveryEmail" type="email" autocomplete="email" required>
+      <button type="submit">Odeslat odkaz</button>
+      <p id="recoveryStatus" role="status"></p>
+      <button type="button" onclick="showLogin()">Zpět na přihlášení</button>
+    </form>
+    <form class="login-box" id="resetPasswordForm" onsubmit="saveRecoveredPassword(event)" style="display:none">
+      <h2>Nové heslo</h2>
+      <label for="newAccountPassword">Nové heslo (alespoň 12 znaků)</label>
+      <input id="newAccountPassword" type="password" minlength="12" autocomplete="new-password" required>
+      <label for="confirmAccountPassword">Zopakujte nové heslo</label>
+      <input id="confirmAccountPassword" type="password" minlength="12" autocomplete="new-password" required>
+      <button type="submit">Uložit nové heslo</button>
+      <p id="resetPasswordStatus" role="alert"></p>
     </form>
     <form class="login-box" id="createRestaurantForm" onsubmit="createOwnerRestaurant(event)" style="display:none">
       <h2>Založit restauraci</h2>
@@ -1418,7 +1437,7 @@
     </div>
 </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="dashboard.js?v=pilot-v1-20260926-r26"></script>
+  <script src="dashboard.js?v=pilot-v1-20260926-r27"></script>
 
 </body>
 </html>
