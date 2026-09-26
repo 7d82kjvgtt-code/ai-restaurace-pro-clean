@@ -603,10 +603,12 @@ module.exports =
 
         return send(
           res,
-          500,
+          teamResponse.status === 409 ? 409 : 500,
           {
             error:
-              "Pozvánka odešla, ale člen týmu se nepodařilo uložit. Zkuste pozvání zopakovat."
+              teamResponse.status === 409
+                ? "Pozvánka možná odešla, ale účet už má aktivní členství v restauraci. Člen týmu nebyl přidán."
+                : "Pozvánka odešla, ale člen týmu se nepodařilo uložit. Zkuste pozvání zopakovat."
           }
         );
       }
