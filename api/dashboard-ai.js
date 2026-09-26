@@ -239,38 +239,9 @@ async function assertOwnerAccess(
     return;
   }
 
-  const profileRows =
-    await serviceJson(
-      "/rest/v1/profiles" +
-      "?id=eq." +
-      encodeURIComponent(
-        userId
-      ) +
-      "&restaurant_id=eq." +
-      Number(
-        restaurantId
-      ) +
-      "&role=eq.owner" +
-      "&select=id,restaurant_id,role" +
-      "&limit=1"
-    );
-
-  const profile =
-    Array.isArray(
-      profileRows
-    )
-      ? profileRows[0]
-      : null;
-
-  if (!profile?.id) {
-    const error =
-      new Error(
-        "AI přehled může používat pouze majitel restaurace."
-      );
-
-    error.status = 403;
-    throw error;
-  }
+  const error = new Error("AI přehled může používat pouze aktivní majitel restaurace.");
+  error.status = 403;
+  throw error;
 }
 
 
