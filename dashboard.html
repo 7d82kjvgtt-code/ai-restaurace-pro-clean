@@ -1015,9 +1015,13 @@
               <input
                 id="restaurantBrandSlug"
                 type="text"
-                readonly
-                aria-readonly="true"
+                minlength="3"
+                maxlength="80"
+                pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                autocapitalize="off"
+                spellcheck="false"
               >
+              <small>Jen malá písmena, čísla a pomlčky. Změna po zveřejnění zneplatní starý odkaz.</small>
             </label>
 
             <label>
@@ -1414,7 +1418,7 @@
     </div>
 </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="dashboard.js?v=pilot-v1-20260926-r24"></script>
+  <script src="dashboard.js?v=pilot-v1-20260926-r25"></script>
 
 </body>
 </html>
