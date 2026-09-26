@@ -1,3 +1,22 @@
+let passwordRecoveryToken = null;
+{
+  const authParams = new URLSearchParams(window.location.hash.slice(1));
+  const authType = authParams.get("type");
+  const accessToken = authParams.get("access_token");
+  const refreshToken = authParams.get("refresh_token");
+  if (authType === "recovery" && accessToken) {
+    passwordRecoveryToken = accessToken;
+    history.replaceState(null, "", location.pathname + location.search);
+  } else if ((authType === "signup" || authType === "email") && accessToken && refreshToken) {
+    sessionStorage.setItem("dashboardLoggedIn", "true");
+    sessionStorage.setItem("supabaseAccessToken", accessToken);
+    sessionStorage.setItem("supabaseRefreshToken", refreshToken);
+    history.replaceState(null, "", location.pathname + location.search);
+  } else if (authParams.has("error") && authParams.has("error_code")) {
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+}
+
 const SUPABASE_URL = "https://decpnnbaejxjbpmyjocs.supabase.co";
 const SUPABASE_KEY = "sb_publishable_l6ko8NS_92RjQBM2rEzAvA_Sd2hYicb";
 
@@ -328,6 +347,11 @@ document.querySelectorAll(".room-switch").forEach((button) => {
   document
     .getElementById("statusFilter")
     ?.addEventListener("change", applyFilters);
+
+  if (passwordRecoveryToken) {
+    showPasswordReset();
+    return;
+  }
 
   if (await ensureValidSession()) {
     // Po návratu z pozvánky může členství dorazit o zlomek sekundy později.
@@ -2092,6 +2116,8 @@ function showLogin() {
   document.getElementById("loginForm").style.display = "";
   document.getElementById("signupForm").style.display = "none";
   document.getElementById("createRestaurantForm").style.display = "none";
+  document.getElementById("forgotPasswordForm").style.display = "none";
+  document.getElementById("resetPasswordForm").style.display = "none";
 }
 
 async function showUnassignedAccountState() {
@@ -2127,6 +2153,91 @@ async function showUnassignedAccountState() {
   }
 }
 
+function showForgotPassword() {
+  showLogin();
+  document.getElementById("loginForm").style.display = "none";
+  document.getElementById("forgotPasswordForm").style.display = "";
+}
+
+function showPasswordReset() {
+  showLogin();
+  document.getElementById("loginForm").style.display = "none";
+  document.getElementById("resetPasswordForm").style.display = "";
+}
+
+async function requestPasswordReset(event) {
+  event.preventDefault();
+  const email = document.getElementById("recoveryEmail").value.trim();
+  const status = document.getElementById("recoveryStatus");
+  const button = document.querySelector('#forgotPasswordForm button[type="submit"]');
+  button.disabled = true;
+  status.textContent = "Odesílám odkaz...";
+  try {
+    const redirectTo = encodeURIComponent(location.origin + "/dashboard.html");
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/recover?redirect_to=${redirectTo}`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    status.textContent = response.status === 429
+      ? "Příliš mnoho požadavků. Zkuste to později."
+      : response.ok
+        ? "Pokud účet existuje, pošleme odkaz pro změnu hesla na tento e-mail."
+        : "Odkaz se nepodařilo odeslat. Zkuste to později.";
+  } catch {
+    status.textContent = "Spojení se nezdařilo. Zkuste to znovu.";
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function saveRecoveredPassword(event) {
+  event.preventDefault();
+  const status = document.getElementById("resetPasswordStatus");
+  const password = document.getElementById("newAccountPassword").value;
+  const confirmation = document.getElementById("confirmAccountPassword").value;
+  const button = document.querySelector('#resetPasswordForm button[type="submit"]');
+  if (password.length < 12 || password !== confirmation) {
+    status.textContent = "Zadejte stejné nové heslo o alespoň 12 znacích.";
+    return;
+  }
+  if (!passwordRecoveryToken) {
+    status.textContent = "Odkaz vypršel. Požádejte o nový.";
+    return;
+  }
+  button.disabled = true;
+  status.textContent = "Ukládám nové heslo...";
+  try {
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      method: "PUT",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${passwordRecoveryToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ password })
+    });
+    if (!response.ok) {
+      status.textContent = "Heslo se nepodařilo změnit. Odkaz mohl vypršet; požádejte o nový.";
+      return;
+    }
+    const usedToken = passwordRecoveryToken;
+    passwordRecoveryToken = null;
+    document.getElementById("resetPasswordForm").reset();
+    await fetch(`${SUPABASE_URL}/auth/v1/logout?scope=local`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${usedToken}` }
+    }).catch(() => {});
+    clearSession();
+    showLogin();
+    document.getElementById("error").textContent = "Heslo bylo změněno. Přihlaste se novým heslem.";
+  } catch {
+    status.textContent = "Spojení se nezdařilo. Zkuste to znovu.";
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function showSignup() {
   showLogin();
   document.getElementById("loginForm").style.display = "none";
@@ -2138,6 +2249,8 @@ function showCreateRestaurant() {
   document.getElementById("loginForm").style.display = "none";
   document.getElementById("signupForm").style.display = "none";
   document.getElementById("createRestaurantForm").style.display = "";
+  document.getElementById("forgotPasswordForm").style.display = "none";
+  document.getElementById("resetPasswordForm").style.display = "none";
 }
 
 async function signupOwner(event) {
@@ -2154,7 +2267,8 @@ async function signupOwner(event) {
   button.disabled = true;
   status.textContent = "Vytvářím účet...";
   try {
-    const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+    const redirectTo = encodeURIComponent(location.origin + "/dashboard.html");
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/signup?redirect_to=${redirectTo}`, {
       method: "POST",
       headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
