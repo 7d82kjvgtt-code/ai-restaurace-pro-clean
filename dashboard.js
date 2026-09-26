@@ -2722,40 +2722,54 @@ function isValidOptionalEmail(value) {
 ========================================================= */
 
 async function fetchReservationsSnapshot() {
-  const response =
-    await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${currentRestaurantId}&select=*&order=id.desc`,
+  const restaurantId = Number(currentRestaurantId);
+  if (!Number.isInteger(restaurantId) || restaurantId < 1) {
+    throw new Error("Restaurace není vybraná.");
+  }
+
+  const pageSize = 500;
+  const maxPages = 40;
+  const snapshot = [];
+  let beforeId = null;
+
+  for (let page = 0; page < maxPages; page++) {
+    const cursor = beforeId === null ? "" : `&id=lt.${beforeId}`;
+    const response = await authorizedFetch(
+      `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${restaurantId}&select=*&order=id.desc&limit=${pageSize}${cursor}`,
       {
-        headers:
-          getHeaders({
-            "Cache-Control":
-              "no-cache"
-          })
+        headers: getHeaders({ "Cache-Control": "no-cache" })
       }
     );
 
-  const data =
-    await response
-      .json()
-      .catch(() => []);
+    if (!response.ok) {
+      throw new Error("Rezervace se nepodařilo kompletně načíst.");
+    }
 
-  if (!response.ok) {
-    throw new Error(
-      JSON.stringify(
-        data
-      )
-    );
+    const rows = await response.json();
+    if (!Array.isArray(rows) || rows.length > pageSize) {
+      throw new Error("Neplatná odpověď při načítání rezervací.");
+    }
+
+    if (rows.length) {
+      const lastId = Number(rows[rows.length - 1]?.id);
+      if (!Number.isSafeInteger(lastId) || lastId < 1 ||
+          (beforeId !== null && lastId >= beforeId)) {
+        throw new Error("Neplatné stránkování rezervací.");
+      }
+      beforeId = lastId;
+      snapshot.push(...rows);
+    }
+
+    if (rows.length < pageSize) {
+      if (Number(currentRestaurantId) !== restaurantId) {
+        throw new Error("Během načítání byla změněna restaurace.");
+      }
+      reservations = snapshot;
+      return snapshot;
+    }
   }
 
-  const snapshot =
-    Array.isArray(data)
-      ? data
-      : [];
-
-  reservations =
-    snapshot;
-
-  return snapshot;
+  throw new Error("Historie rezervací je pro tento přehled příliš rozsáhlá.");
 }
 
 async function loadReservations() {
