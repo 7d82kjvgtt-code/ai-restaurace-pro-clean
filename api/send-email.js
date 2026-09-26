@@ -89,6 +89,15 @@ function publicErrorMessage(error, fallback) {
 }
 
 
+function dashboardReservationErrorStatus(error) {
+  const message = String(error?.data?.message || error?.message || "");
+  if (message.includes("je v tomto čase již rezervovaná")) {
+    return 409;
+  }
+  const status = Number(error?.status || 500);
+  return status >= 400 && status < 600 ? status : 500;
+}
+
 function dashboardErrorMessage(
   error,
   fallback
@@ -3765,11 +3774,7 @@ async function createDashboardReservationOnServer(
       error
     );
 
-    const statusCode =
-      Number(
-        error?.status ||
-        500
-      );
+    const statusCode = dashboardReservationErrorStatus(error);
 
     return res
       .status(
@@ -4394,11 +4399,7 @@ async function updateReservationOnServer(
       error
     );
 
-    const statusCode =
-      Number(
-        error?.status ||
-        500
-      );
+    const statusCode = dashboardReservationErrorStatus(error);
 
     return res
       .status(
@@ -4543,10 +4544,7 @@ async function updateReservationStatusOnServer(
   } catch (error) {
     console.error("Chyba při změně stavu rezervace:", error);
 
-    const statusCode =
-      Number(error?.status) >= 400 && Number(error?.status) < 600
-        ? Number(error.status)
-        : 500;
+    const statusCode = dashboardReservationErrorStatus(error);
 
     return res.status(statusCode).json({
       error:
