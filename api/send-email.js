@@ -1050,7 +1050,36 @@ async function sendReservationStatusEmail({
     throw new Error("Chybí platná verze změny stavu rezervace.");
   }
 
-  return sendResendEmail({
+  const deliveryPath =
+    `/rest/v1/reservation_status_email_deliveries?restaurant_id=eq.${Number(restaurant.id)}&reservation_id=eq.${Number(reservation.id)}&status_revision=eq.${revision}`;
+
+  await supabaseServiceJson(
+    "/rest/v1/reservation_status_email_deliveries?on_conflict=restaurant_id,reservation_id,status_revision",
+    {
+      method: "POST",
+      headers: { Prefer: "resolution=ignore-duplicates" },
+      body: JSON.stringify({
+        restaurant_id: Number(restaurant.id),
+        reservation_id: Number(reservation.id),
+        status_revision: revision,
+        status
+      })
+    }
+  );
+
+  const deliveryRows = await supabaseServiceJson(
+    `${deliveryPath}&select=sent_at,provider_id&limit=1`,
+    { method: "GET" }
+  );
+  const delivery = Array.isArray(deliveryRows) ? deliveryRows[0] : null;
+  if (!delivery) {
+    throw new Error("Záznam o stavovém e-mailu se nepodařilo načíst.");
+  }
+  if (delivery.sent_at) {
+    return { id: delivery.provider_id || null };
+  }
+
+  const emailResult = await sendResendEmail({
     to:
       reservation.email,
     idempotencyKey: `reservation-status/${Number(restaurant.id)}/${Number(reservation.id)}/${revision}`,
@@ -1101,6 +1130,24 @@ async function sendReservationStatusEmail({
           locale === "en" ? confirmed ? "Confirmed" : "Cancelled" : status
       })
   });
+
+  try {
+    await supabaseServiceJson(
+      `${deliveryPath}&sent_at=is.null`,
+      {
+        method: "PATCH",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({
+          sent_at: new Date().toISOString(),
+          provider_id: emailResult?.id || null
+        })
+      }
+    );
+  } catch (deliveryError) {
+    console.error("E-mail odešel, ale zápis o doručení selhal:", deliveryError);
+  }
+
+  return emailResult;
 }
 
 
