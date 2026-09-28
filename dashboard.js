@@ -20,6 +20,12 @@ let passwordRecoveryToken = null;
 const SUPABASE_URL = "https://decpnnbaejxjbpmyjocs.supabase.co";
 const SUPABASE_KEY = "sb_publishable_l6ko8NS_92RjQBM2rEzAvA_Sd2hYicb";
 
+// Discard any token handoff left by an older invitation page.
+try {
+  localStorage.removeItem("dashboardSessionHandoff");
+} catch (_) {}
+
+
 const RESTAURANT_LOGO_TYPES = new Map([
   ["image/jpeg", "jpg"],
   ["image/png", "png"],
@@ -2336,46 +2342,11 @@ function hideLogin() {
   document.getElementById("loginScreen").style.display = "none";
 }
 
-function consumeDashboardSessionHandoff() {
-  try {
-    const raw = localStorage.getItem("dashboardSessionHandoff");
-    if (!raw) return false;
-
-    const handoff = JSON.parse(raw);
-    const age = Date.now() - Number(handoff?.created_at || 0);
-
-    // Předání je jen krátkodobé a jednorázové.
-    if (!handoff?.access_token || age < 0 || age > 10 * 60 * 1000) {
-      localStorage.removeItem("dashboardSessionHandoff");
-      return false;
-    }
-
-    sessionStorage.setItem("dashboardLoggedIn", "true");
-    sessionStorage.setItem("supabaseAccessToken", handoff.access_token);
-    if (handoff.refresh_token) {
-      sessionStorage.setItem("supabaseRefreshToken", handoff.refresh_token);
-    }
-
-    localStorage.removeItem("dashboardSessionHandoff");
-    return true;
-  } catch (error) {
-    localStorage.removeItem("dashboardSessionHandoff");
-    return false;
-  }
-}
-
 function getAccessToken() {
-  let token = sessionStorage.getItem("supabaseAccessToken");
-  if (!token && consumeDashboardSessionHandoff()) {
-    token = sessionStorage.getItem("supabaseAccessToken");
-  }
-  return token;
+  return sessionStorage.getItem("supabaseAccessToken");
 }
 
 function getRefreshToken() {
-  if (!sessionStorage.getItem("supabaseRefreshToken")) {
-    consumeDashboardSessionHandoff();
-  }
   return sessionStorage.getItem("supabaseRefreshToken");
 }
 
