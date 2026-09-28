@@ -2541,7 +2541,7 @@ async function refreshCurrentUserContext(options = {}) {
 
     if (!ok) {
       clearSession();
-      showLogin();
+      location.reload();
       return;
     }
 
@@ -2690,7 +2690,7 @@ async function authorizedFetch(url, options = {}) {
 
   if (response.status === 401) {
     clearSession();
-    showLogin();
+    location.reload();
   }
 
   return response;
