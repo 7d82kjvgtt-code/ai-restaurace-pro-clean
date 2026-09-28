@@ -3442,12 +3442,7 @@ async function createDashboardReservationOnServer(
         req
       );
 
-    const callerToken =
-      getRequestBearerToken(
-        req
-      );
-
-    await assertRestaurantAccess(
+await assertRestaurantAccess(
       user.id,
       restaurantId
     );
@@ -3652,9 +3647,8 @@ async function createDashboardReservationOnServer(
     });
 
     const insertedRows =
-      await supabaseUserJson(
+      await supabaseServiceJson(
         `/rest/v1/reservations?select=id,restaurant_id,name,last_name,people,date,time,duration_minutes,phone,email,note,table_id,table_group_id,status,locale`,
-        callerToken,
         {
           method:
             "POST",
