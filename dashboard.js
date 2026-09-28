@@ -3801,6 +3801,17 @@ async function deleteReservation(id) {
     return;
   }
 
+  const reservation = reservations.find(item => Number(item.id) === Number(id));
+  const todayInPrague = new Date().toLocaleDateString("sv-SE", {
+    timeZone: "Europe/Prague"
+  });
+
+  if (reservation && reservation.status !== "Zrušeno" &&
+      reservation.date >= todayInPrague) {
+    showDashboardNotice("Budoucí rezervaci nejdřív zrušte, aby host dostal zprávu o zrušení.");
+    return;
+  }
+
   if (!confirm("Opravdu smazat rezervaci?")) {
     return;
   }
@@ -3830,7 +3841,9 @@ async function deleteReservation(id) {
     console.error(error);
 
     showDashboardNotice(
-      "Nepodařilo se smazat rezervaci."
+      String(error?.message || "").includes("ACTIVE_FUTURE_RESERVATION_DELETE")
+        ? "Budoucí rezervaci nejdřív zrušte, aby host dostal zprávu o zrušení."
+        : "Nepodařilo se smazat rezervaci."
     );
   }
 }
