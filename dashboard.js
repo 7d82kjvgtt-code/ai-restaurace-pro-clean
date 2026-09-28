@@ -3727,7 +3727,7 @@ async function updateStatus(id, status) {
       result?.email_error
     ) {
       showDashboardNotice(
-        `Stav rezervace byl změněn, ale e-mail se nepodařilo odeslat: ${result.email_error}`,
+        `Stav rezervace byl změněn, ale e-mail se nepodařilo odeslat. Kontaktujte hosta ručně podle údajů rezervace. ${result.email_error}`,
         "error"
       );
     } else {
@@ -3808,7 +3808,7 @@ async function deleteReservation(id) {
 
   if (reservation && reservation.status !== "Zrušeno" &&
       reservation.date >= todayInPrague) {
-    showDashboardNotice("Budoucí rezervaci nejdřív zrušte, aby host dostal zprávu o zrušení.");
+    showDashboardNotice("Budoucí rezervaci nejdřív zrušte a ověřte odeslání zprávy hostovi.");
     return;
   }
 
@@ -3842,7 +3842,7 @@ async function deleteReservation(id) {
 
     showDashboardNotice(
       String(error?.message || "").includes("ACTIVE_FUTURE_RESERVATION_DELETE")
-        ? "Budoucí rezervaci nejdřív zrušte, aby host dostal zprávu o zrušení."
+        ? "Budoucí rezervaci nejdřív zrušte a ověřte odeslání zprávy hostovi."
         : "Nepodařilo se smazat rezervaci."
     );
   }
