@@ -2534,7 +2534,11 @@ async function refreshCurrentUserContext(options = {}) {
 
   roleRefreshInProgress = true;
   try {
-    if (!(await ensureValidSession())) return;
+    if (!(await ensureValidSession())) {
+      clearSession();
+      location.reload();
+      return;
+    }
     const previousRole = currentUserRole;
     const previousRestaurantId = currentRestaurantId;
     const ok = await loadRestaurantContextWithRetry(3, 250);
