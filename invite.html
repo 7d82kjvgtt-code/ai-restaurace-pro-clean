@@ -233,19 +233,22 @@
       const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
       const session = sessionData?.session || null;
 
-      if (sessionError || !saveDashboardSession(session)) {
+      if (sessionError || !session) {
+        showMessage("Účet je aktivovaný, ale přihlášení se nepodařilo. Přihlas se prosím svým e-mailem a novým heslem.", "error");
+        return;
+      }
+
+      if (!await waitForTeamMembership(session)) {
+        showMessage("Heslo je nastavené, ale členství v týmu ještě není připravené. Požádej majitele o nové pozvání.", "error");
+        return;
+      }
+
+      if (!saveDashboardSession(session)) {
         showMessage("Účet je aktivovaný, ale nepodařilo se dokončit přihlášení. Přihlas se prosím svým e-mailem a novým heslem.", "error");
-        btn.disabled = false;
-        btn.textContent = "Aktivovat účet";
         return;
       }
 
       showMessage("✅ Účet je připraven. Otevírám administraci…", "success");
-
-      // Než otevřeme dashboard, krátce ověříme, že je týmové členství opravdu
-      // dostupné. Tím odstraníme situaci, kdy zaměstnanec vidí správnou roli
-      // až po ručním refreshi.
-      await waitForTeamMembership(session);
 
       window.location.replace(`${window.location.origin}/dashboard#prehled`);
 
