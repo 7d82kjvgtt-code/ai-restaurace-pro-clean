@@ -1039,7 +1039,8 @@ async function sendReservationStatusEmail({
   restaurant,
   reservation,
   placeName,
-  status
+  status,
+  retryOnly = false
 }) {
   const confirmed =
     status === "Potvrzeno";
@@ -1053,33 +1054,7 @@ async function sendReservationStatusEmail({
   const deliveryPath =
     `/rest/v1/reservation_status_email_deliveries?restaurant_id=eq.${Number(restaurant.id)}&reservation_id=eq.${Number(reservation.id)}&status_revision=eq.${revision}`;
 
-  await supabaseServiceJson(
-    "/rest/v1/reservation_status_email_deliveries?on_conflict=restaurant_id,reservation_id,status_revision",
-    {
-      method: "POST",
-      headers: { Prefer: "resolution=ignore-duplicates" },
-      body: JSON.stringify({
-        restaurant_id: Number(restaurant.id),
-        reservation_id: Number(reservation.id),
-        status_revision: revision,
-        status
-      })
-    }
-  );
-
-  const deliveryRows = await supabaseServiceJson(
-    `${deliveryPath}&select=sent_at,provider_id&limit=1`,
-    { method: "GET" }
-  );
-  const delivery = Array.isArray(deliveryRows) ? deliveryRows[0] : null;
-  if (!delivery) {
-    throw new Error("Záznam o stavovém e-mailu se nepodařilo načíst.");
-  }
-  if (delivery.sent_at) {
-    return { id: delivery.provider_id || null };
-  }
-
-  const emailResult = await sendResendEmail({
+  const emailOptions = {
     to:
       reservation.email,
     idempotencyKey: `reservation-status/${Number(restaurant.id)}/${Number(reservation.id)}/${revision}`,
@@ -1129,7 +1104,51 @@ async function sendReservationStatusEmail({
         statusLabel:
           locale === "en" ? confirmed ? "Confirmed" : "Cancelled" : status
       })
-  });
+  };
+
+  const payloadHash = createHash("sha256")
+    .update(JSON.stringify({
+      from: process.env.RESEND_FROM_EMAIL || "AI Restaurace PRO <rezervace@rajanbentekfa.com>",
+      ...emailOptions
+    }))
+    .digest("hex");
+
+  if (!retryOnly) {
+    await supabaseServiceJson(
+      "/rest/v1/reservation_status_email_deliveries?on_conflict=restaurant_id,reservation_id,status_revision",
+      {
+        method: "POST",
+        headers: { Prefer: "resolution=ignore-duplicates" },
+        body: JSON.stringify({
+          restaurant_id: Number(restaurant.id),
+          reservation_id: Number(reservation.id),
+          status_revision: revision,
+          status,
+          payload_sha256: payloadHash
+        })
+      }
+    );
+  }
+
+  const deliveryRows = await supabaseServiceJson(
+    `${deliveryPath}&select=status,recorded_at,sent_at,provider_id,payload_sha256&limit=1`,
+    { method: "GET" }
+  );
+  const delivery = Array.isArray(deliveryRows) ? deliveryRows[0] : null;
+  if (!delivery || delivery.status !== status ||
+      delivery.payload_sha256 !== payloadHash) {
+    throw new Error("Obsah stavového e-mailu se změnil nebo jeho záznam chybí.");
+  }
+  if (delivery.sent_at) {
+    return { id: delivery.provider_id || null, alreadySent: true };
+  }
+  const elapsedMs = Date.now() - Date.parse(delivery.recorded_at);
+  if (!Number.isFinite(elapsedMs) || elapsedMs < 0 ||
+      elapsedMs >= 23 * 60 * 60 * 1000) {
+    throw new Error("Bezpečné opakování e-mailu už není dostupné.");
+  }
+
+  const emailResult = await sendResendEmail(emailOptions);
 
   try {
     await supabaseServiceJson(
