@@ -1143,7 +1143,7 @@ async function sendReservationStatusEmail({
     return { id: delivery.provider_id || null, alreadySent: true };
   }
   const elapsedMs = Date.now() - Date.parse(delivery.recorded_at);
-  if (!Number.isFinite(elapsedMs) || elapsedMs < 0 ||
+  if (!Number.isFinite(elapsedMs) || elapsedMs < -60 * 1000 ||
       elapsedMs >= 23 * 60 * 60 * 1000) {
     throw new Error("Bezpečné opakování e-mailu už není dostupné.");
   }
@@ -4585,6 +4585,72 @@ async function updateReservationStatusOnServer(
 }
 
 
+async function retryReservationStatusEmailOnServer(req, res) {
+  const reservationId = Number(req.body?.reservation_id);
+  const requestedRevision = Number(req.body?.status_revision);
+  if (!Number.isSafeInteger(reservationId) || reservationId < 1 ||
+      !Number.isSafeInteger(requestedRevision) || requestedRevision < 1) {
+    return res.status(400).json({ error: "Neplatná rezervace nebo verze změny." });
+  }
+
+  try {
+    const user = await getAuthenticatedUser(req);
+    const rows = await supabaseServiceJson(
+      `/rest/v1/reservations?id=eq.${reservationId}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status,locale,status_revision&limit=1`,
+      { method: "GET" }
+    );
+    const reservation = Array.isArray(rows) ? rows[0] : null;
+    if (!reservation?.id) {
+      return res.status(404).json({ error: "Rezervace neexistuje." });
+    }
+    await assertRestaurantAccess(user.id, reservation.restaurant_id);
+    if (Number(reservation.status_revision) !== requestedRevision ||
+        !["Potvrzeno", "Zrušeno"].includes(reservation.status)) {
+      return res.status(409).json({
+        error: "Stav rezervace se změnil. Obnovte přehled."
+      });
+    }
+    if (!isValidEmail(reservation.email)) {
+      return res.status(409).json({
+        error: "Rezervace nemá platný e-mail hosta. Kontaktujte hosta ručně."
+      });
+    }
+
+    const [restaurant, placeName] = await Promise.all([
+      getRestaurantById(reservation.restaurant_id),
+      getReservationPlaceName(reservation)
+    ]);
+    const result = await sendReservationStatusEmail({
+      restaurant, reservation, placeName,
+      status: reservation.status,
+      retryOnly: true
+    });
+    return res.status(200).json({
+      success: true,
+      email_sent: true,
+      already_sent: result.alreadySent === true
+    });
+  } catch (error) {
+    console.error("Opakované odeslání stavového e-mailu selhalo:", error);
+    const message = String(error?.message || "");
+    if (message.includes("Obsah stavového e-mailu") ||
+        message.includes("Bezpečné opakování")) {
+      return res.status(409).json({
+        error: "E-mail už nelze bezpečně opakovat. Kontaktujte hosta ručně."
+      });
+    }
+    const status = Number(error?.status || 500);
+    return res.status(status === 401 || status === 403 ? status : 503).json({
+      error: status === 403
+        ? "Pro tuto restauraci nemáte oprávnění."
+        : status === 401
+          ? "Přihlášení není platné."
+          : "E-mail se nepodařilo odeslat. Kontaktujte hosta ručně."
+    });
+  }
+}
+
+
 export default async function handler(
   req,
   res
@@ -4668,6 +4734,13 @@ export default async function handler(
       req,
       res
     );
+  }
+
+  if (
+    req.body?.action ===
+    "retry-reservation-status-email"
+  ) {
+    return retryReservationStatusEmailOnServer(req, res);
   }
 
   if (
