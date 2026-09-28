@@ -7287,11 +7287,20 @@ async function saveNewReservation() {
       loadReservationHistory()
     ]);
 
+    const emailFailed =
+      result?.email?.attempted === true &&
+      result?.email?.sent !== true;
+
     showDashboardNotice(
-      reservationsLoaded
-        ? "Rezervace byla úspěšně uložena."
-        : "Rezervace byla uložena, ale přehled se nepodařilo obnovit. Obnov stránku.",
-      reservationsLoaded ? "success" : "info"
+      !reservationsLoaded
+        ? "Rezervace byla uložena, ale přehled se nepodařilo obnovit. Obnov stránku." +
+          (emailFailed ? " E-mail hostovi se nepodařilo odeslat." : "")
+        : emailFailed
+          ? "Rezervace byla uložena, ale e-mail hostovi se nepodařilo odeslat."
+          : result?.email?.sent
+            ? "Rezervace byla uložena a e-mail hostovi odeslán."
+            : "Rezervace byla úspěšně uložena.",
+      reservationsLoaded && !emailFailed ? "success" : "info"
     );
   } catch (error) {
     console.error(
