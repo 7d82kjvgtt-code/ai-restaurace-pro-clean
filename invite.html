@@ -95,7 +95,7 @@
     <p>Dokončete svůj účet nastavením vlastního hesla.</p>
 
     <label>Nové heslo</label>
-    <input id="password" type="password" placeholder="Minimálně 8 znaků" />
+    <input id="password" type="password" placeholder="Minimálně 12 znaků" />
 
     <label>Potvrdit heslo</label>
     <input id="passwordConfirm" type="password" placeholder="Zadejte heslo znovu" />
@@ -114,7 +114,7 @@
   const supabaseClient = supabase.createClient(
     SUPABASE_URL,
     SUPABASE_ANON_KEY,
-    { auth: { detectSessionInUrl: true, persistSession: true } }
+    { auth: { detectSessionInUrl: true, persistSession: false } }
   );
 
   const btn = document.getElementById("activateBtn");
@@ -196,8 +196,8 @@
     const password = document.getElementById("password").value;
     const passwordConfirm = document.getElementById("passwordConfirm").value;
 
-    if (password.length < 8) {
-      showMessage("Heslo musí mít alespoň 8 znaků.", "error");
+    if (password.length < 12) {
+      showMessage("Heslo musí mít alespoň 12 znaků.", "error");
       return;
     }
 
