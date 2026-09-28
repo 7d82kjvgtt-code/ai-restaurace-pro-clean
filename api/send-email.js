@@ -3653,7 +3653,7 @@ async function createDashboardReservationOnServer(
 
     const insertedRows =
       await supabaseUserJson(
-        `/rest/v1/reservations?select=id,restaurant_id,name,last_name,people,date,time,duration_minutes,phone,email,note,table_id,table_group_id,status`,
+        `/rest/v1/reservations?select=id,restaurant_id,name,last_name,people,date,time,duration_minutes,phone,email,note,table_id,table_group_id,status,locale`,
         callerToken,
         {
           method:
@@ -3703,12 +3703,44 @@ async function createDashboardReservationOnServer(
         });
     }
 
+    let emailSent = false;
+    let emailError = null;
+
+    if (isValidEmail(reservation.email)) {
+      try {
+        const [restaurant, placeName] = await Promise.all([
+          getRestaurantById(restaurantId),
+          getReservationPlaceName(reservation)
+        ]);
+        await sendReservationCreatedEmail({
+          restaurant,
+          reservationId: reservation.id,
+          email: reservation.email,
+          locale: reservation.locale === "en" ? "en" : "cs",
+          name: reservation.name,
+          lastName: reservation.last_name,
+          date: reservation.date,
+          time: reservation.time,
+          people: reservation.people,
+          placeName
+        });
+        emailSent = true;
+      } catch (sendError) {
+        console.error("Ruční rezervace byla uložena, ale e-mail se nepodařilo odeslat:", sendError);
+        emailError = "Rezervace byla uložena, ale e-mail se nepodařilo odeslat.";
+      }
+    }
+
     return res
       .status(200)
       .json({
-        success:
-          true,
-        reservation
+        success: true,
+        reservation,
+        email: {
+          attempted: isValidEmail(reservation.email),
+          sent: emailSent,
+          ...(emailError ? { error: emailError } : {})
+        }
       });
   } catch (error) {
     console.error(
