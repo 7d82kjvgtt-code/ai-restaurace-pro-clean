@@ -1458,6 +1458,20 @@ async function saveRestaurantBranding() {
 
   if (
     published &&
+    !currentRestaurantIsPublished &&
+    !address &&
+    !phone &&
+    !email
+  ) {
+    showDashboardNotice(
+      "Před zveřejněním doplň adresu, telefon nebo e-mail restaurace.",
+      "error"
+    );
+    return;
+  }
+
+  if (
+    published &&
     !canPublishRestaurantFromDashboard()
   ) {
     showDashboardNotice(
@@ -1892,14 +1906,6 @@ function renderSetupChecklist() {
         ).trim() ||
         String(
           currentRestaurantBranding.email ||
-          ""
-        ).trim() ||
-        String(
-          currentRestaurantBranding.logo_url ||
-          ""
-        ).trim() ||
-        String(
-          currentRestaurantBranding.short_description ||
           ""
         ).trim()
       )
