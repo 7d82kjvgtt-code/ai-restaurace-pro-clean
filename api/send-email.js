@@ -3935,12 +3935,7 @@ async function updateReservationOnServer(
         req
       );
 
-    const callerToken =
-      getRequestBearerToken(
-        req
-      );
-
-    const rows =
+const rows =
       await supabaseServiceJson(
         `/rest/v1/reservations?id=eq.${reservationId}&select=id,restaurant_id,status,date,time,duration_minutes,table_id,table_group_id,last_name&limit=1`,
         {
@@ -4221,11 +4216,10 @@ async function updateReservationOnServer(
       : `eq.${Number(existing.table_group_id)}`;
 
     const changedRows =
-      await supabaseUserJson(
+      await supabaseServiceJson(
         `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${restaurantId}&status=eq.${encodeURIComponent(
           previousStatus
         )}&date=eq.${encodeURIComponent(String(existing.date))}&time=eq.${encodeURIComponent(String(existing.time))}&duration_minutes=eq.${Number(existing.duration_minutes)}&table_id=${previousTableFilter}&table_group_id=${previousGroupFilter}&select=id,restaurant_id,name,last_name,people,date,time,duration_minutes,email,phone,note,table_id,table_group_id,status,locale,status_revision`,
-        callerToken,
         {
           method:
             "PATCH",
@@ -4410,7 +4404,6 @@ async function updateReservationStatusOnServer(
 
   try {
     const user = await getAuthenticatedUser(req);
-    const callerToken = getRequestBearerToken(req);
 
     // Nejdřív načteme rezervaci jen kvůli autorizaci restaurace.
     const rows = await supabaseServiceJson(
@@ -4438,9 +4431,8 @@ async function updateReservationStatusOnServer(
 
     // Změň pouze stav, který jsme skutečně přečetli. Dva souběžné
     // požadavky s různým cílovým stavem tak neodešlou protichůdné e-maily.
-    const changedRows = await supabaseUserJson(
+    const changedRows = await supabaseServiceJson(
       `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${Number(existing.restaurant_id)}&status=eq.${encodeURIComponent(String(existing.status))}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status,locale,status_revision`,
-      callerToken,
       {
         method: "PATCH",
         headers: { Prefer: "return=representation" },
