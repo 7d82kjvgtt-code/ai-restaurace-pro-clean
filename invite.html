@@ -135,14 +135,6 @@
       sessionStorage.setItem("supabaseRefreshToken", session.refresh_token);
     }
 
-    // Jednorázové předání session přes localStorage. Safari/iOS může odkaz z
-    // e-mailu otevřít v jiném webovém kontextu; localStorage je mezi taby na
-    // stejné doméně sdílený, takže dashboard si session spolehlivě převezme.
-    localStorage.setItem("dashboardSessionHandoff", JSON.stringify({
-      access_token: session.access_token,
-      refresh_token: session.refresh_token || "",
-      created_at: Date.now()
-    }));
 
     return true;
   }
