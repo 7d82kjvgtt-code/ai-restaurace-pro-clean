@@ -3654,7 +3654,8 @@ await assertRestaurantAccess(
             "POST",
           headers: {
             Prefer:
-              "return=representation"
+              "return=representation",
+            "X-Audit-Actor-Id": user.id
           },
           body:
             JSON.stringify({
@@ -4219,7 +4220,8 @@ const rows =
             "PATCH",
           headers: {
             Prefer:
-              "return=representation"
+              "return=representation",
+            "X-Audit-Actor-Id": user.id
           },
           body:
             JSON.stringify({
@@ -4429,7 +4431,7 @@ async function updateReservationStatusOnServer(
       `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${Number(existing.restaurant_id)}&status=eq.${encodeURIComponent(String(existing.status))}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status,locale,status_revision`,
       {
         method: "PATCH",
-        headers: { Prefer: "return=representation" },
+        headers: { Prefer: "return=representation", "X-Audit-Actor-Id": user.id },
         body: JSON.stringify({ status })
       }
     );
