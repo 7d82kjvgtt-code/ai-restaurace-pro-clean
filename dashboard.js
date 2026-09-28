@@ -2663,7 +2663,8 @@ async function ensureValidSession() {
 
 async function authorizedFetch(url, options = {}) {
   if (!(await ensureValidSession())) {
-    showLogin();
+    clearSession();
+    location.reload();
     throw new Error("Přihlášení vypršelo.");
   }
 
