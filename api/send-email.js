@@ -1044,10 +1044,16 @@ async function sendReservationStatusEmail({
   const confirmed =
     status === "Potvrzeno";
   const locale = reservation.locale === "en" ? "en" : "cs";
+  const revision = Number(reservation.status_revision);
+
+  if (!Number.isSafeInteger(revision) || revision < 1) {
+    throw new Error("Chybí platná verze změny stavu rezervace.");
+  }
 
   return sendResendEmail({
     to:
       reservation.email,
+    idempotencyKey: `reservation-status/${Number(restaurant.id)}/${Number(reservation.id)}/${revision}`,
 
     subject:
       locale === "en"
@@ -4186,7 +4192,7 @@ async function updateReservationOnServer(
       await supabaseUserJson(
         `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${restaurantId}&status=eq.${encodeURIComponent(
           previousStatus
-        )}&date=eq.${encodeURIComponent(String(existing.date))}&time=eq.${encodeURIComponent(String(existing.time))}&duration_minutes=eq.${Number(existing.duration_minutes)}&table_id=${previousTableFilter}&table_group_id=${previousGroupFilter}&select=id,restaurant_id,name,last_name,people,date,time,duration_minutes,email,phone,note,table_id,table_group_id,status,locale`,
+        )}&date=eq.${encodeURIComponent(String(existing.date))}&time=eq.${encodeURIComponent(String(existing.time))}&duration_minutes=eq.${Number(existing.duration_minutes)}&table_id=${previousTableFilter}&table_group_id=${previousGroupFilter}&select=id,restaurant_id,name,last_name,people,date,time,duration_minutes,email,phone,note,table_id,table_group_id,status,locale,status_revision`,
         callerToken,
         {
           method:
@@ -4401,7 +4407,7 @@ async function updateReservationStatusOnServer(
     // Změň pouze stav, který jsme skutečně přečetli. Dva souběžné
     // požadavky s různým cílovým stavem tak neodešlou protichůdné e-maily.
     const changedRows = await supabaseUserJson(
-      `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${Number(existing.restaurant_id)}&status=eq.${encodeURIComponent(String(existing.status))}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status,locale`,
+      `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${Number(existing.restaurant_id)}&status=eq.${encodeURIComponent(String(existing.status))}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status,locale,status_revision`,
       callerToken,
       {
         method: "PATCH",
