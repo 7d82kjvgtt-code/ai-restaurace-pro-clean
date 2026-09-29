@@ -3379,7 +3379,8 @@ function renderReservations(data) {
         Number(pendingEmail.status_revision) === Number(reservation.status_revision) &&
         pendingEmail.status === currentStatus;
       const pendingAge = emailPending ? Date.now() - Date.parse(pendingEmail.recorded_at) : NaN;
-      const canRetryEmail = emailPending && isValidOptionalEmail(reservation.email) &&
+      const canRetryEmail = emailPending && Boolean(reservation.email) &&
+        isValidOptionalEmail(reservation.email) &&
         Number.isFinite(pendingAge) && pendingAge >= -60000 && pendingAge < 23 * 60 * 60 * 1000;
 
 
