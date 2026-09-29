@@ -37,6 +37,7 @@ const MAX_RESTAURANT_LOGO_BYTES =
   5 * 1024 * 1024;
 
 let reservations = [];
+let pendingStatusEmails = new Map();
 let foods = [];
 let restaurantTables = [];
 let tableGroups = [];
@@ -2945,6 +2946,31 @@ async function fetchReservationsSnapshot() {
   throw new Error("Historie rezervací je pro tento přehled příliš rozsáhlá.");
 }
 
+async function loadPendingStatusEmails() {
+  const restaurantId = Number(currentRestaurantId);
+  const response = await authorizedFetch("/api/send-email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(15000),
+    body: JSON.stringify({
+      action: "pending-status-emails",
+      restaurant_id: restaurantId
+    })
+  });
+  if (!response.ok) throw new Error("Stav e-mailů se nepodařilo načíst.");
+  const data = await response.json();
+  if (Number(currentRestaurantId) !== restaurantId ||
+      !Array.isArray(data?.pending)) {
+    throw new Error("Neplatný stav e-mailů restaurace.");
+  }
+  pendingStatusEmails = new Map(
+    data.pending
+      .filter(item => Number.isSafeInteger(Number(item.reservation_id)) &&
+        Number.isSafeInteger(Number(item.status_revision)))
+      .map(item => [Number(item.reservation_id), item])
+  );
+}
+
 async function loadReservations() {
   const table =
     document.getElementById(
@@ -2953,6 +2979,13 @@ async function loadReservations() {
 
   try {
     await fetchReservationsSnapshot();
+    try {
+      await loadPendingStatusEmails();
+    } catch (emailStateError) {
+      pendingStatusEmails = new Map();
+      console.error(emailStateError);
+      showDashboardNotice("Stav odeslání e-mailů se nepodařilo načíst. Před mazáním rezervace jej ověřte.", "error");
+    }
 
     updateStatistics();
     renderReservations(
@@ -3335,6 +3368,14 @@ function renderReservations(data) {
         reservationStatusUpdatesInFlight.has(
           currentReservationId
         );
+      const pendingEmail = pendingStatusEmails.get(currentReservationId);
+      const emailPending = pendingEmail &&
+        Number(pendingEmail.status_revision) === Number(reservation.status_revision) &&
+        pendingEmail.status === currentStatus;
+      const pendingAge = emailPending ? Date.now() - Date.parse(pendingEmail.recorded_at) : NaN;
+      const canRetryEmail = emailPending && isValidOptionalEmail(reservation.email) &&
+        Number.isFinite(pendingAge) && pendingAge >= -60000 && pendingAge < 23 * 60 * 60 * 1000;
+
 
       return `
         <tr>
@@ -3425,6 +3466,7 @@ function renderReservations(data) {
 
           <td data-label="Akce">
             <div class="tableActions">
+              ${canRetryEmail ? `<button type="button" title="Stavový e-mail čeká na odeslání" onclick="retryStatusEmail(${currentReservationId}, ${Number(pendingEmail.status_revision)})">📧 Odeslat e-mail</button>` : emailPending ? `<span title="E-mail nebyl potvrzen jako odeslaný">E-mail neodeslán – kontaktujte hosta</span>` : ""}
 
   <button
     type="button"
@@ -3605,6 +3647,8 @@ async function retryStatusEmail(reservationId, statusRevision) {
     if (!response.ok) {
       throw new Error(data.error || "E-mail se nepodařilo odeslat.");
     }
+    pendingStatusEmails.delete(Number(reservationId));
+    renderReservations(reservations);
     showDashboardNotice(
       data.already_sent
         ? "E-mail už byl odeslán. Další zpráva nevznikla."
