@@ -379,6 +379,36 @@ async function loadDashboardReservations(
 }
 
 
+async function loadDashboardMenu(restaurantId) {
+  const pageSize = 500;
+  const maxPages = 40;
+  const items = [];
+  let afterId = 0;
+
+  for (let page = 0; page < maxPages; page++) {
+    const rows = await serviceJson(
+      "/rest/v1/menu?restaurant_id=eq." + Number(restaurantId) +
+      "&id=gt." + afterId +
+      "&select=id,name,category,price&order=id.asc&limit=" + pageSize
+    );
+    if (!Array.isArray(rows) || rows.length > pageSize) {
+      throw new Error("Neplatná odpověď při načítání menu.");
+    }
+    if (rows.length) {
+      const lastId = Number(rows[rows.length - 1]?.id);
+      if (!Number.isSafeInteger(lastId) || lastId <= afterId) {
+        throw new Error("Neplatné stránkování menu.");
+      }
+      afterId = lastId;
+      items.push(...rows);
+    }
+    if (rows.length < pageSize) return items;
+  }
+
+  throw new Error("Menu má příliš mnoho položek pro úplný přehled.");
+}
+
+
 function weekdayIndex(
   dateString
 ) {
@@ -739,10 +769,6 @@ function buildDashboardSummary({
         ? menuRows
         : []
     )
-      .slice(
-        0,
-        200
-      )
       .map(
         item => ({
           name:
@@ -1452,13 +1478,7 @@ export default async function handler(
           restaurantId,
           today
         ),
-        serviceJson(
-          "/rest/v1/menu" +
-          "?restaurant_id=eq." +
-          restaurantId +
-          "&select=name,category,price" +
-          "&order=id.asc"
-        ),
+        loadDashboardMenu(restaurantId),
         serviceJson(
           "/rest/v1/opening_hours" +
           "?restaurant_id=eq." +
