@@ -1782,13 +1782,15 @@ async function getAvailableTimesOnServer(
         loadActiveReservationsForDate(restaurantId, date)
       ]);
 
-    const settings =
-      Array.isArray(
-        settingsRows
-      ) &&
-      settingsRows[0]
-        ? settingsRows[0]
-        : {};
+    if (!Array.isArray(settingsRows) || !settingsRows[0]) {
+      return res.status(200).json({
+        success: true,
+        slots: [],
+        unavailable_reason: "unconfigured",
+        message: "Online rezervace momentálně nejsou dostupné."
+      });
+    }
+    const settings = settingsRows[0];
 
     const hours =
       Array.isArray(
@@ -2437,13 +2439,12 @@ async function createReservationOnServer(
         loadActiveReservationsForDate(restaurantId, date)
       ]);
 
-    const settings =
-      Array.isArray(
-        settingsRows
-      ) &&
-      settingsRows[0]
-        ? settingsRows[0]
-        : {};
+    if (!Array.isArray(settingsRows) || !settingsRows[0]) {
+      return res.status(503).json({
+        error: "Online rezervace momentálně nejsou dostupné."
+      });
+    }
+    const settings = settingsRows[0];
 
     const minPeople =
       Math.max(
