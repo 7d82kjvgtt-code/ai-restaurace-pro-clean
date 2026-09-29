@@ -3814,6 +3814,7 @@ async function updateReservationOnServer(
     Number(
       req.body?.reservation_id
     );
+  const expectedRevision = Number(req.body?.expected_revision);
 
   const name =
     String(
@@ -3890,7 +3891,9 @@ async function updateReservationOnServer(
     !Number.isInteger(
       reservationId
     ) ||
-    reservationId < 1
+    reservationId < 1 ||
+    !Number.isSafeInteger(expectedRevision) ||
+    expectedRevision < 0
   ) {
     return res
       .status(400)
@@ -3975,7 +3978,7 @@ async function updateReservationOnServer(
 
 const rows =
       await supabaseServiceJson(
-        `/rest/v1/reservations?id=eq.${reservationId}&select=id,restaurant_id,status,date,time,duration_minutes,table_id,table_group_id,last_name&limit=1`,
+        `/rest/v1/reservations?id=eq.${reservationId}&select=id,restaurant_id,status,date,time,duration_minutes,table_id,table_group_id,last_name,row_revision&limit=1`,
         {
           method:
             "GET"
@@ -4005,6 +4008,10 @@ const rows =
       user.id,
       restaurantId
     );
+
+    if (Number(existing.row_revision) !== expectedRevision) {
+      return res.status(409).json({ error: "Rezervace se mezitím změnila. Obnov data a zkus úpravu znovu." });
+    }
 
     if (
       tableId !== null
@@ -4257,7 +4264,7 @@ const rows =
       await supabaseServiceJson(
         `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${restaurantId}&status=eq.${encodeURIComponent(
           previousStatus
-        )}&date=eq.${encodeURIComponent(String(existing.date))}&time=eq.${encodeURIComponent(String(existing.time))}&duration_minutes=eq.${Number(existing.duration_minutes)}&table_id=${previousTableFilter}&table_group_id=${previousGroupFilter}&select=id,restaurant_id,name,last_name,people,date,time,duration_minutes,email,phone,note,table_id,table_group_id,status,locale,status_revision`,
+        )}&date=eq.${encodeURIComponent(String(existing.date))}&time=eq.${encodeURIComponent(String(existing.time))}&duration_minutes=eq.${Number(existing.duration_minutes)}&table_id=${previousTableFilter}&table_group_id=${previousGroupFilter}&row_revision=eq.${expectedRevision}&select=id,restaurant_id,name,last_name,people,date,time,duration_minutes,email,phone,note,table_id,table_group_id,status,locale,status_revision,row_revision`,
         {
           method:
             "PATCH",
