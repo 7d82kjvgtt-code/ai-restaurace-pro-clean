@@ -114,6 +114,7 @@ function showDashboardNotice(message, type = "auto", action = null) {
   const closeButton = notice.querySelector(".dashboard-notice__close");
   closeButton.addEventListener("click", close);
   if (action && typeof action.onClick === "function") {
+    notice.classList.add("dashboard-notice--actionable");
     const actionButton = document.createElement("button");
     actionButton.type = "button";
     actionButton.className = "dashboard-notice__action";
