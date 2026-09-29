@@ -1160,6 +1160,17 @@ async function sendReservationStatusEmail({
     throw new Error("Bezpečné opakování e-mailu už není dostupné.");
   }
 
+  const currentRows = await supabaseServiceJson(
+    `/rest/v1/reservations?id=eq.${Number(reservation.id)}&restaurant_id=eq.${Number(restaurant.id)}&select=status,status_revision,email&limit=1`,
+    { method: "GET" }
+  );
+  const current = Array.isArray(currentRows) ? currentRows[0] : null;
+  if (!current || current.status !== status ||
+      Number(current.status_revision) !== revision ||
+      current.email !== reservation.email) {
+    throw new Error("Stav rezervace se změnil před odesláním e-mailu.");
+  }
+
   const emailResult = await sendResendEmail(emailOptions);
 
   try {
