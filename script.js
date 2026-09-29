@@ -1596,7 +1596,7 @@ async function ulozitRezervaci() {
     showPublicReservationNotice(
       createData.email?.sent === true
         ? publicText("Rezervaci jsme přijali a čeká na potvrzení restaurace. E-mail o přijetí jsme poslali na zadanou adresu.", "We received your reservation. It is awaiting confirmation from the restaurant. We sent a receipt to your email.")
-        : publicText("Rezervace byla uložena, ale potvrzovací e-mail se nepodařilo odeslat. Kontaktujte prosím restauraci podle údajů na této stránce.", "Your reservation was saved, but we could not send the email. Please contact the restaurant using the details on this page."),
+        : publicText("Rezervace byla uložena a čeká na potvrzení restaurace, ale e-mail o přijetí se nepodařilo odeslat. Kontaktujte prosím restauraci podle údajů na této stránce.", "Your reservation was saved and awaits confirmation from the restaurant, but we could not send the receipt email. Please contact the restaurant using the details on this page."),
       createData.email?.sent === true ? "success" : "error"
     );
 
