@@ -4586,6 +4586,8 @@ function editReservation(id) {
 
     document.getElementById("editReservationId").value =
         reservation.id;
+    document.getElementById("editReservationId").dataset.rowRevision =
+        String(reservation.row_revision);
 
     document.getElementById("editReservationName").value =
         getReservationGuestName(reservation) === "-"
@@ -4972,6 +4974,10 @@ async function saveReservationChanges() {
       ).value
     );
 
+  const expectedRevision = Number(
+    document.getElementById("editReservationId").dataset.rowRevision
+  );
+
   const name =
     document
       .getElementById(
@@ -5062,6 +5068,8 @@ async function saveReservationChanges() {
   if (
     !Number.isInteger(id) ||
     id < 1 ||
+    !Number.isSafeInteger(expectedRevision) ||
+    expectedRevision < 0 ||
     !name ||
     !date ||
     !time ||
@@ -5325,6 +5333,7 @@ async function saveReservationChanges() {
                 "update-reservation",
               reservation_id:
                 id,
+              expected_revision: expectedRevision,
               name,
               people,
               date,
@@ -5466,6 +5475,7 @@ async function updateReservation(id, data = {}) {
       "update-reservation",
     reservation_id:
       reservationId,
+    expected_revision: Number(current.row_revision),
     name:
       has("name")
         ? String(
