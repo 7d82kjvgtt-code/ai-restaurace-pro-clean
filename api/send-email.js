@@ -4453,7 +4453,7 @@ async function updateReservationStatusOnServer(
 
     // Nejdřív načteme rezervaci jen kvůli autorizaci restaurace.
     const rows = await supabaseServiceJson(
-      `/rest/v1/reservations?id=eq.${reservationId}&select=id,restaurant_id,status&limit=1`,
+      `/rest/v1/reservations?id=eq.${reservationId}&select=id,restaurant_id,status,row_revision&limit=1`,
       { method: "GET" }
     );
 
@@ -4478,7 +4478,7 @@ async function updateReservationStatusOnServer(
     // Změň pouze stav, který jsme skutečně přečetli. Dva souběžné
     // požadavky s různým cílovým stavem tak neodešlou protichůdné e-maily.
     const changedRows = await supabaseServiceJson(
-      `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${Number(existing.restaurant_id)}&status=eq.${encodeURIComponent(String(existing.status))}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status,locale,status_revision`,
+      `/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${Number(existing.restaurant_id)}&status=eq.${encodeURIComponent(String(existing.status))}&row_revision=eq.${Number(existing.row_revision)}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status,locale,status_revision,row_revision`,
       {
         method: "PATCH",
         headers: { Prefer: "return=representation", "X-Audit-Actor-Id": user.id },
