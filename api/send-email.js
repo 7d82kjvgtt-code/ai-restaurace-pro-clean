@@ -211,6 +211,33 @@ async function supabaseServiceJson(path, options = {}) {
 }
 
 
+async function loadActiveReservationsForDate(restaurantId, date, excludedId = 0) {
+  const pageSize = 500;
+  const maxPages = 40;
+  const rows = [];
+  let afterId = 0;
+  for (let page = 0; page < maxPages; page++) {
+    const batch = await supabaseServiceJson(
+      `/rest/v1/reservations?restaurant_id=eq.${Number(restaurantId)}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&id=gt.${afterId}&select=id,date,time,duration_minutes,people,table_id,table_group_id,status&order=id.asc&limit=${pageSize}`,
+      { method: "GET" }
+    );
+    if (!Array.isArray(batch) || batch.length > pageSize) {
+      throw new Error("Neplatná odpověď při načítání obsazenosti.");
+    }
+    if (batch.length) {
+      const lastId = Number(batch[batch.length - 1]?.id);
+      if (!Number.isSafeInteger(lastId) || lastId <= afterId) {
+        throw new Error("Neplatné stránkování obsazenosti.");
+      }
+      afterId = lastId;
+      rows.push(...batch.filter(item => Number(item.id) !== Number(excludedId)));
+    }
+    if (batch.length < pageSize) return rows;
+  }
+  throw new Error("Obsazenost je příliš rozsáhlá pro bezpečné ověření.");
+}
+
+
 async function supabasePublicRpc(
   functionName,
   body
@@ -1775,16 +1802,7 @@ async function getAvailableTimesOnServer(
           }
         ),
 
-        supabaseServiceJson(
-          `/rest/v1/reservations?restaurant_id=eq.${restaurantId}&date=eq.${encodeURIComponent(
-            date
-          )}&status=neq.${encodeURIComponent(
-            "Zrušeno"
-          )}&select=id,date,time,duration_minutes,people,table_id,table_group_id,status`,
-          {
-            method: "GET"
-          }
-        )
+        loadActiveReservationsForDate(restaurantId, date)
       ]);
 
     const settings =
@@ -2439,16 +2457,7 @@ async function createReservationOnServer(
           }
         ),
 
-        supabaseServiceJson(
-          `/rest/v1/reservations?restaurant_id=eq.${restaurantId}&date=eq.${encodeURIComponent(
-            date
-          )}&status=neq.${encodeURIComponent(
-            "Zrušeno"
-          )}&select=id,date,time,duration_minutes,people,table_id,table_group_id,status`,
-          {
-            method: "GET"
-          }
-        )
+        loadActiveReservationsForDate(restaurantId, date)
       ]);
 
     const settings =
@@ -3102,17 +3111,7 @@ async function validateDashboardReservationAvailabilityOnServer({
             "GET"
         }
       ),
-      supabaseServiceJson(
-        `/rest/v1/reservations?restaurant_id=eq.${restaurantId}&date=eq.${encodeURIComponent(
-          date
-        )}&id=neq.${reservationId}&status=neq.${encodeURIComponent(
-          "Zrušeno"
-        )}&select=id,date,time,duration_minutes,table_id,table_group_id,status`,
-        {
-          method:
-            "GET"
-        }
-      )
+      loadActiveReservationsForDate(restaurantId, date, reservationId)
     ]);
 
   const hours =
