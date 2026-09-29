@@ -3082,22 +3082,12 @@ async function validateDashboardReservationAvailabilityOnServer({
       loadActiveReservationsForDate(restaurantId, date, reservationId)
     ]);
 
-  const hours =
-    (
-      Array.isArray(
-        hoursRows
-      ) &&
-      hoursRows[0]
-    )
-      ? hoursRows[0]
-      : {
-          is_open:
-            true,
-          open_time:
-            "10:00",
-          close_time:
-            "22:00"
-        };
+  const hours = Array.isArray(hoursRows) ? hoursRows[0] : null;
+  if (!hours || !hours.open_time || !hours.close_time) {
+    const error = new Error("Pro tento den není nastavena otevírací doba.");
+    error.status = 409;
+    throw error;
+  }
 
   if (
     hours.is_open ===
