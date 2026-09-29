@@ -3771,12 +3771,11 @@ async function updateStatus(id, status) {
     } else if (
       result?.email_error
     ) {
-      const updated = reservations.find(item => Number(item.id) === reservationId);
-      const revision = Number(updated?.status_revision);
+      const revision = Number(result.status_revision);
       showDashboardNotice(
         `Stav rezervace byl změněn, ale e-mail se nepodařilo odeslat. Kontaktujte hosta ručně podle údajů rezervace. ${result.email_error}`,
         "error",
-        updated?.email && isValidOptionalEmail(updated.email) &&
+        result.has_email === true &&
         Number.isSafeInteger(revision) && revision > 0
           ? { label: "Zkusit e-mail znovu", onClick: () => retryStatusEmail(reservationId, revision) }
           : null
