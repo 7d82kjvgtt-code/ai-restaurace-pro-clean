@@ -4556,7 +4556,9 @@ async function updateReservationStatusOnServer(
         email_sent: false,
         email_error: "Rezervace nemá platný e-mail zákazníka.",
         reservation_id: reservationId,
-        status
+        status,
+        status_revision: Number(reservation.status_revision),
+        has_email: isValidEmail(reservation.email)
       });
     }
 
@@ -4578,7 +4580,9 @@ async function updateReservationStatusOnServer(
         email_sent: true,
         email_id: emailResult?.id || null,
         reservation_id: reservationId,
-        status
+        status,
+        status_revision: Number(reservation.status_revision),
+        has_email: isValidEmail(reservation.email)
       });
     } catch (emailError) {
       console.error("Stav změněn, ale e-mail se nepodařilo odeslat:", emailError);
@@ -4589,7 +4593,9 @@ async function updateReservationStatusOnServer(
         email_sent: false,
         email_error: "Stav byl změněn, ale e-mail se nepodařilo odeslat.",
         reservation_id: reservationId,
-        status
+        status,
+        status_revision: Number(reservation.status_revision),
+        has_email: isValidEmail(reservation.email)
       });
     }
   } catch (error) {
