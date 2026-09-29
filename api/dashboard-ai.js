@@ -978,6 +978,7 @@ function buildDashboardSummary({
     menu: {
       item_count:
         menu.length,
+      items_truncated: menu.length > 80,
       categories:
         topEntries(
           menuCategoryCounts,
@@ -1196,6 +1197,7 @@ async function askModel({
     "Odpovídej česky, stručně a konkrétně.",
     "Používej pouze DASHBOARD_DATA v dotazu. Pokud data nestačí, řekni to.",
     "Nevymýšlej příčiny, tržby, náklady, zisk, recenze ani chování hostů, které v datech nejsou.",
+    "Pokud menu.items_truncated je true, seznam konkrétních položek není úplný; nevyvozuj, že nezobrazené jídlo v restauraci není. Souhrnné počty a ceny jsou z celého menu.",
     "Rozlišuj fakta od doporučení. Doporučení formuluj jako návrhy založené na dostupných číslech.",
     "Nedělej závěry o individuálních hostech. Data jsou agregovaná a neobsahují jejich identitu.",
     "Když porovnáváš období, uváděj konkrétní hodnoty.",
