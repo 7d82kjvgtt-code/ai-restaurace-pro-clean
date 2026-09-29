@@ -1949,6 +1949,29 @@ tbody tr:hover {
 }
 .dashboard-notice__close:hover { background: rgba(255,255,255,.14); color: #fff; }
 
+.dashboard-notice--actionable .dashboard-notice__action {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: start;
+  padding: 9px 12px;
+  border: 1px solid rgba(251, 146, 60, 0.55);
+  border-radius: 10px;
+  background: rgba(251, 146, 60, 0.17);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+.dashboard-notice--actionable .dashboard-notice__action:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.dashboard-notice--actionable .dashboard-notice__close {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+
 @media (max-width: 640px) {
   .dashboard-notice-container { top: 12px; right: 12px; left: 12px; width: auto; }
 }
