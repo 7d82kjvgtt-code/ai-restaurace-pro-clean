@@ -1130,6 +1130,18 @@ async function sendReservationStatusEmail({
     );
   }
 
+  // The status trigger creates the pending row in the same transaction.
+  // Pin the exact outgoing payload before contacting Resend. An older
+  // pending row without a hash can also be recovered by a safe retry.
+  await supabaseServiceJson(
+    `${deliveryPath}&status=eq.${encodeURIComponent(status)}&payload_sha256=is.null&sent_at=is.null`,
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ payload_sha256: payloadHash })
+    }
+  );
+
   const deliveryRows = await supabaseServiceJson(
     `${deliveryPath}&select=status,recorded_at,sent_at,provider_id,payload_sha256&limit=1`,
     { method: "GET" }
