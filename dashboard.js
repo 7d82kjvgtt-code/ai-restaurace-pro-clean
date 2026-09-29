@@ -8178,43 +8178,31 @@ function isTableInActiveGroup(tableId) {
     .has(Number(tableId));
 }
 
-function reservationHasNotEnded(
-  reservation,
-  now = new Date()
-) {
-  if (
-    !reservation ||
-    (reservation.status || "Čeká") === "Zrušeno"
-  ) {
+function reservationHasNotEnded(reservation, now = new Date()) {
+  if (!reservation || (reservation.status || "Čeká") === "Zrušeno") {
     return false;
   }
 
-  const start =
-    new Date(
-      `${reservation.date}T${String(
-        reservation.time || ""
-      ).slice(0, 5)}`
-    );
+  const reservationDay = Date.parse(String(reservation.date || "") + "T00:00:00Z") / 60000;
+  if (!Number.isFinite(reservationDay)) return false;
+  const startMinutes = reservationDay + timeToMinutes(reservation.time);
+  const durationMinutes = Math.max(30, Number(reservation.duration_minutes || 120) || 120);
 
-  if (
-    Number.isNaN(start.getTime())
-  ) {
-    return false;
-  }
-
-  const durationMinutes =
-    Math.max(
-      30,
-      Number(
-        reservation.duration_minutes || 120
-      ) || 120
-    );
-
-  return (
-    start.getTime() +
-      durationMinutes * 60000 >
-    now.getTime()
-  );
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Prague",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(now);
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  const pragueDay = Date.parse(
+    `${values.year}-${values.month}-${values.day}T00:00:00Z`
+  ) / 60000;
+  const nowMinutes = pragueDay + Number(values.hour) * 60 + Number(values.minute);
+  return startMinutes + durationMinutes > nowMinutes;
 }
 
 function hasTableConflict(
