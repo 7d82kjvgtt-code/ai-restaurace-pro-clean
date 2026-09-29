@@ -3891,10 +3891,13 @@ async function deleteReservation(id) {
   } catch (error) {
     console.error(error);
 
+    const deleteError = String(error?.message || "");
     showDashboardNotice(
-      String(error?.message || "").includes("ACTIVE_FUTURE_RESERVATION_DELETE")
-        ? "Budoucí rezervaci nejdřív zrušte a ověřte odeslání zprávy hostovi."
-        : "Nepodařilo se smazat rezervaci."
+      deleteError.includes("PENDING_CANCELLATION_EMAIL")
+        ? "Zrušení je uložené, ale e-mail hostovi není potvrzený. Zkuste jej odeslat znovu; pokud to nejde, kontaktujte hosta ručně a rezervaci ponechte v historii."
+        : deleteError.includes("ACTIVE_FUTURE_RESERVATION_DELETE")
+          ? "Budoucí rezervaci nejdřív zrušte a ověřte odeslání zprávy hostovi."
+          : "Nepodařilo se smazat rezervaci."
     );
   }
 }
