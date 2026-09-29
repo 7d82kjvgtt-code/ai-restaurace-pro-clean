@@ -215,10 +215,14 @@ async function loadActiveReservationsForDate(restaurantId, date, excludedId = 0)
   const pageSize = 500;
   const maxPages = 40;
   const rows = [];
+  const noonUtc = Date.parse(date + "T12:00:00Z");
+  if (!Number.isFinite(noonUtc)) throw new Error("Neplatné datum obsazenosti.");
+  const previousDate = new Date(noonUtc - 86400000).toISOString().slice(0, 10);
+  const nextDate = new Date(noonUtc + 86400000).toISOString().slice(0, 10);
   let afterId = 0;
   for (let page = 0; page < maxPages; page++) {
     const batch = await supabaseServiceJson(
-      `/rest/v1/reservations?restaurant_id=eq.${Number(restaurantId)}&date=eq.${encodeURIComponent(date)}&status=neq.${encodeURIComponent("Zrušeno")}&id=gt.${afterId}&select=id,date,time,duration_minutes,people,table_id,table_group_id,status&order=id.asc&limit=${pageSize}`,
+      `/rest/v1/reservations?restaurant_id=eq.${Number(restaurantId)}&date=gte.${previousDate}&date=lte.${nextDate}&status=neq.${encodeURIComponent("Zrušeno")}&id=gt.${afterId}&select=id,date,time,duration_minutes,people,table_id,table_group_id,status&order=id.asc&limit=${pageSize}`,
       { method: "GET" }
     );
     if (!Array.isArray(batch) || batch.length > pageSize) {
@@ -487,42 +491,15 @@ function effectiveDuration(
 }
 
 
-function overlaps(
-  a,
-  b,
-  settings
-) {
-  if (
-    String(a.date) !==
-    String(b.date)
-  ) {
-    return false;
-  }
+function overlaps(a, b, settings) {
+  const aDay = Date.parse(String(a.date) + "T00:00:00Z") / 60000;
+  const bDay = Date.parse(String(b.date) + "T00:00:00Z") / 60000;
+  if (!Number.isFinite(aDay) || !Number.isFinite(bDay)) return false;
 
-  const aStart =
-    timeToMinutes(a.time);
-
-  const bStart =
-    timeToMinutes(b.time);
-
-  const aEnd =
-    aStart +
-    effectiveDuration(
-      a,
-      settings
-    );
-
-  const bEnd =
-    bStart +
-    effectiveDuration(
-      b,
-      settings
-    );
-
-  return (
-    aStart < bEnd &&
-    bStart < aEnd
-  );
+  const aStart = aDay + timeToMinutes(a.time);
+  const bStart = bDay + timeToMinutes(b.time);
+  return aStart < bStart + effectiveDuration(b, settings) &&
+    bStart < aStart + effectiveDuration(a, settings);
 }
 
 
