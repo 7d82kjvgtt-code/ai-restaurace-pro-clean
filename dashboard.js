@@ -70,7 +70,7 @@ let selectedTablesForMerge = [];
 let upcomingReservationTimer = null;
 const shownUpcomingReservationAlerts = new Set();
 
-function showDashboardNotice(message, type = "auto") {
+function showDashboardNotice(message, type = "auto", action = null) {
   const text = String(message || "").trim();
   if (!text) return;
 
@@ -111,10 +111,23 @@ function showDashboardNotice(message, type = "auto") {
     window.setTimeout(() => notice.remove(), 220);
   };
 
-  notice.querySelector(".dashboard-notice__close").addEventListener("click", close);
+  const closeButton = notice.querySelector(".dashboard-notice__close");
+  closeButton.addEventListener("click", close);
+  if (action && typeof action.onClick === "function") {
+    const actionButton = document.createElement("button");
+    actionButton.type = "button";
+    actionButton.className = "dashboard-notice__action";
+    actionButton.textContent = String(action.label || "Zkusit znovu");
+    actionButton.addEventListener("click", async () => {
+      actionButton.disabled = true;
+      await action.onClick();
+      close();
+    });
+    notice.insertBefore(actionButton, closeButton);
+  }
   container.appendChild(notice);
   requestAnimationFrame(() => notice.classList.add("is-visible"));
-  window.setTimeout(close, resolvedType === "error" ? 6500 : 4200);
+  window.setTimeout(close, action ? 30000 : resolvedType === "error" ? 6500 : 4200);
 }
 
 function toggleMergeMode() {
@@ -3575,6 +3588,37 @@ async function updateReservationStatusRequest(id, status) {
   }
 }
 
+async function retryStatusEmail(reservationId, statusRevision) {
+  try {
+    const response = await authorizedFetch("/api/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(20000),
+      body: JSON.stringify({
+        action: "retry-reservation-status-email",
+        reservation_id: Number(reservationId),
+        status_revision: Number(statusRevision)
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || "E-mail se nepodařilo odeslat.");
+    }
+    showDashboardNotice(
+      data.already_sent
+        ? "E-mail už byl odeslán. Další zpráva nevznikla."
+        : "E-mail byl odeslán hostovi.",
+      "success"
+    );
+  } catch (error) {
+    console.error("Opakování stavového e-mailu selhalo:", error);
+    showDashboardNotice(
+      error?.message || "E-mail se nepodařilo odeslat. Kontaktujte hosta ručně.",
+      "error"
+    );
+  }
+}
+
 async function updateStatus(id, status) {
   const reservationId =
     Number(id);
@@ -3726,9 +3770,15 @@ async function updateStatus(id, status) {
     } else if (
       result?.email_error
     ) {
+      const updated = reservations.find(item => Number(item.id) === reservationId);
+      const revision = Number(updated?.status_revision);
       showDashboardNotice(
         `Stav rezervace byl změněn, ale e-mail se nepodařilo odeslat. Kontaktujte hosta ručně podle údajů rezervace. ${result.email_error}`,
-        "error"
+        "error",
+        updated?.email && isValidOptionalEmail(updated.email) &&
+        Number.isSafeInteger(revision) && revision > 0
+          ? { label: "Zkusit e-mail znovu", onClick: () => retryStatusEmail(reservationId, revision) }
+          : null
       );
     } else {
       showDashboardNotice(
@@ -5285,9 +5335,14 @@ async function saveReservationChanges() {
       statusResult &&
       statusResult.email_error
     ) {
+      const revision = Number(statusResult.reservation?.status_revision);
       showDashboardNotice(
         `Rezervace byla upravena a stav změněn, ale e-mail se nepodařilo odeslat: ${statusResult.email_error}`,
-        "error"
+        "error",
+        statusResult.reservation?.email && isValidOptionalEmail(statusResult.reservation.email) &&
+        Number.isSafeInteger(revision) && revision > 0
+          ? { label: "Zkusit e-mail znovu", onClick: () => retryStatusEmail(id, revision) }
+          : null
       );
     } else {
       showDashboardNotice(
