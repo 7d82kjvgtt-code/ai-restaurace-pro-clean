@@ -8131,34 +8131,18 @@ function timeToMinutes(time) {
 }
 
 function reservationsOverlap(first, second) {
-  if (
-    !first ||
-    !second ||
-    first.date !== second.date
-  ) {
-    return false;
-  }
+  if (!first || !second) return false;
+  const firstDay = Date.parse(String(first.date || "") + "T00:00:00Z") / 60000;
+  const secondDay = Date.parse(String(second.date || "") + "T00:00:00Z") / 60000;
+  if (!Number.isFinite(firstDay) || !Number.isFinite(secondDay)) return false;
 
-  const firstStart = timeToMinutes(first.time);
-  const secondStart = timeToMinutes(second.time);
+  const firstStart = firstDay + timeToMinutes(first.time);
+  const secondStart = secondDay + timeToMinutes(second.time);
+  const firstDuration = Math.max(30, Number(first.duration_minutes || 120));
+  const secondDuration = Math.max(30, Number(second.duration_minutes || 120));
 
-  const firstDuration = Math.max(
-    30,
-    Number(first.duration_minutes || 120)
-  );
-
-  const secondDuration = Math.max(
-    30,
-    Number(second.duration_minutes || 120)
-  );
-
-  const firstEnd = firstStart + firstDuration;
-  const secondEnd = secondStart + secondDuration;
-
-  return (
-    firstStart < secondEnd &&
-    secondStart < firstEnd
-  );
+  return firstStart < secondStart + secondDuration &&
+    secondStart < firstStart + firstDuration;
 }
 
 function getActiveGroupedTableIds() {
