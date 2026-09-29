@@ -3089,10 +3089,7 @@ async function validateDashboardReservationAvailabilityOnServer({
     throw error;
   }
 
-  if (
-    hours.is_open ===
-    false
-  ) {
+  if (hours.is_open !== true) {
     const error =
       new Error(
         "V tento den má restaurace zavřeno."
