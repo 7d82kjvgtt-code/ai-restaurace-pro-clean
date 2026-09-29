@@ -2991,22 +2991,12 @@ function dashboardReservationsOverlap(
   first,
   second
 ) {
-  if (
-    String(first?.date || "") !==
-    String(second?.date || "")
-  ) {
-    return false;
-  }
+  const firstDay = Date.parse(String(first?.date || "") + "T00:00:00Z") / 60000;
+  const secondDay = Date.parse(String(second?.date || "") + "T00:00:00Z") / 60000;
+  if (!Number.isFinite(firstDay) || !Number.isFinite(secondDay)) return false;
 
-  const firstStart =
-    timeToMinutes(
-      first?.time
-    );
-
-  const secondStart =
-    timeToMinutes(
-      second?.time
-    );
+  const firstStart = firstDay + timeToMinutes(first?.time);
+  const secondStart = secondDay + timeToMinutes(second?.time);
 
   const firstDuration =
     Math.max(
