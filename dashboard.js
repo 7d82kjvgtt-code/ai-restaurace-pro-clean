@@ -2963,12 +2963,18 @@ async function loadPendingStatusEmails() {
       !Array.isArray(data?.pending)) {
     throw new Error("Neplatný stav e-mailů restaurace.");
   }
-  pendingStatusEmails = new Map(
-    data.pending
-      .filter(item => Number.isSafeInteger(Number(item.reservation_id)) &&
-        Number.isSafeInteger(Number(item.status_revision)))
-      .map(item => [Number(item.reservation_id), item])
-  );
+  const pendingByReservation = new Map();
+  for (const item of data.pending) {
+    const id = Number(item.reservation_id);
+    const revision = Number(item.status_revision);
+    if (!Number.isSafeInteger(id) || id < 1 ||
+        !Number.isSafeInteger(revision) || revision < 1) continue;
+    const previous = pendingByReservation.get(id);
+    if (!previous || revision > Number(previous.status_revision)) {
+      pendingByReservation.set(id, item);
+    }
+  }
+  pendingStatusEmails = pendingByReservation;
 }
 
 async function loadReservations() {
