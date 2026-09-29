@@ -312,26 +312,36 @@ async function loadReservationWindow(
   fromDate,
   toDate
 ) {
-  const rows =
-    await serviceJson(
-      "/rest/v1/reservations" +
-      "?restaurant_id=eq." +
-      Number(
-        restaurantId
-      ) +
-      "&date=gte." +
-      fromDate +
-      "&date=lte." +
-      toDate +
-      "&select=date,time,people,status,duration_minutes" +
-      "&order=date.asc,time.asc"
-    );
+  const pageSize = 500;
+  const maxPages = 40;
+  const reservations = [];
+  let afterId = 0;
 
-  return Array.isArray(
-    rows
-  )
-    ? rows
-    : [];
+  for (let page = 0; page < maxPages; page++) {
+    const rows = await serviceJson(
+      "/rest/v1/reservations" +
+      "?restaurant_id=eq." + Number(restaurantId) +
+      "&date=gte." + fromDate +
+      "&date=lte." + toDate +
+      "&id=gt." + afterId +
+      "&select=id,date,time,people,status,duration_minutes" +
+      "&order=id.asc&limit=" + pageSize
+    );
+    if (!Array.isArray(rows) || rows.length > pageSize) {
+      throw new Error("Neplatná odpověď při načítání statistik.");
+    }
+    if (rows.length) {
+      const lastId = Number(rows[rows.length - 1]?.id);
+      if (!Number.isSafeInteger(lastId) || lastId <= afterId) {
+        throw new Error("Neplatné stránkování statistik.");
+      }
+      afterId = lastId;
+      reservations.push(...rows);
+    }
+    if (rows.length < pageSize) return reservations;
+  }
+
+  throw new Error("Statistiky mají příliš mnoho rezervací pro úplný přehled.");
 }
 
 
