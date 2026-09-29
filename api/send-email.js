@@ -4614,6 +4614,36 @@ async function updateReservationStatusOnServer(
 }
 
 
+async function getPendingStatusEmailsOnServer(req, res) {
+  const restaurantId = Number(req.body?.restaurant_id);
+  if (!Number.isSafeInteger(restaurantId) || restaurantId < 1) {
+    return res.status(400).json({ error: "Neplatná restaurace." });
+  }
+  try {
+    const user = await getAuthenticatedUser(req);
+    await assertRestaurantAccess(user.id, restaurantId);
+    const rows = await supabaseServiceJson(
+      `/rest/v1/reservation_status_email_deliveries?restaurant_id=eq.${restaurantId}&sent_at=is.null&select=reservation_id,status_revision,status,recorded_at&order=recorded_at.desc&limit=1000`,
+      { method: "GET" }
+    );
+    return res.status(200).json({
+      success: true,
+      pending: Array.isArray(rows) ? rows : []
+    });
+  } catch (error) {
+    console.error("Načtení čekajících stavových e-mailů selhalo:", error);
+    const status = Number(error?.status || 500);
+    return res.status(status === 401 || status === 403 ? status : 503).json({
+      error: status === 403
+        ? "Pro tuto restauraci nemáte oprávnění."
+        : status === 401
+          ? "Přihlášení není platné."
+          : "Stav e-mailů se nepodařilo načíst."
+    });
+  }
+}
+
+
 async function retryReservationStatusEmailOnServer(req, res) {
   const reservationId = Number(req.body?.reservation_id);
   const requestedRevision = Number(req.body?.status_revision);
@@ -4763,6 +4793,10 @@ export default async function handler(
       req,
       res
     );
+  }
+
+  if (req.body?.action === "pending-status-emails") {
+    return getPendingStatusEmailsOnServer(req, res);
   }
 
   if (
