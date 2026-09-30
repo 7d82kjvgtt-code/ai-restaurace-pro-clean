@@ -1050,6 +1050,11 @@ async function sendReservationStatusEmail({
     status === "Potvrzeno";
   const locale = reservation.locale === "en" ? "en" : "cs";
   const revision = Number(reservation.status_revision);
+  const rowRevision = Number(reservation.row_revision);
+
+  if (!Number.isSafeInteger(rowRevision) || rowRevision < 0) {
+    throw new Error("Chybí platná verze rezervace pro odeslání e-mailu.");
+  }
 
   if (!Number.isSafeInteger(revision) || revision < 1) {
     throw new Error("Chybí platná verze změny stavu rezervace.");
@@ -1165,12 +1170,13 @@ async function sendReservationStatusEmail({
   }
 
   const currentRows = await supabaseServiceJson(
-    `/rest/v1/reservations?id=eq.${Number(reservation.id)}&restaurant_id=eq.${Number(restaurant.id)}&select=status,status_revision,email&limit=1`,
+    `/rest/v1/reservations?id=eq.${Number(reservation.id)}&restaurant_id=eq.${Number(restaurant.id)}&select=status,status_revision,email,row_revision&limit=1`,
     { method: "GET" }
   );
   const current = Array.isArray(currentRows) ? currentRows[0] : null;
   if (!current || current.status !== status ||
       Number(current.status_revision) !== revision ||
+      Number(current.row_revision) !== rowRevision ||
       current.email !== reservation.email) {
     throw new Error("Stav rezervace se změnil před odesláním e-mailu.");
   }
@@ -4616,7 +4622,7 @@ async function retryReservationStatusEmailOnServer(req, res) {
   try {
     const user = await getAuthenticatedUser(req);
     const rows = await supabaseServiceJson(
-      `/rest/v1/reservations?id=eq.${reservationId}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status,locale,status_revision&limit=1`,
+      `/rest/v1/reservations?id=eq.${reservationId}&select=id,restaurant_id,name,last_name,people,date,time,email,table_id,table_group_id,status,locale,status_revision,row_revision&limit=1`,
       { method: "GET" }
     );
     const reservation = Array.isArray(rows) ? rows[0] : null;
