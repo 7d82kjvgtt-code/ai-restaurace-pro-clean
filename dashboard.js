@@ -5612,10 +5612,31 @@ async function updateReservation(id, data = {}) {
       );
     }
 
-    await Promise.all([
+    const savedReservation = result?.reservation;
+    if (Number(savedReservation?.id) === reservationId &&
+        Number(savedReservation?.restaurant_id) === Number(currentRestaurantId)) {
+      reservations = reservations.map(item =>
+        Number(item.id) === reservationId
+          ? { ...item, ...savedReservation }
+          : item
+      );
+    }
+
+    const [reservationsLoaded] = await Promise.all([
       loadReservations(),
       loadReservationHistory()
     ]);
+
+    if (!reservationsLoaded) {
+      renderReservations(getFilteredReservations());
+      renderCalendar();
+      renderFloorMap();
+      updateStatistics();
+      showDashboardNotice(
+        "Rezervace byla uložena, ale přehled se nepodařilo obnovit. Obnov stránku a zkontroluj aktuální stav.",
+        "info"
+      );
+    }
 
     return true;
   } catch (error) {
