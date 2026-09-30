@@ -263,7 +263,7 @@ async function askRestaurantAi(
       !data?.answer
     ) {
       throw new Error(
-        (PUBLIC_LOCALE === "en" ? null : data?.error) ||
+        data?.error ||
         publicText("AI asistent teď není dostupný.", "The AI assistant is unavailable right now.")
       );
     }
