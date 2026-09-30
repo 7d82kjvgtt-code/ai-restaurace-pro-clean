@@ -1803,6 +1803,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+let foodModalPreviousFocus = null;
+
 function openFoodDetail(id) {
   const item = menu.find(food => food.id === id);
 
@@ -1875,16 +1877,35 @@ if (/^[\d,\s]+$/.test(allergensText)) {
 
 document.getElementById("modalFoodAllergens").textContent =
   allergensText;
-  document.getElementById("foodModal").classList.add("open");
+  const modal = document.getElementById("foodModal");
+  if (!modal.classList.contains("open")) foodModalPreviousFocus = document.activeElement;
+  modal.classList.add("open");
+  modal.querySelector(".food-modal-close")?.focus();
 }
 
 function closeFoodDetail() {
-  document.getElementById("foodModal").classList.remove("open");
+  const modal = document.getElementById("foodModal");
+  if (!modal?.classList.contains("open")) return;
+  modal.classList.remove("open");
+  if (foodModalPreviousFocus?.isConnected) foodModalPreviousFocus.focus();
+  foodModalPreviousFocus = null;
 }
 document.addEventListener("DOMContentLoaded", function () {
   const foodModal = document.getElementById("foodModal");
 
   if (!foodModal) return;
+
+  document.addEventListener("keydown", event => {
+    if (!foodModal.classList.contains("open")) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeFoodDetail();
+    } else if (event.key === "Tab") {
+      // The close button is the dialog's only interactive control.
+      event.preventDefault();
+      foodModal.querySelector(".food-modal-close")?.focus();
+    }
+  });
 
   foodModal.addEventListener("click", function (event) {
     if (event.target === foodModal) {
