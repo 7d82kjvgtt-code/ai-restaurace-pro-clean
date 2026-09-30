@@ -2847,12 +2847,7 @@ async function logoutDashboard() {
 ========================================================= */
 
 function getLocalDateString(date = new Date()) {
-  return new Date(
-    date.getTime() -
-    date.getTimezoneOffset() * 60000
-  )
-    .toISOString()
-    .split("T")[0];
+  return getRestaurantClock(date)?.date || "";
 }
 
 function formatDate(date) {
@@ -3222,21 +3217,23 @@ function formatUpcomingTime(minutes) {
   return rest ? `Za ${hours} h ${rest} min` : `Za ${hours} h`;
 }
 
-function getUpcomingReservations() {
-  const now = new Date();
-  const today = getLocalDateString(now);
-
+function getUpcomingReservations(now = new Date()) {
+  const clock = getRestaurantClock(now);
+  if (!clock) return [];
   return reservations
-    .filter(reservation => reservation.date === today && !isCancelledReservation(reservation))
+    .filter(reservation => !isCancelledReservation(reservation))
     .map(reservation => {
-      const startsAt = parseReservationDateTime(reservation);
-      const minutesUntil = startsAt
-        ? Math.ceil((startsAt.getTime() - now.getTime()) / 60000)
-        : null;
-
+      const day = Date.parse(String(reservation.date || "") + "T00:00:00Z") / 60000;
+      const time = String(reservation.time || "");
+      const startsAt = Number.isFinite(day) &&
+        /^([01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9])?$/.test(time)
+          ? day + timeToMinutes(time)
+          : NaN;
+      const minutesUntil = Math.ceil(startsAt - clock.wallMinutes);
       return { reservation, startsAt, minutesUntil };
     })
-    .filter(item => item.startsAt && item.minutesUntil >= 0 && item.minutesUntil <= 120)
+    .filter(item => Number.isFinite(item.startsAt) &&
+      item.minutesUntil >= 0 && item.minutesUntil <= 120)
     .sort((a, b) => a.startsAt - b.startsAt);
 }
 
@@ -5811,6 +5808,7 @@ function renderCharts() {
 
     labels.push(
       date.toLocaleDateString("cs-CZ", {
+        timeZone: "Europe/Prague",
         weekday: "short",
         day: "numeric",
         month: "numeric"
