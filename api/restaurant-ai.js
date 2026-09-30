@@ -843,6 +843,19 @@ async function askModel({
 }
 
 
+function aiErrorMessage(status, locale = "cs") {
+  if (locale === "en") {
+    if (status === 404) return "Restaurant not found or unavailable.";
+    if (status === 429) return "The AI assistant is busy. Please try again later.";
+    if (status === 504) return "The AI assistant took too long to respond. Please try again later.";
+    return "The AI assistant is unavailable right now. Please try again later.";
+  }
+  if (status === 404) return "Restaurace není dostupná.";
+  if (status === 429) return "AI asistent je teď vytížený. Zkus to za chvíli.";
+  if (status === 504) return "AI asistent odpovídá příliš dlouho. Zkus to prosím za chvíli.";
+  return "AI asistent teď není dostupný. Zkus to prosím za chvíli.";
+}
+
 export default async function handler(
   req,
   res
@@ -1004,16 +1017,7 @@ export default async function handler(
       )
       .json({
         error:
-          locale === "en"
-            ? status === 404
-              ? "Restaurant not found or unavailable."
-              : "The AI assistant is unavailable right now. Please try again later."
-            : status >= 500
-              ? "AI asistent teď není dostupný. Zkus to prosím za chvíli."
-              : String(
-                  error?.message ||
-                  "AI asistent teď není dostupný."
-                )
+          aiErrorMessage(status, locale)
       });
   }
 }
