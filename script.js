@@ -238,6 +238,7 @@ async function askRestaurantAi(
         {
           method:
             "POST",
+          signal: AbortSignal.timeout(45000),
           headers: {
             "Content-Type":
               "application/json"
@@ -289,10 +290,12 @@ async function askRestaurantAi(
 
     if (answer) {
       answer.textContent =
-        String(
-          error?.message ||
-          publicText("AI asistent teď není dostupný. Zkuste to prosím za chvíli.", "The AI assistant is unavailable. Please try again shortly.")
-        );
+        ["AbortError", "TimeoutError", "TypeError"].includes(error?.name)
+          ? publicText("AI asistent teď není dostupný. Zkuste to prosím za chvíli.", "The AI assistant is unavailable. Please try again shortly.")
+          : String(
+              error?.message ||
+              publicText("AI asistent teď není dostupný. Zkuste to prosím za chvíli.", "The AI assistant is unavailable. Please try again shortly.")
+            );
     }
   } finally {
     setRestaurantAiBusy(
