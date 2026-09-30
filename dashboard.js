@@ -2693,12 +2693,19 @@ async function authorizedFetch(url, options = {}) {
     throw new Error("Přihlášení vypršelo.");
   }
 
+  const requestHeaders = () => {
+    const headers = new Headers(getHeaders());
+    new Headers(options.headers || {}).forEach((value, key) => {
+      headers.set(key, value);
+    });
+    // Always use the current session, including after a refresh.
+    headers.set("Authorization", `Bearer ${getAccessToken()}`);
+    return headers;
+  };
+
   let response = await fetch(url, {
     ...options,
-   headers: {
-    ...getHeaders(),
-    ...(options.headers || {})
-}
+    headers: requestHeaders()
   });
 
   if (
@@ -2707,10 +2714,7 @@ async function authorizedFetch(url, options = {}) {
   ) {
     response = await fetch(url, {
       ...options,
-     headers: {
-    ...getHeaders(),
-    ...(options.headers || {})
-}
+      headers: requestHeaders()
     });
   }
 
