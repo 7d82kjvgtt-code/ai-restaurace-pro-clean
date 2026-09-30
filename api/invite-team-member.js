@@ -294,11 +294,7 @@ module.exports =
         req.body?.full_name ||
         ""
       )
-        .trim()
-        .slice(
-          0,
-          120
-        );
+        .trim();
 
     const email =
       String(
@@ -306,11 +302,7 @@ module.exports =
         ""
       )
         .trim()
-        .toLowerCase()
-        .slice(
-          0,
-          320
-        );
+        .toLowerCase();
 
     const role =
       String(
@@ -322,7 +314,8 @@ module.exports =
 
     if (
       !fullName ||
-      fullName.length < 2
+      fullName.length < 2 ||
+      fullName.length > 120
     ) {
       return send(
         res,
@@ -335,6 +328,7 @@ module.exports =
     }
 
     if (
+      email.length > 320 ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
         email
       )
