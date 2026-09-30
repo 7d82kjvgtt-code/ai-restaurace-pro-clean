@@ -1180,7 +1180,8 @@ async function askModel({
   question,
   summary,
   restaurantId,
-  userId
+  userId,
+  locale = "cs"
 }) {
   if (!OPENAI_API_KEY) {
     const error =
@@ -1194,7 +1195,9 @@ async function askModel({
 
   const systemText = [
     "Jsi provozní AI asistent majitele restaurace.",
-    "Odpovídej česky, stručně a konkrétně.",
+    locale === "en"
+      ? "Respond in English, briefly and concretely."
+      : "Odpovídej česky, stručně a konkrétně.",
     "Používej pouze DASHBOARD_DATA v dotazu. Pokud data nestačí, řekni to.",
     "Nevymýšlej příčiny, tržby, náklady, zisk, recenze ani chování hostů, které v datech nejsou.",
     "Pokud menu.items_truncated je true, seznam konkrétních položek není úplný; nevyvozuj, že nezobrazené jídlo v restauraci není. Souhrnné počty a ceny jsou z celého menu.",
@@ -1375,7 +1378,14 @@ async function askModel({
 }
 
 
-function aiErrorMessage(status) {
+function aiErrorMessage(status, locale = "cs") {
+  if (locale === "en") {
+    if (status === 401) return "Your session has expired. Please sign in again.";
+    if (status === 403) return "Only an active restaurant owner can use the AI overview.";
+    if (status === 429) return "The AI assistant is busy. Please try again later.";
+    if (status === 504) return "The AI assistant took too long to respond. Please try again later.";
+    return "The AI overview is unavailable right now. Please try again later.";
+  }
   if (status === 401) return "Přihlášení není platné. Přihlas se prosím znovu.";
   if (status === 403) return "AI přehled může používat pouze aktivní majitel restaurace.";
   if (status === 429) return "AI asistent je teď vytížený. Zkus to za chvíli.";
@@ -1392,6 +1402,8 @@ export default async function handler(
     "no-store"
   );
 
+  const locale = req.body?.locale === "en" ? "en" : "cs";
+
   if (
     req.method !== "POST"
   ) {
@@ -1404,7 +1416,7 @@ export default async function handler(
       .status(405)
       .json({
         error:
-          "Povolena je pouze metoda POST."
+          locale === "en" ? "Only POST requests are allowed." : "Povolena je pouze metoda POST."
       });
   }
 
@@ -1433,7 +1445,7 @@ export default async function handler(
       .status(400)
       .json({
         error:
-          "Zadej platný dotaz."
+          locale === "en" ? "Enter a valid question." : "Zadej platný dotaz."
       });
   }
 
@@ -1458,12 +1470,12 @@ export default async function handler(
         .status(429)
         .json({
           error:
-            "AI asistent dostal příliš mnoho dotazů. Zkus to prosím za několik minut."
+            locale === "en" ? "Too many questions. Please try again in a few minutes." : "AI asistent dostal příliš mnoho dotazů. Zkus to prosím za několik minut."
         });
     }
 
     if (!OPENAI_API_KEY) {
-      return res.status(503).json({ error: "AI asistent ještě není aktivovaný." });
+      return res.status(503).json({ error: locale === "en" ? "The AI assistant is not available yet." : "AI asistent ještě není aktivovaný." });
     }
 
     const today =
@@ -1509,7 +1521,7 @@ export default async function handler(
         .status(404)
         .json({
           error:
-            "Restaurace nebyla nalezena."
+            locale === "en" ? "Restaurant not found." : "Restaurace nebyla nalezena."
         });
     }
 
@@ -1523,7 +1535,7 @@ export default async function handler(
       });
 
     if (!(await consumeDailyAiQuota(restaurantId, "owner"))) {
-      return res.status(429).json({ error: "Denní limit AI dotazů restaurace byl vyčerpán. Zkuste to prosím zítra." });
+      return res.status(429).json({ error: locale === "en" ? "This restaurant has reached its daily AI question limit. Please try again tomorrow." : "Denní limit AI dotazů restaurace byl vyčerpán. Zkuste to prosím zítra." });
     }
 
     const answer =
@@ -1532,7 +1544,8 @@ export default async function handler(
         summary,
         restaurantId,
         userId:
-          user.id
+          user.id,
+        locale
       });
 
     return res
@@ -1583,7 +1596,7 @@ export default async function handler(
       )
       .json({
         error:
-          aiErrorMessage(status)
+          aiErrorMessage(status, locale)
       });
   }
 }
