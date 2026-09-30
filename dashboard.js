@@ -7633,7 +7633,25 @@ function deleteCurrentTable() {
   );
 }
 
+async function requireChangedRestaurantRow(response, expectedId = null) {
+  const rows = await response.json();
+  if (!Array.isArray(rows) || rows.length !== 1 ||
+      !Number.isSafeInteger(Number(rows[0]?.id)) || Number(rows[0]?.id) < 1 ||
+      Number(rows[0]?.restaurant_id) !== Number(currentRestaurantId) ||
+      (expectedId !== null && Number(rows[0]?.id) !== Number(expectedId))) {
+    throw new Error("The requested restaurant row was not changed.");
+  }
+  return rows[0];
+}
+
+let saveTableInProgress = false;
+
 async function saveTable() {
+  if (saveTableInProgress) return;
+  saveTableInProgress = true;
+  const submitButton = document.getElementById("tableBtn");
+  if (submitButton) submitButton.disabled = true;
+  try {
   const name =
     document
       .getElementById("tableName")
@@ -7767,7 +7785,7 @@ async function saveTable() {
           headers:
             getHeaders({
               Prefer:
-                "return=minimal"
+                "return=representation"
             }),
           body:
             JSON.stringify(
@@ -7781,6 +7799,8 @@ async function saveTable() {
         await response.text()
       );
     }
+
+    await requireChangedRestaurantRow(response, editing ? editingTableId : null);
 
     resetTableForm();
     await loadTables();
@@ -7803,6 +7823,10 @@ async function saveTable() {
     showDashboardNotice(
       "Nepodařilo se uložit stůl."
     );
+  }
+  } finally {
+    saveTableInProgress = false;
+    if (submitButton) submitButton.disabled = false;
   }
 }
 
@@ -7941,7 +7965,7 @@ async function deleteTable(id) {
           method:
             "DELETE",
           headers:
-            getHeaders()
+            getHeaders({ Prefer: "return=representation" })
         }
       );
 
@@ -7950,6 +7974,8 @@ async function deleteTable(id) {
         await response.text()
       );
     }
+
+    await requireChangedRestaurantRow(response, numericId);
 
     if (
       Number(
@@ -8966,7 +8992,14 @@ async function loadFoods() {
   }
 }
 
+let saveFoodInProgress = false;
+
 async function saveFood() {
+  if (saveFoodInProgress) return;
+  saveFoodInProgress = true;
+  const submitButton = document.getElementById("foodBtn");
+  if (submitButton) submitButton.disabled = true;
+  try {
   const name =
     document
       .getElementById("foodName")
@@ -9124,7 +9157,7 @@ async function saveFood() {
           ? "PATCH"
           : "POST",
         headers: getHeaders({
-          Prefer: "return=minimal"
+          Prefer: "return=representation"
         }),
         body: JSON.stringify(foodData)
       }
@@ -9136,6 +9169,8 @@ async function saveFood() {
       );
     }
 
+    await requireChangedRestaurantRow(response, editing ? editingFoodId : null);
+
     resetFoodForm();
     await loadFoods();
   } catch (error) {
@@ -9144,6 +9179,10 @@ async function saveFood() {
     showDashboardNotice(
       "Nepodařilo se uložit jídlo nebo nahrát fotografii."
     );
+  }
+  } finally {
+    saveFoodInProgress = false;
+    if (submitButton) submitButton.disabled = false;
   }
 }
 
@@ -9274,7 +9313,7 @@ function editFood(id) {
 
   document.getElementById(
     "foodPrice"
-  ).value = food.price || "";
+  ).value = food.price ?? "";
 
   document.getElementById(
     "foodEmoji"
@@ -9356,7 +9395,7 @@ async function deleteFood(id) {
       `${SUPABASE_URL}/rest/v1/menu?id=eq.${Number(id)}&restaurant_id=eq.${currentRestaurantId}`,
       {
         method: "DELETE",
-        headers: getHeaders()
+        headers: getHeaders({ Prefer: "return=representation" })
       }
     );
 
@@ -9365,6 +9404,8 @@ async function deleteFood(id) {
         await response.text()
       );
     }
+
+    await requireChangedRestaurantRow(response, Number(id));
 
     if (
       Number(editingFoodId) === Number(id)
