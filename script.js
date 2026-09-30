@@ -1382,11 +1382,22 @@ async function loadAvailableReservationTimes() {
   if (!date || !Number.isInteger(people) || people < publicReservationSettings.min_people || people > publicReservationSettings.max_people) {
     timeSelect.innerHTML = `<option value="">${publicText("Nejdřív vyber datum a počet osob", "Choose a date and number of guests first")}</option>`;
     timeSelect.disabled = true;
-    setAvailableTimesStatus("");
+    const invalidPeople = peopleInput.value !== "" &&
+      (!Number.isInteger(people) || people < settings.min_people || people > settings.max_people);
+    setAvailableTimesStatus(invalidPeople ? publicText(
+      `Zadejte celý počet osob od ${settings.min_people} do ${settings.max_people}.`,
+      `Enter a whole number of guests between ${settings.min_people} and ${settings.max_people}.`
+    ) : "", invalidPeople ? "error" : "");
     return;
   }
 
   const restaurantToday = publicRestaurantToday || localDateString(new Date());
+  if (date < restaurantToday) {
+    timeSelect.innerHTML = `<option value="">${publicText("Datum je v minulosti", "Date is in the past")}</option>`;
+    timeSelect.disabled = true;
+    setAvailableTimesStatus(publicText("Vyberte dnešní nebo budoucí datum.", "Choose today or a future date."), "error");
+    return;
+  }
   const maxAllowedDate = localDateString(
     addLocalDays(new Date(`${restaurantToday}T12:00:00`), publicReservationSettings.max_advance_days)
   );
