@@ -115,6 +115,15 @@ function dashboardErrorMessage(
     return "K této akci nemáš oprávnění.";
   }
 
+  // Database responses are internal. Only map the known booking conflict
+  // to a fixed guest-safe message; never expose raw database messages.
+  if (error?.data !== undefined) {
+    const databaseMessage = String(error?.data?.message || error?.message || "");
+    return databaseMessage.includes("je v tomto čase již rezervovaná")
+      ? "Vybrané místo je v tomto čase obsazené. Vyber jiné místo nebo čas."
+      : fallback;
+  }
+
   if (status >= 500) {
     return fallback;
   }
