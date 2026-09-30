@@ -1388,6 +1388,13 @@ async function loadAvailableReservationTimes() {
   timeSelect.innerHTML = `<option value="">${publicText("Načítám volné časy…", "Loading available times…")}</option>`;
   setAvailableTimesStatus(publicText("Kontroluji otevírací dobu a skutečně volné stoly…", "Checking opening hours and available tables…"));
 
+  const controller = availabilityAbortController;
+  let timedOut = false;
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, 15000);
+
   try {
     // DŮLEŽITÉ: dostupnost počítá server se SERVICE ROLE klíčem.
     // Veřejný Supabase klient nemusí kvůli RLS vidět všechny rezervace,
@@ -1399,7 +1406,7 @@ async function loadAvailableReservationTimes() {
         "Cache-Control": "no-cache"
       },
       cache: "no-store",
-      signal: availabilityAbortController.signal,
+      signal: controller.signal,
       body: JSON.stringify({
         action: "available-times",
         slug: requirePublicRestaurantSlug(),
@@ -1412,11 +1419,17 @@ async function loadAvailableReservationTimes() {
     if (requestId !== availabilityRequestSequence) return;
 
     const data = await response.json().catch(() => ({}));
+    if (requestId !== availabilityRequestSequence) return;
     if (!response.ok) {
       throw new Error(PUBLIC_LOCALE === "en" ? "Available times could not be loaded." : data.error || "Volné časy se nepodařilo načíst.");
     }
 
-    const slots = Array.isArray(data.slots) ? data.slots : [];
+    if (!Array.isArray(data.slots) || data.slots.some(slot =>
+      typeof slot !== "string" || !/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(slot)
+    )) {
+      throw new Error(publicText("Volné časy se nepodařilo načíst.", "Available times could not be loaded."));
+    }
+    const slots = [...new Set(data.slots)];
     if (!slots.length) {
       timeSelect.innerHTML = `<option value="">${publicText("Žádný volný čas", "No available times")}</option>`;
       const englishUnavailable = data.unavailable_reason === "unconfigured"
@@ -1448,10 +1461,13 @@ async function loadAvailableReservationTimes() {
     if (slots.includes(previousValue)) timeSelect.value = previousValue;
     setAvailableTimesStatus(PUBLIC_LOCALE === "en" ? `${slots.length} available times` : data.message || `${slots.length} volných termínů`, "success");
   } catch (error) {
-    if (error?.name === "AbortError" || requestId !== availabilityRequestSequence) return;
+    if (requestId !== availabilityRequestSequence) return;
+    if (error?.name === "AbortError" && !timedOut) return;
     console.error(error);
     timeSelect.innerHTML = `<option value="">${publicText("Časy se nepodařilo načíst", "Times could not be loaded")}</option>`;
-    setAvailableTimesStatus(PUBLIC_LOCALE === "en" ? "Available times could not be loaded. Please try again." : error.message || "Volné časy se nepodařilo načíst. Zkus to znovu.", "error");
+    setAvailableTimesStatus(publicText("Volné časy se nepodařilo načíst. Zkuste to prosím znovu.", "Available times could not be loaded. Please try again."), "error");
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -1598,6 +1614,16 @@ async function ulozitRezervaci() {
       return;
     }
 
+    if (createData.success !== true ||
+        !Number.isSafeInteger(Number(createData.reservation?.id)) ||
+        Number(createData.reservation?.id) < 1) {
+      showPublicReservationNotice(publicText(
+        "Výsledek rezervace nelze ověřit. Před dalším odesláním kontaktujte restauraci podle údajů na této stránce.",
+        "We could not verify the booking result. Before submitting again, contact the restaurant using the details on this page."
+      ));
+      return;
+    }
+
     showPublicReservationNotice(
       createData.email?.sent === true
         ? publicText("Rezervaci jsme přijali a čeká na potvrzení restaurace. E-mail o přijetí jsme poslali na zadanou adresu.", "We received your reservation. It is awaiting confirmation from the restaurant. We sent a receipt to your email.")
@@ -1613,7 +1639,10 @@ async function ulozitRezervaci() {
     loadAvailableReservationTimes();
   } catch (error) {
     console.error(error);
-    showPublicReservationNotice(PUBLIC_LOCALE === "en" ? "The reservation could not be saved. Please try again." : error.message || "Rezervaci se nepodařilo uložit.");
+    showPublicReservationNotice(publicText(
+      "Výsledek rezervace nelze ověřit. Před dalším odesláním kontaktujte restauraci podle údajů na této stránce.",
+      "We could not verify the booking result. Before submitting again, contact the restaurant using the details on this page."
+    ));
   } finally {
     setPublicReservationSubmitting(false);
   }
