@@ -3898,6 +3898,7 @@ async function updateReservationOnServer(
       reservationId
     ) ||
     reservationId < 1 ||
+    typeof req.body?.expected_revision !== "number" ||
     !Number.isSafeInteger(expectedRevision) ||
     expectedRevision < 0
   ) {
