@@ -5984,65 +5984,39 @@ if (!groupsResponse.ok) {
     }
   }
 }
-function getReservationLiveStatus(
-  reservation,
-  now = new Date()
-) {
-  if (
-    !reservation ||
-    (reservation.status || "Čeká") === "Zrušeno"
-  ) {
-    return "free";
-  }
+const restaurantClockFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Prague",
+  year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+});
 
-  const start =
-    new Date(
-      `${reservation.date}T${String(
-        reservation.time || ""
-      ).slice(0, 5)}`
-    );
+function getRestaurantClock(now = new Date()) {
+  if (!Number.isFinite(now.getTime())) return null;
+  const values = Object.fromEntries(
+    restaurantClockFormatter.formatToParts(now).map(part => [part.type, part.value])
+  );
+  const date = `${values.year}-${values.month}-${values.day}`;
+  const minuteOfDay = Number(values.hour) * 60 + Number(values.minute);
+  return {
+    date,
+    time: `${values.hour}:${values.minute}`,
+    minuteOfDay,
+    wallMinutes: Date.parse(date + "T00:00:00Z") / 60000 + minuteOfDay
+  };
+}
 
-  if (
-    Number.isNaN(
-      start.getTime()
-    )
-  ) {
-    return "free";
-  }
-
-  const durationMinutes =
-    Math.max(
-      30,
-      Number(
-        reservation.duration_minutes || 120
-      ) || 120
-    );
-
-  const end =
-    new Date(
-      start.getTime() +
-      durationMinutes * 60000
-    );
-
-  const minutesUntilStart =
-    (start.getTime() - now.getTime()) /
-    60000;
-
-  if (
-    now >= start &&
-    now < end
-  ) {
-    return "occupied";
-  }
-
-  if (
-    minutesUntilStart > 0 &&
-    minutesUntilStart <= 30
-  ) {
-    return "busy";
-  }
-
-  return "free";
+function getReservationLiveStatus(reservation, now = new Date()) {
+  if (!reservation || (reservation.status || "Čeká") === "Zrušeno") return "free";
+  const clock = getRestaurantClock(now);
+  const day = Date.parse(String(reservation.date || "") + "T00:00:00Z") / 60000;
+  const time = String(reservation.time || "");
+  if (!clock || !Number.isFinite(day) ||
+      !/^([01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9])?$/.test(time)) return "free";
+  const start = day + timeToMinutes(time);
+  const duration = Math.max(30, Number(reservation.duration_minutes || 120) || 120);
+  if (clock.wallMinutes >= start && clock.wallMinutes < start + duration) return "occupied";
+  const untilStart = start - clock.wallMinutes;
+  return untilStart > 0 && untilStart <= 30 ? "busy" : "free";
 }
 
 function combineLiveStatuses(statuses) {
@@ -9462,10 +9436,11 @@ function updateCalendarCurrentTime() {
 
   if (!indicator || !dateInput) return;
 
-  const now = new Date();
-  const selectedDate = dateInput.value || getLocalDateString();
-  const currentDate = getLocalDateString();
-  const totalMinutes = ((now.getHours() - 10) * 60) + now.getMinutes();
+  const clock = getRestaurantClock();
+  if (!clock) { indicator.hidden = true; return; }
+  const selectedDate = dateInput.value || clock.date;
+  const currentDate = clock.date;
+  const totalMinutes = clock.minuteOfDay - 10 * 60;
 
   if (selectedDate !== currentDate || totalMinutes < 0 || totalMinutes > 780) {
     indicator.hidden = true;
@@ -9477,10 +9452,7 @@ function updateCalendarCurrentTime() {
 
   const label = indicator.querySelector(".calendar-current-time-label");
   if (label) {
-    label.textContent = now.toLocaleTimeString("cs-CZ", {
-      hour: "2-digit",
-      minute: "2-digit"
-    });
+    label.textContent = clock.time;
   }
 }
 
