@@ -2771,8 +2771,11 @@ const ipRateKey =
           });
       }
     }
+    const contactHash = createHash("sha256")
+      .update(JSON.stringify([cleanEmail, cleanPhone]))
+      .digest("hex");
     const rateKey =
-      `reservation:${restaurantId}:${cleanEmail}:${cleanPhone}`;
+      `reservation:${restaurantId}:${contactHash}`;
 
     const rateLimitResult =
       await supabaseServiceJson(
