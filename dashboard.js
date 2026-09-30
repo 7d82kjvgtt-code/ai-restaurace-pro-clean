@@ -4087,7 +4087,7 @@ function renderReservationHistory() {
       ) ||
       "Rezervace";
     const actor = entry.actor_email || (entry.action === "created" ? "Veřejný formulář / systém" : "Systém");
-    const when = entry.created_at ? new Date(entry.created_at).toLocaleString("cs-CZ", { dateStyle: "short", timeStyle: "short" }) : "—";
+    const when = entry.created_at ? new Date(entry.created_at).toLocaleString("cs-CZ", { timeZone: "Europe/Prague", dateStyle: "short", timeStyle: "short" }) : "—";
 
     return `
       <article class="history-card history-${escapeHtml(entry.action || "updated")}">
