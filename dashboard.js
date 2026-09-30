@@ -2144,7 +2144,13 @@ function setupNavigation() {
    PŘIHLÁŠENÍ
 ========================================================= */
 
+function setDashboardBackgroundInert(isInert) {
+  document.querySelectorAll("#dashboardSidebar, main.main, #mobileMenuButton, #mobileMenuOverlay")
+    .forEach(element => { element.inert = isInert; });
+}
+
 function showLogin() {
+  setDashboardBackgroundInert(true);
   document.getElementById("loginScreen").style.display = "flex";
   document.getElementById("loginForm").style.display = "";
   document.getElementById("signupForm").style.display = "none";
@@ -2278,6 +2284,7 @@ function showSignup() {
 }
 
 function showCreateRestaurant() {
+  setDashboardBackgroundInert(true);
   document.getElementById("loginScreen").style.display = "flex";
   document.getElementById("loginForm").style.display = "none";
   document.getElementById("signupForm").style.display = "none";
@@ -2367,6 +2374,7 @@ async function createOwnerRestaurant(event) {
 
 function hideLogin() {
   document.getElementById("loginScreen").style.display = "none";
+  setDashboardBackgroundInert(false);
 }
 
 function getAccessToken() {
