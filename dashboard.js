@@ -3342,6 +3342,8 @@ function updateStatistics() {
 }
 
 function renderReservations(data) {
+  if (data === reservations) data = getFilteredReservations();
+
   const table =
     document.getElementById("reservationTable");
 
