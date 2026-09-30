@@ -10083,7 +10083,7 @@ async function inviteTeamMember(event) {
   button.textContent = 'Odesílám pozvánku…';
 
   try {
-    const response = await fetch('/api/invite-team-member', {
+    const response = await authorizedFetch('/api/invite-team-member', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -10126,6 +10126,13 @@ async function updateTeamMemberRole(memberId, role) {
       }
     );
     if (!response.ok) throw new Error(await response.text());
+    const changedMembers = await response.json();
+    if (!Array.isArray(changedMembers) || changedMembers.length !== 1 ||
+        Number(changedMembers[0]?.id) !== Number(memberId) ||
+        Number(changedMembers[0]?.restaurant_id) !== Number(currentRestaurantId) ||
+        changedMembers[0]?.role !== role) {
+      throw new Error("Team role update did not change the requested member.");
+    }
     await loadTeamMembers();
     showDashboardNotice('Role zaměstnance byla změněna.', 'success');
   } catch (error) {
@@ -10148,6 +10155,13 @@ async function toggleTeamMemberActive(memberId, active) {
       }
     );
     if (!response.ok) throw new Error(await response.text());
+    const changedMembers = await response.json();
+    if (!Array.isArray(changedMembers) || changedMembers.length !== 1 ||
+        Number(changedMembers[0]?.id) !== Number(memberId) ||
+        Number(changedMembers[0]?.restaurant_id) !== Number(currentRestaurantId) ||
+        changedMembers[0]?.active !== Boolean(active)) {
+      throw new Error("Team activation update did not change the requested member.");
+    }
     await loadTeamMembers();
     showDashboardNotice(active ? 'Zaměstnanec byl aktivován.' : 'Zaměstnanec byl deaktivován.', 'success');
   } catch (error) {
