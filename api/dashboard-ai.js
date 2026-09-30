@@ -1233,6 +1233,7 @@ async function askModel({
     );
 
   let response;
+  let payload;
 
   try {
     response =
@@ -1301,6 +1302,7 @@ async function askModel({
             })
         }
       );
+    payload = await readJsonResponse(response);
   } catch (error) {
     if (
       error?.name ===
@@ -1322,10 +1324,7 @@ async function askModel({
     );
   }
 
-  const payload =
-    await readJsonResponse(
-      response
-    );
+
 
   if (!response.ok) {
     console.error(
