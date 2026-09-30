@@ -433,7 +433,7 @@ module.exports =
         await supabase(
           `/rest/v1/restaurant_team?restaurant_id=eq.${restaurantId}&email=eq.${encodeURIComponent(
             email
-          )}&select=id,user_id,active&limit=1`
+          )}&select=id,user_id,active,role&limit=1`
         );
 
       if (
@@ -460,7 +460,8 @@ module.exports =
           : null;
 
       if (
-        existing?.active
+        existing?.active ||
+        String(existing?.role || "").toLowerCase() === "owner"
       ) {
         return send(
           res,
@@ -555,14 +556,16 @@ module.exports =
 
       const teamResponse =
         await supabase(
-          `/rest/v1/restaurant_team?on_conflict=restaurant_id,email`,
+          existing?.id
+            ? `/rest/v1/restaurant_team?id=eq.${Number(existing.id)}&restaurant_id=eq.${restaurantId}&active=eq.false&role=neq.owner`
+            : "/rest/v1/restaurant_team",
           {
             method:
-              "POST",
+              existing?.id ? "PATCH" : "POST",
 
             headers: {
               Prefer:
-                "resolution=merge-duplicates,return=representation"
+                "return=representation"
             },
 
             body:
@@ -611,6 +614,15 @@ module.exports =
                 : "Pozvánka odešla, ale člen týmu se nepodařilo uložit. Zkuste pozvání zopakovat."
           }
         );
+      }
+
+      const savedTeamRows = await teamResponse.json().catch(() => []);
+      if (!Array.isArray(savedTeamRows) || savedTeamRows.length !== 1 ||
+          Number(savedTeamRows[0]?.restaurant_id) !== Number(restaurantId) ||
+          savedTeamRows[0]?.user_id !== userId) {
+        return send(res, 409, {
+          error: "Pozvánka možná odešla, ale členství se mezitím změnilo. Obnovte tým a zkontrolujte aktuální stav."
+        });
       }
 
       return send(
