@@ -622,7 +622,7 @@
 </script>
 
 
-<script src="/script.js?v=pilot-v1-20260930-public-loading"></script>
+<script src="/script.js?v=pilot-v1-20260930-dish-dialog"></script>
 
 
 <div
@@ -630,7 +630,10 @@
   class="food-modal"
 >
 
-  <div class="food-modal-content">
+  <div class="food-modal-content"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modalFoodName">
 
     <button
       class="food-modal-close"
