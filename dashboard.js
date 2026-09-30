@@ -5950,11 +5950,11 @@ const groupsData = await groupsResponse.json();
 if (!groupsResponse.ok) {
   throw new Error(JSON.stringify(groupsData));
 }
-    restaurantTables =
-      Array.isArray(data) ? data : [];
-    
-tableGroups =
-  Array.isArray(groupsData) ? groupsData : [];
+    if (!Array.isArray(data) || !Array.isArray(groupsData)) {
+      throw new Error("Invalid table list response.");
+    }
+    restaurantTables = data;
+    tableGroups = groupsData;
     
     document.getElementById(
       "tableCount"
@@ -8970,8 +8970,10 @@ async function loadFoods() {
       throw new Error(JSON.stringify(data));
     }
 
-    foods =
-      Array.isArray(data) ? data : [];
+    if (!Array.isArray(data)) {
+      throw new Error("Invalid menu list response.");
+    }
+    foods = data;
 
     document.getElementById(
       "foodCount"
