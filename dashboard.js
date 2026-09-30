@@ -570,6 +570,10 @@ async function loadCurrentRestaurantInfo() {
   }
 }
 
+function dashboardAiText(cs, en) {
+  return document.documentElement.lang === "en" ? en : cs;
+}
+
 function setDashboardAiBusy(
   busy
 ) {
@@ -592,8 +596,8 @@ function setDashboardAiBusy(
 
     button.textContent =
       dashboardAiRequestInProgress
-        ? "Analyzuji…"
-        : "Zeptat se";
+        ? dashboardAiText("Analyzuji…", "Analyzing…")
+        : dashboardAiText("Zeptat se", "Ask");
   }
 
   if (input) {
@@ -644,9 +648,7 @@ function renderDashboardAiSnapshot(
       }
 
       element.textContent =
-        Number.isFinite(
-          Number(value)
-        )
+        Number.isSafeInteger(value) && value >= 0
           ? String(
               Number(value)
             )
@@ -694,7 +696,7 @@ async function askDashboardAi(
   if (!question) {
     if (answer) {
       answer.textContent =
-        "Napiš prosím dotaz k provozu restaurace.";
+        dashboardAiText("Napiš prosím dotaz k provozu restaurace.", "Enter a question about your restaurant.");
     }
 
     input?.focus();
@@ -707,7 +709,7 @@ async function askDashboardAi(
   ) {
     if (answer) {
       answer.textContent =
-        "Dotaz může mít maximálně 600 znaků.";
+        dashboardAiText("Dotaz může mít maximálně 600 znaků.", "Your question can be at most 600 characters.");
     }
 
     return;
@@ -715,7 +717,7 @@ async function askDashboardAi(
 
   if (answer) {
     answer.textContent =
-      "Analyzuji aktuální provozní data restaurace…";
+      dashboardAiText("Analyzuji aktuální provozní data restaurace…", "Analyzing current restaurant data…");
   }
 
   setDashboardAiBusy(
@@ -759,7 +761,7 @@ async function askDashboardAi(
     ) {
       throw new Error(
         data?.error ||
-        "AI přehled teď není dostupný."
+        dashboardAiText("AI přehled teď není dostupný.", "The AI overview is unavailable right now.")
       );
     }
 
@@ -790,11 +792,11 @@ async function askDashboardAi(
 
     if (answer) {
       answer.textContent =
-        error?.name === "AbortError" || error?.name === "TimeoutError"
-          ? "AI přehled teď není dostupný. Zkus to prosím za chvíli."
+        ["AbortError", "TimeoutError", "TypeError"].includes(error?.name)
+          ? dashboardAiText("AI přehled teď není dostupný. Zkus to prosím za chvíli.", "The AI overview is unavailable. Please try again shortly.")
           : String(
               error?.message ||
-              "AI přehled teď není dostupný. Zkus to prosím za chvíli."
+              dashboardAiText("AI přehled teď není dostupný. Zkus to prosím za chvíli.", "The AI overview is unavailable. Please try again shortly.")
             );
     }
   } finally {
