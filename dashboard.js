@@ -6032,59 +6032,30 @@ function combineLiveStatuses(statuses) {
 }
 
 function getTableStatus(tableId) {
-  const relevantReservations =
-    reservations.filter(
-      reservation =>
-        Number(reservation.table_id) ===
-          Number(tableId) &&
-        (reservation.status || "Čeká") !==
-          "Zrušeno"
-    );
-
   return combineLiveStatuses(
-    relevantReservations.map(
-      reservation =>
-        getReservationLiveStatus(
-          reservation
-        )
+    getReservationsUsingTableResource(tableId).map(reservation =>
+      getReservationLiveStatus(reservation)
     )
   );
 }
 
 function getTableGroupStatus(group) {
-  const groupId =
-    Number(group?.id);
-
-  const memberIds =
-    new Set(
-      Array.isArray(group?.table_ids)
-        ? group.table_ids.map(Number)
-        : []
-    );
-
-  const relevantReservations =
-    reservations.filter(
-      reservation =>
-        (
-          Number(
-            reservation.table_group_id
-          ) === groupId ||
-          memberIds.has(
-            Number(
-              reservation.table_id
-            )
-          )
-        ) &&
-        (reservation.status || "Čeká") !==
-          "Zrušeno"
-    );
-
+  const groupId = Number(group?.id);
+  const relevantReservations = new Set(
+    reservations.filter(reservation =>
+      reservation.table_group_id != null &&
+      Number(reservation.table_group_id) === groupId
+    )
+  );
+  const memberIds = Array.isArray(group?.table_ids) ? group.table_ids : [];
+  for (const memberId of memberIds) {
+    for (const reservation of getReservationsUsingTableResource(memberId)) {
+      relevantReservations.add(reservation);
+    }
+  }
   return combineLiveStatuses(
-    relevantReservations.map(
-      reservation =>
-        getReservationLiveStatus(
-          reservation
-        )
+    [...relevantReservations].map(reservation =>
+      getReservationLiveStatus(reservation)
     )
   );
 }
