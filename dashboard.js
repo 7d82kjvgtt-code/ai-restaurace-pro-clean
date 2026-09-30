@@ -729,6 +729,7 @@ async function askDashboardAi(
         {
           method:
             "POST",
+          signal: AbortSignal.timeout(45000),
           headers: {
             "Content-Type":
               "application/json"
@@ -788,10 +789,12 @@ async function askDashboardAi(
 
     if (answer) {
       answer.textContent =
-        String(
-          error?.message ||
-          "AI přehled teď není dostupný. Zkus to prosím za chvíli."
-        );
+        error?.name === "AbortError" || error?.name === "TimeoutError"
+          ? "AI přehled teď není dostupný. Zkus to prosím za chvíli."
+          : String(
+              error?.message ||
+              "AI přehled teď není dostupný. Zkus to prosím za chvíli."
+            );
     }
   } finally {
     setDashboardAiBusy(
