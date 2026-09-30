@@ -1201,7 +1201,24 @@ function renderPublicMenu() {
     items.forEach(item => {
       const card = document.createElement("div");
       card.className = "food-card";
-      card.addEventListener("click", () => openFoodDetail(item.id));
+      card.tabIndex = 0;
+      card.setAttribute("role", "button");
+      card.setAttribute("aria-haspopup", "dialog");
+      card.setAttribute("aria-label", publicText(
+        `Zobrazit detail: ${String(item.name || "Jídlo")}`,
+        `View dish details: ${String(item.name || "Dish")}`
+      ));
+      const openDetails = () => {
+        card.focus();
+        openFoodDetail(item.id);
+      };
+      card.addEventListener("click", openDetails);
+      card.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openDetails();
+        }
+      });
 
       if (item.image_url) {
         try {
