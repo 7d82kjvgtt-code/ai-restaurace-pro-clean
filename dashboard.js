@@ -740,7 +740,8 @@ async function askDashboardAi(
                 Number(
                   currentRestaurantId
                 ),
-              question
+              question,
+              locale: document.documentElement.lang === "en" ? "en" : "cs"
             })
         }
       );
