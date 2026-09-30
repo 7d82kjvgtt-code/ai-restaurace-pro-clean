@@ -147,9 +147,8 @@ function dashboardErrorMessage(
 
 
 function isValidEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-    String(value || "").trim()
-  );
+  const email = String(value || "").trim();
+  return email.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 
