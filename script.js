@@ -898,6 +898,7 @@ async function publicRpc(functionName, body = {}) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
     method: "POST",
     headers,
+    signal: AbortSignal.timeout(15000),
     body: JSON.stringify(body)
   });
 
@@ -994,7 +995,7 @@ async function loadPublicReservationSettings(force = false) {
       throw new Error("Restaurace nemá veřejné nastavení rezervací.");
     }
 
-    publicReservationSettings = {
+    const settings = {
       duration_1_2: Math.max(30, Number(row.duration_1_2 || 90)),
       duration_3_4: Math.max(30, Number(row.duration_3_4 || 120)),
       duration_5_6: Math.max(30, Number(row.duration_5_6 || 150)),
@@ -1004,6 +1005,13 @@ async function loadPublicReservationSettings(force = false) {
       min_people: Math.max(1, Number(row.min_people || 1)),
       max_people: Math.max(1, Number(row.max_people || 20))
     };
+    if (Object.values(settings).some(value => !Number.isSafeInteger(value)) ||
+        settings.min_people > settings.max_people ||
+        [settings.duration_1_2, settings.duration_3_4, settings.duration_5_6, settings.duration_7_plus]
+          .some(value => value < 30 || value > 360)) {
+      throw new Error("Invalid public booking settings.");
+    }
+    publicReservationSettings = settings;
   } catch (error) {
     console.error("Veřejné nastavení rezervací se nepodařilo načíst:", error);
     publicReservationSettingsLoaded = false;
