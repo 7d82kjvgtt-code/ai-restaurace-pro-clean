@@ -104,6 +104,15 @@ function applyPublicPageMode() {
     });
 
   if (hasRestaurant) {
+    const loadingCopy = {
+      publicRestaurantBadge: publicText("Online rezervace a aktuální menu", "Online reservations and current menu"),
+      publicRestaurantHeroTitle: publicText("Načítání restaurace…", "Loading restaurant…"),
+      publicRestaurantHeroSubtitle: publicText("Načítáme aktuální informace restaurace.", "Loading the restaurant's current information.")
+    };
+    for (const [id, text] of Object.entries(loadingCopy)) {
+      const element = document.getElementById(id);
+      if (element) element.textContent = text;
+    }
     document.body.classList.add(
       "restaurant-public-mode"
     );
