@@ -2586,7 +2586,10 @@ async function refreshCurrentUserContext(options = {}) {
 
     lastRoleRefreshAt = Date.now();
     applyRolePermissions();
-    showDashboardSection(window.location.hash.replace("#", "") || "prehled", { notifyDenied: false });
+    showDashboardSection(window.location.hash.replace("#", "") || "prehled", {
+      notifyDenied: false,
+      preserveNewReservation: previousRole === currentUserRole && previousRestaurantId === currentRestaurantId
+    });
 
     // Když majitel změnil zaměstnanci roli nebo restauraci, přenačteme data
     // automaticky při návratu do aplikace.
@@ -10195,7 +10198,7 @@ async function toggleTeamMemberActive(memberId, active) {
 }
 
 function showDashboardSection(sectionId, options = {}) {
-    const { notifyDenied = true } = options;
+    const { notifyDenied = true, preserveNewReservation = false } = options;
     const requestedSection = String(sectionId || "prehled").replace(/^#/, "");
     const sectionExists = document.getElementById(requestedSection);
     const denied = Boolean(currentUserRole) && (!sectionExists || !canAccessSection(requestedSection));
@@ -10228,7 +10231,7 @@ function showDashboardSection(sectionId, options = {}) {
         if (!section) return;
 
         if (resolvedSection === "rezervace" && id === "novaRezervace") {
-            section.style.display = "none";
+            if (!preserveNewReservation) section.style.display = "none";
             return;
         }
 
