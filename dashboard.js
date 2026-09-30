@@ -4972,6 +4972,8 @@ function updateEditReservationTableOptions(
 }
 
 function closeReservationModal() {
+    const inlineError = document.getElementById("editReservationError");
+    if (inlineError) { inlineError.hidden = true; inlineError.textContent = ""; }
     document
         .getElementById("reservationModal")
         .classList.remove("show");
@@ -4982,6 +4984,8 @@ let saveReservationChangesInProgress = false;
 async function saveReservationChanges() {
   if (saveReservationChangesInProgress) return;
   saveReservationChangesInProgress = true;
+  const inlineError = document.getElementById("editReservationError");
+  if (inlineError) { inlineError.hidden = true; inlineError.textContent = ""; }
   const saveButton = document.querySelector('#reservationModal button[onclick="saveReservationChanges()"]');
   if (saveButton) saveButton.disabled = true;
   try {
@@ -5436,13 +5440,12 @@ async function saveReservationChanges() {
       error
     );
 
-    showDashboardNotice(
-      String(
-        error?.message ||
-        "Rezervaci se nepodařilo kompletně upravit."
-      ),
-      "error"
-    );
+    const errorText = String(error?.message || "Rezervaci se nepodařilo kompletně upravit.");
+    if (inlineError) {
+      inlineError.textContent = errorText;
+      inlineError.hidden = false;
+    }
+    showDashboardNotice(errorText, "error");
 
     await Promise.allSettled([
       loadReservations(),
