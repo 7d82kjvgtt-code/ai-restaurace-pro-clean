@@ -1375,6 +1375,14 @@ async function askModel({
 }
 
 
+function aiErrorMessage(status) {
+  if (status === 401) return "Přihlášení není platné. Přihlas se prosím znovu.";
+  if (status === 403) return "AI přehled může používat pouze aktivní majitel restaurace.";
+  if (status === 429) return "AI asistent je teď vytížený. Zkus to za chvíli.";
+  if (status === 504) return "AI asistent odpovídá příliš dlouho. Zkus to prosím za chvíli.";
+  return "AI přehled teď není dostupný. Zkus to prosím za chvíli.";
+}
+
 export default async function handler(
   req,
   res
@@ -1575,12 +1583,7 @@ export default async function handler(
       )
       .json({
         error:
-          status >= 500
-            ? "AI přehled teď není dostupný. Zkus to prosím za chvíli."
-            : String(
-                error?.message ||
-                "AI přehled teď není dostupný."
-              )
+          aiErrorMessage(status)
       });
   }
 }
