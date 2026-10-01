@@ -1732,11 +1732,13 @@ async function getAvailableTimesOnServer(
   }
 
   try {
+    const availabilityStartedAt = performance.now();
     const restaurant =
       await getPublishedRestaurantBySlug(
         cleanRestaurantSlug
       );
 
+    const restaurantLoadedAt = performance.now();
     const restaurantId =
       Number(
         restaurant.id
@@ -1795,6 +1797,13 @@ async function getAvailableTimesOnServer(
 
         loadActiveReservationsForDate(restaurantId, date)
       ]);
+
+    const availabilityDataLoadedAt = performance.now();
+    res.setHeader("Server-Timing", [
+      `restaurant;dur=${(restaurantLoadedAt - availabilityStartedAt).toFixed(1)}`,
+      `availability_data;dur=${(availabilityDataLoadedAt - restaurantLoadedAt).toFixed(1)}`
+    ].join(", "));
+
 
     if (!Array.isArray(settingsRows) || !settingsRows[0]) {
       return res.status(200).json({
