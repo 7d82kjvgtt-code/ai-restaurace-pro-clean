@@ -4251,7 +4251,8 @@ function getCustomerProfile(customerKey) {
 
 function getCustomerProfileForCustomer(customer) {
   const exact = getCustomerProfile(customer?.key);
-  if (exact) return exact;
+  if (exact && (!normalizeCustomerPhone(exact.phone) ||
+      normalizeCustomerPhone(exact.phone) === normalizeCustomerPhone(customer?.phone))) return exact;
 
   const phone = normalizeCustomerPhone(customer?.phone);
   if (phone) {
@@ -4265,7 +4266,8 @@ function getCustomerProfileForCustomer(customer) {
     const email = normalizeCustomerEmail(customer?.email);
     if (email) {
       const legacyByEmailKey = customerProfiles.find(item =>
-        item?.customer_key === `email:${email}`
+        item?.customer_key === `email:${email}` &&
+        (!normalizeCustomerPhone(item?.phone) || normalizeCustomerPhone(item?.phone) === phone)
       );
       if (legacyByEmailKey) return legacyByEmailKey;
     }
@@ -4276,8 +4278,10 @@ function getCustomerProfileForCustomer(customer) {
   const email = normalizeCustomerEmail(customer?.email);
   if (!email) return null;
   return customerProfiles.find(item =>
-    normalizeCustomerEmail(item?.email) === email ||
-    item?.customer_key === `email:${email}`
+    !normalizeCustomerPhone(item?.phone) && (
+      normalizeCustomerEmail(item?.email) === email ||
+      item?.customer_key === `email:${email}`
+    )
   ) || null;
 }
 
