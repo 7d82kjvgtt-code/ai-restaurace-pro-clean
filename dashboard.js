@@ -9446,9 +9446,16 @@ function resetFoodForm(force = false) {
 }
 
 async function deleteFood(id) {
+  if (saveFoodInProgress) return;
+  if (!Number.isSafeInteger(Number(id)) || Number(id) < 1) return;
   if (!confirm("Opravdu smazat jídlo?")) {
     return;
   }
+
+  saveFoodInProgress = true;
+  const saveButton = document.getElementById("foodBtn");
+  const saveButtonWasDisabled = Boolean(saveButton?.disabled);
+  if (saveButton) saveButton.disabled = true;
 
   try {
     const response = await authorizedFetch(
@@ -9470,7 +9477,7 @@ async function deleteFood(id) {
     if (
       Number(editingFoodId) === Number(id)
     ) {
-      resetFoodForm();
+      resetFoodForm(true);
     }
 
     await loadFoods();
@@ -9480,6 +9487,9 @@ async function deleteFood(id) {
     showDashboardNotice(
       "Nepodařilo se smazat jídlo."
     );
+  } finally {
+    saveFoodInProgress = false;
+    if (saveButton) saveButton.disabled = saveButtonWasDisabled;
   }
 }
 function createCalendarTimeline(eventsHtml = "") {
