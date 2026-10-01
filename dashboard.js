@@ -4479,8 +4479,11 @@ async function refreshCustomers(button) {
   }
 }
 
-async function loadCustomerProfiles() {
-  if (!currentRestaurantId) return;
+async function loadCustomerProfiles({ throwOnError = false } = {}) {
+  if (!currentRestaurantId) {
+    if (throwOnError) throw new Error("Chybí restaurace pro načtení CRM.");
+    return;
+  }
   try {
     const response = await authorizedFetch(
       `${SUPABASE_URL}/rest/v1/customer_profiles?restaurant_id=eq.${encodeURIComponent(currentRestaurantId)}&select=*`,
@@ -4489,13 +4492,15 @@ async function loadCustomerProfiles() {
     if (!response.ok) throw new Error(await response.text());
 
     const rows = await response.json();
-    customerProfiles = Array.isArray(rows) ? rows : [];
+    if (!Array.isArray(rows)) throw new Error("Neplatná odpověď CRM.");
+    customerProfiles = rows;
     renderCustomers();
   } catch (error) {
     console.warn("Profily zákazníků zatím nejsou dostupné:", error);
     // Nemažeme lokální profily při dočasné chybě načtení, aby se právě
     // uložená poznámka nebo označení stálého hosta neztratily z UI.
     renderCustomers();
+    if (throwOnError) throw error;
   }
 }
 
@@ -4535,6 +4540,7 @@ async function persistCustomerProfile(customerKey, changes) {
     updated_at: new Date().toISOString()
   };
 
+  let writeAccepted = false;
   try {
     const response = await authorizedFetch(
       `${SUPABASE_URL}/rest/v1/customer_profiles?on_conflict=restaurant_id,customer_key`,
@@ -4546,6 +4552,7 @@ async function persistCustomerProfile(customerKey, changes) {
     );
     if (!response.ok) throw new Error(await response.text());
 
+    writeAccepted = true;
     const savedRows = await response.json();
     const saved = Array.isArray(savedRows) && savedRows[0] ? savedRows[0] : payload;
     const index = customerProfiles.findIndex(item => item.customer_key === customerKey);
@@ -4558,9 +4565,10 @@ async function persistCustomerProfile(customerKey, changes) {
 
     // Následně znovu načteme databázi, aby bylo jisté, že hodnota opravdu
     // přežila refresh a není jen lokálně v prohlížeči.
-    await loadCustomerProfiles();
+    await loadCustomerProfiles({ throwOnError: true });
 
     const persisted = getCustomerProfile(customerKey);
+    if (!persisted) throw new Error("Uložený profil se z databáze nenačetl.");
     if (Object.prototype.hasOwnProperty.call(changes, "note") &&
         String(persisted?.note || "") !== String(changes.note || "")) {
       throw new Error("Poznámka se po uložení nenačetla zpět z databáze.");
@@ -4573,7 +4581,9 @@ async function persistCustomerProfile(customerKey, changes) {
     showDashboardNotice("Profil zákazníka byl uložen.", "success");
   } catch (error) {
     console.error(error);
-    showDashboardNotice("Profil zákazníka se nepodařilo trvale uložit.", "error");
+    showDashboardNotice(writeAccepted
+      ? "Zápis byl přijat, ale uložení profilu se nepodařilo ověřit. Obnov zákazníky a zkontroluj hodnoty."
+      : "Profil zákazníka se nepodařilo uložit.", "error");
   }
 }
 
