@@ -1313,7 +1313,18 @@ async function uploadRestaurantLogo(
 }
 
 
+let restaurantBrandingBusy = false;
+
+function setRestaurantBrandingBusy(busy) {
+  restaurantBrandingBusy = busy;
+  for (const id of ["restaurantBrandSaveButton", "restaurantBrandRemoveLogoButton"]) {
+    const button = document.getElementById(id);
+    if (button) button.disabled = busy;
+  }
+}
+
 async function saveRestaurantBranding() {
+  if (restaurantBrandingBusy) return;
   if (
     currentUserRole !==
       "owner" ||
@@ -1502,6 +1513,8 @@ async function saveRestaurantBranding() {
     return;
   }
 
+  setRestaurantBrandingBusy(true);
+
   const saveButton =
     document.getElementById(
       "restaurantBrandSaveButton"
@@ -1679,6 +1692,7 @@ async function saveRestaurantBranding() {
       "error"
     );
   } finally {
+    setRestaurantBrandingBusy(false);
     if (saveButton) {
       saveButton.disabled =
         false;
@@ -1691,6 +1705,7 @@ async function saveRestaurantBranding() {
 
 
 async function removeRestaurantLogo() {
+  if (restaurantBrandingBusy) return;
   if (
     currentUserRole !==
       "owner" ||
@@ -1698,6 +1713,8 @@ async function removeRestaurantLogo() {
   ) {
     return;
   }
+
+  setRestaurantBrandingBusy(true);
 
   try {
     const response =
@@ -1752,9 +1769,9 @@ async function removeRestaurantLogo() {
       fileInput.value = "";
     }
 
-    renderRestaurantBrandingForm(
-      currentRestaurantBranding
-    );
+    restoreSavedRestaurantLogoPreview();
+    const removeButton = document.getElementById("restaurantBrandRemoveLogoButton");
+    if (removeButton) removeButton.hidden = true;
 
     showDashboardNotice(
       "Logo bylo odebráno.",
@@ -1772,6 +1789,8 @@ async function removeRestaurantLogo() {
       ),
       "error"
     );
+  } finally {
+    setRestaurantBrandingBusy(false);
   }
 }
 
