@@ -1776,6 +1776,19 @@ async function removeRestaurantLogo() {
 }
 
 
+function restoreSavedRestaurantLogoPreview() {
+  const image = document.getElementById("restaurantLogoPreviewImage");
+  const fallback = document.getElementById("restaurantLogoFallback");
+  const savedUrl = getSafeHttpImageUrl(currentRestaurantBranding?.logo_url);
+  if (image) {
+    if (image.src.startsWith("blob:")) URL.revokeObjectURL(image.src);
+    image.src = savedUrl || "";
+    image.hidden = !savedUrl;
+  }
+  if (fallback) fallback.hidden = Boolean(savedUrl);
+  updateRestaurantBrandingPreview();
+}
+
 function setupRestaurantBrandingInputs() {
   [
     "restaurantBrandName",
@@ -1809,10 +1822,7 @@ function setupRestaurantBrandingInputs() {
             ?.files?.[0];
 
         if (!file) {
-          renderRestaurantBrandingForm(
-            currentRestaurantBranding ||
-            {}
-          );
+          restoreSavedRestaurantLogoPreview();
           return;
         }
 
@@ -1834,6 +1844,7 @@ function setupRestaurantBrandingInputs() {
 
           event.target.value =
             "";
+          restoreSavedRestaurantLogoPreview();
 
           return;
         }
@@ -1849,6 +1860,7 @@ function setupRestaurantBrandingInputs() {
           );
 
         if (logoImage) {
+          if (logoImage.src.startsWith("blob:")) URL.revokeObjectURL(logoImage.src);
           logoImage.src =
             URL.createObjectURL(
               file
