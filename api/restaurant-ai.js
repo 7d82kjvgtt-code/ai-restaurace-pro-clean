@@ -866,6 +866,8 @@ export default async function handler(
     "no-store"
   );
 
+  const locale = req.body?.locale === "en" ? "en" : "cs";
+
   if (
     req.method !== "POST"
   ) {
@@ -878,11 +880,9 @@ export default async function handler(
       .status(405)
       .json({
         error:
-          "Povolena je pouze metoda POST."
+          locale === "en" ? "Only POST requests are allowed." : "Povolena je pouze metoda POST."
       });
   }
-
-  const locale = req.body?.locale === "en" ? "en" : "cs";
 
   const slug =
     cleanText(
