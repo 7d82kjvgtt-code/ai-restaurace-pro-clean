@@ -2420,6 +2420,10 @@ async function createReservationOnServer(
       });
   }
 
+  if (!/^\+?\d{9,15}$/.test(cleanPhone.replace(/\s+/g, ""))) {
+    return res.status(400).json({ error: "Zadej platné telefonní číslo." });
+  }
+
   try {
     const restaurant =
       await getPublishedRestaurantBySlug(
