@@ -4499,7 +4499,26 @@ async function loadCustomerProfiles() {
   }
 }
 
-async function saveCustomerProfile(customerKey, changes) {
+const customerProfileSaveQueues = new Map();
+
+function saveCustomerProfile(customerKey, changes) {
+  const queueKey = `${currentRestaurantId}:${customerKey}`;
+  const restaurantId = currentRestaurantId;
+  const pending = customerProfileSaveQueues.get(queueKey) || Promise.resolve();
+  const operation = pending.catch(() => {}).then(() => {
+    if (String(currentRestaurantId) !== String(restaurantId)) return;
+    return persistCustomerProfile(customerKey, { ...changes });
+  });
+  customerProfileSaveQueues.set(queueKey, operation);
+  operation.finally(() => {
+    if (customerProfileSaveQueues.get(queueKey) === operation) {
+      customerProfileSaveQueues.delete(queueKey);
+    }
+  }).catch(() => {});
+  return operation;
+}
+
+async function persistCustomerProfile(customerKey, changes) {
   const customer = buildCustomers().find(item => item.key === customerKey);
   if (!customer) return;
 
