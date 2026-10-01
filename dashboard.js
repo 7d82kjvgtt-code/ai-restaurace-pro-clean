@@ -4349,6 +4349,19 @@ function renderCustomerSummary(customers) {
   `;
 }
 
+const customerNoteDrafts = new Map();
+
+function getCustomerNoteDraftKey(customerKey, restaurantId = currentRestaurantId) {
+  return `${restaurantId}:${customerKey}`;
+}
+
+function clearSavedCustomerNoteDraft(customerKey, note, restaurantId) {
+  const key = getCustomerNoteDraftKey(customerKey, restaurantId);
+  if (customerNoteDrafts.get(key) === String(note || "")) {
+    customerNoteDrafts.delete(key);
+  }
+}
+
 function renderCustomers() {
   const list = document.getElementById("customerList");
   if (!list) return;
@@ -4419,7 +4432,7 @@ function renderCustomers() {
           <div><strong>${escapeHtml(lastText)}</strong><span>poslední rezervace</span></div>
         </div>
         <div class="customer-note-row">
-          <textarea id="customerNote-${index}" placeholder="Interní poznámka k hostovi…">${escapeHtml(customer.note)}</textarea>
+          <textarea id="customerNote-${index}" class="customer-note-input" data-customer-key="${escapeHtml(encodeURIComponent(customer.key))}" placeholder="Interní poznámka k hostovi…">${escapeHtml(customerNoteDrafts.get(getCustomerNoteDraftKey(customer.key)) ?? customer.note)}</textarea>
           <button type="button" class="primary-btn customer-note-save" data-customer-key="${escapeHtml(encodeURIComponent(customer.key))}" data-note-id="customerNote-${index}">Uložit poznámku</button>
         </div>
         <button type="button" class="customer-history-toggle" onclick="toggleCustomerHistory('customerHistory-${index}', this)">Zobrazit historii rezervací (${customer.reservationCount})</button>
@@ -4427,6 +4440,15 @@ function renderCustomers() {
       </article>
     `;
   }).join("");
+
+  list.querySelectorAll(".customer-note-input").forEach(input => {
+    input.addEventListener("input", () => {
+      try {
+        const customerKey = decodeURIComponent(input.dataset.customerKey || "");
+        customerNoteDrafts.set(getCustomerNoteDraftKey(customerKey), input.value);
+      } catch (_) {}
+    });
+  });
 
   list.querySelectorAll(".customer-regular-input").forEach(input => {
     input.addEventListener("change", () => {
@@ -4578,6 +4600,10 @@ async function persistCustomerProfile(customerKey, changes) {
       throw new Error("Označení stálého hosta se po uložení nenačetlo zpět z databáze.");
     }
 
+    if (Object.prototype.hasOwnProperty.call(changes, "note")) {
+      clearSavedCustomerNoteDraft(customerKey, changes.note, payload.restaurant_id);
+      renderCustomers();
+    }
     showDashboardNotice("Profil zákazníka byl uložen.", "success");
   } catch (error) {
     console.error(error);
