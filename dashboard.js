@@ -4486,8 +4486,8 @@ async function refreshCustomers(button) {
   try {
     // Znovu načteme rezervace i uložené profily zákazníků z databáze.
     // Samotné renderCustomers() jen překresluje data, která už jsou v paměti.
-    await loadReservations();
-    await loadCustomerProfiles();
+    if (!await loadReservations()) throw new Error("Rezervace se nepodařilo obnovit.");
+    await loadCustomerProfiles({ throwOnError: true });
     renderCustomers();
     showDashboardNotice("Zákazníci byli aktualizováni.", "success");
   } catch (error) {
