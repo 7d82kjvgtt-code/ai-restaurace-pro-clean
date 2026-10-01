@@ -9036,16 +9036,18 @@ async function loadFoods() {
 
     renderFoods();
     renderSetupChecklist();
+    return true;
   } catch (error) {
     console.error(error);
 
-    document.getElementById(
-      "foodList"
-    ).innerHTML = `
-      <p>
-        Nepodařilo se načíst menu.
-      </p>
-    `;
+    if (foods.length) {
+      renderFoods();
+      showDashboardNotice("Menu se nepodařilo obnovit. Zobrazené položky pocházejí z posledního úspěšného načtení.", "error");
+    } else {
+      const list = document.getElementById("foodList");
+      if (list) list.innerHTML = `<p role="alert">Nepodařilo se načíst menu. Zkus načtení znovu.</p>`;
+    }
+    return false;
   }
 }
 
