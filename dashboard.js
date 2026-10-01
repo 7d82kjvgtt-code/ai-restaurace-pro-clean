@@ -8994,6 +8994,7 @@ let saveFoodInProgress = false;
 
 async function saveFood() {
   if (saveFoodInProgress) return;
+  const foodEditingId = editingFoodId;
   saveFoodInProgress = true;
   const submitButton = document.getElementById("foodBtn");
   if (submitButton) submitButton.disabled = true;
@@ -9142,10 +9143,10 @@ async function saveFood() {
     };
 
     const editing =
-      editingFoodId !== null;
+      foodEditingId !== null;
 
     const url = editing
-      ? `${SUPABASE_URL}/rest/v1/menu?id=eq.${Number(editingFoodId)}&restaurant_id=eq.${currentRestaurantId}`
+      ? `${SUPABASE_URL}/rest/v1/menu?id=eq.${Number(foodEditingId)}&restaurant_id=eq.${currentRestaurantId}`
       : `${SUPABASE_URL}/rest/v1/menu`;
 
     const response = await authorizedFetch(
@@ -9167,9 +9168,9 @@ async function saveFood() {
       );
     }
 
-    await requireChangedRestaurantRow(response, editing ? editingFoodId : null);
+    await requireChangedRestaurantRow(response, editing ? foodEditingId : null);
 
-    resetFoodForm();
+    resetFoodForm(true);
     await loadFoods();
   } catch (error) {
     console.error(error);
@@ -9293,6 +9294,7 @@ function renderFoods() {
 }
 
 function editFood(id) {
+  if (saveFoodInProgress) return;
   const food = foods.find(
     item => Number(item.id) === Number(id)
   );
@@ -9354,7 +9356,8 @@ function editFood(id) {
   });
 }
 
-function resetFoodForm() {
+function resetFoodForm(force = false) {
+  if (saveFoodInProgress && !force) return;
   editingFoodId = null;
   editingImageUrl = "";
 
