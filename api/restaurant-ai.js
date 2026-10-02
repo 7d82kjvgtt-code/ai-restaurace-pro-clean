@@ -822,6 +822,12 @@ async function askModel({
     throw error;
   }
 
+  if (payload?.status !== "completed" || payload?.error || payload?.incomplete_details) {
+    const error = new Error("AI asistent nevrátil kompletní odpověď.");
+    error.status = 502;
+    throw error;
+  }
+
   const answer =
     extractOutputText(
       payload
