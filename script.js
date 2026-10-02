@@ -1841,9 +1841,10 @@ function openFoodDetail(id) {
   document.getElementById("modalFoodName").textContent = item.name;
   document.getElementById("modalFoodPrice").textContent = `${item.price} Kč`;
   document.getElementById("modalFoodDescription").textContent =
-    item.description || publicText("Neuvedeno", "Not provided");
-  const ingredientsText = item.ingredients
-  ? item.ingredients
+    String(item.description || "").trim() || publicText("Neuvedeno", "Not provided");
+  const normalizedIngredients = String(item.ingredients || "").trim();
+const ingredientsText = normalizedIngredients
+  ? normalizedIngredients
       .split(",")
       .map(ingredient => ingredient.trim())
       .filter(Boolean)
@@ -1856,7 +1857,7 @@ document.getElementById("modalFoodIngredients").textContent =
   item.category === "Nápoj" ? publicText("Objem:", "Volume:") : publicText("Gramáž:", "Weight:");
 
 document.getElementById("modalWeightLabel").textContent = weightLabel;
-  let weightText = item.weight || publicText("Neuvedeno", "Not provided");
+  let weightText = String(item.weight || "").trim() || publicText("Neuvedeno", "Not provided");
 
 weightText = weightText
   .replace(/(\d)(g|kg|ml|l)\b/gi, "$1 $2")
@@ -1888,7 +1889,10 @@ const englishAllergenNames = {
   13: "lupin", 14: "molluscs"
 };
 
-let allergensText = item.allergens || publicText("Neuvedeno", "Not provided");
+let allergensText = String(item.allergens || "").trim() || publicText(
+  "Neuvedeno – před objednáním ověřte u obsluhy.",
+  "Not provided – ask staff before ordering."
+);
 
 if (/^[\d,\s]+$/.test(allergensText)) {
   allergensText = allergensText
