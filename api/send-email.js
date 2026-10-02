@@ -4624,9 +4624,14 @@ async function getPendingStatusEmailsOnServer(req, res) {
       `/rest/v1/reservation_status_email_deliveries?restaurant_id=eq.${restaurantId}&sent_at=is.null&select=reservation_id,status_revision,status,recorded_at&order=recorded_at.desc&limit=1000`,
       { method: "GET" }
     );
+    if (!Array.isArray(rows) || rows.some(row =>
+      row === null || typeof row !== "object" || Array.isArray(row)
+    )) {
+      throw new Error("Neplatná odpověď při načítání čekajících e-mailů.");
+    }
     return res.status(200).json({
       success: true,
-      pending: Array.isArray(rows) ? rows : []
+      pending: rows
     });
   } catch (error) {
     console.error("Načtení čekajících stavových e-mailů selhalo:", error);
