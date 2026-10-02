@@ -183,6 +183,11 @@ async function supabaseServiceJson(path, options = {}) {
     `${SUPABASE_URL}${path}`,
     {
       ...options,
+      ...(
+        !options.signal && String(options.method || "GET").toUpperCase() === "GET"
+          ? { signal: AbortSignal.timeout(8000) }
+          : {}
+      ),
       headers: serviceHeaders(
         options.headers || {}
       )
@@ -1319,6 +1324,7 @@ async function getAuthenticatedUser(
       `${SUPABASE_URL}/auth/v1/user`,
       {
         method: "GET",
+        signal: AbortSignal.timeout(8000),
 
         headers: {
           apikey:
