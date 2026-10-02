@@ -969,6 +969,16 @@ export default async function handler(
         )
       ]);
 
+    if (![menuRows, hoursRows, settingsRows].every(rows =>
+      Array.isArray(rows) && rows.every(row =>
+        row !== null && typeof row === "object" && !Array.isArray(row)
+      )
+    )) {
+      const error = new Error("Podklady restaurace se nepodařilo načíst.");
+      error.status = 502;
+      throw error;
+    }
+
     const restaurantData =
       normalizeRestaurantData({
         restaurant,
