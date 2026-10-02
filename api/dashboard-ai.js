@@ -1517,6 +1517,16 @@ export default async function handler(
         )
       ]);
 
+    if (![restaurantRows, reservations, menuRows, openingRows].every(rows =>
+      Array.isArray(rows) && rows.every(row =>
+        row !== null && typeof row === "object" && !Array.isArray(row)
+      )
+    )) {
+      const error = new Error("Podklady AI přehledu se nepodařilo načíst.");
+      error.status = 502;
+      throw error;
+    }
+
     const restaurant =
       Array.isArray(
         restaurantRows
