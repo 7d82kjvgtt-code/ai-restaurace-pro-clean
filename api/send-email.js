@@ -4625,7 +4625,10 @@ async function getPendingStatusEmailsOnServer(req, res) {
       { method: "GET" }
     );
     if (!Array.isArray(rows) || rows.some(row =>
-      row === null || typeof row !== "object" || Array.isArray(row)
+      row === null || typeof row !== "object" || Array.isArray(row) ||
+      !Number.isSafeInteger(Number(row.reservation_id)) || Number(row.reservation_id) < 1 ||
+      !Number.isSafeInteger(Number(row.status_revision)) || Number(row.status_revision) < 1 ||
+      !["Potvrzeno", "Zrušeno"].includes(row.status)
     )) {
       throw new Error("Neplatná odpověď při načítání čekajících e-mailů.");
     }
