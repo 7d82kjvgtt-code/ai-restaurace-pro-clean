@@ -8,6 +8,8 @@ const headers = {
 };
 
 let menu = [];
+let publicMenuLoadFailed = false;
+let publicMenuLoading = false;
 
 function resolvePublicRestaurantSlug() {
   const fromQuery = new URLSearchParams(window.location.search)
@@ -1134,13 +1136,19 @@ async function checkPublicOpeningAvailability({ date, time, durationMinutes }) {
 }
 
 async function loadMenu() {
+  if (publicMenuLoading) return;
+  publicMenuLoading = true;
   try {
     const slug = requirePublicRestaurantSlug();
     const rows = await publicRpc("get_public_menu_safe", { p_slug: slug });
-    menu = Array.isArray(rows) ? rows : [];
+    if (!Array.isArray(rows)) throw new Error("Invalid public menu response.");
+    menu = rows;
+    publicMenuLoadFailed = false;
   } catch (error) {
     console.error("Veřejné menu se nepodařilo načíst:", error);
-    menu = [];
+    publicMenuLoadFailed = true;
+  } finally {
+    publicMenuLoading = false;
   }
   renderPublicMenu();
 }
@@ -1150,6 +1158,21 @@ function renderPublicMenu() {
   if (!container) return;
 
   container.replaceChildren();
+
+  if (publicMenuLoadFailed) {
+    const message = document.createElement("p");
+    message.setAttribute("role", "alert");
+    message.textContent = publicText("Menu se nepodařilo načíst. Zkus to prosím znovu.", "The menu could not be loaded. Please try again.");
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.textContent = publicText("Zkusit znovu", "Try again");
+    retry.addEventListener("click", () => {
+      retry.disabled = true;
+      loadMenu();
+    });
+    container.append(message, retry);
+    return;
+  }
 
   if (!menu.length) {
     const empty = document.createElement("p");
