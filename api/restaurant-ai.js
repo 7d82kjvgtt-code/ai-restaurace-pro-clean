@@ -78,6 +78,7 @@ async function supabaseServiceJson(path) {
       SUPABASE_URL + path,
       {
         method: "GET",
+        signal: AbortSignal.timeout(8000),
         headers:
           jsonHeaders(
             SERVICE_ROLE_KEY
@@ -123,6 +124,7 @@ async function publicRpc(
         ),
       {
         method: "POST",
+        signal: AbortSignal.timeout(8000),
         headers:
           jsonHeaders(
             SUPABASE_PUBLIC_KEY
