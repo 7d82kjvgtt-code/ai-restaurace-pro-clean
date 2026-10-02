@@ -125,6 +125,7 @@ async function getAuthenticatedUser(
         "/auth/v1/user",
       {
         method: "GET",
+        signal: AbortSignal.timeout(8000),
         headers: {
           apikey:
             SUPABASE_PUBLIC_KEY,
@@ -176,6 +177,7 @@ async function serviceJson(
       SUPABASE_URL + path,
       {
         method: "GET",
+        signal: AbortSignal.timeout(8000),
         headers:
           jsonHeaders(
             SERVICE_ROLE_KEY
