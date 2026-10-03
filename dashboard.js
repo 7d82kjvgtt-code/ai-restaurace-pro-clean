@@ -3670,6 +3670,14 @@ async function updateReservationStatusRequest(id, status) {
       throw requestError;
     }
 
+    if (data?.success !== true || typeof data.changed !== "boolean" ||
+        Number(data.reservation_id) !== Number(id) || data.status !== status ||
+        typeof data.email_sent !== "boolean") {
+      throw new Error(
+        "Server nepotvrdil změnu stavu. Obnov přehled a zkontroluj aktuální stav rezervace."
+      );
+    }
+
     return data;
   } catch (error) {
     if (
