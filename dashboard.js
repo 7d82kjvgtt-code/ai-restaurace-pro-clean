@@ -3719,7 +3719,15 @@ async function retryStatusEmail(reservationId, statusRevision) {
       throw new Error(data.error || "Odeslání e-mailu nebylo potvrzeno. Kontaktujte hosta ručně.");
     }
     if (Number(currentRestaurantId) !== restaurantId) return;
-    pendingStatusEmails.delete(id);
+    const pendingRevision = Number(pendingStatusEmails.get(id)?.status_revision);
+    if (pendingRevision > revision) {
+      showDashboardNotice(
+        "E-mail k původní změně byl odeslán. E-mail k novější změně stále čeká na odeslání.",
+        "info"
+      );
+      return;
+    }
+    if (pendingRevision === revision) pendingStatusEmails.delete(id);
     renderReservations(reservations);
     showDashboardNotice(
       data.already_sent
