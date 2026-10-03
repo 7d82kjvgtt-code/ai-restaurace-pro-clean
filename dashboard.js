@@ -5138,6 +5138,8 @@ let saveReservationChangesInProgress = false;
 
 async function saveReservationChanges() {
   if (saveReservationChangesInProgress) return;
+  const restaurantId = Number(currentRestaurantId);
+  if (!Number.isSafeInteger(restaurantId) || restaurantId < 1) return;
   saveReservationChangesInProgress = true;
   const inlineError = document.getElementById("editReservationError");
   if (inlineError) { inlineError.hidden = true; inlineError.textContent = ""; }
@@ -5313,6 +5315,7 @@ async function saveReservationChanges() {
       "Čerstvý stav rezervací se nepodařilo načíst:",
       error
     );
+    if (Number(currentRestaurantId) !== restaurantId) return;
 
     showDashboardNotice(
       "Rezervaci teď nelze bezpečně upravit. Obnov stránku a zkus to znovu."
@@ -5320,6 +5323,7 @@ async function saveReservationChanges() {
     return;
   }
 
+  if (Number(currentRestaurantId) !== restaurantId) return;
   const currentReservation =
     reservations.find(
       reservation =>
@@ -5342,6 +5346,7 @@ async function saveReservationChanges() {
       durationMinutes
     });
 
+  if (Number(currentRestaurantId) !== restaurantId) return;
   if (
     !openingAvailability.ok &&
     status !== "Zrušeno"
@@ -5543,6 +5548,12 @@ async function saveReservationChanges() {
       );
     }
 
+    if (statusResult?.success !== true ||
+        Number(statusResult?.reservation?.id) !== id ||
+        Number(statusResult?.reservation?.restaurant_id) !== restaurantId) {
+      throw new Error("Server nepotvrdil úpravu rezervace. Obnov přehled a zkontroluj aktuální stav.");
+    }
+    if (Number(currentRestaurantId) !== restaurantId) return;
     closeReservationModal();
     closeTableModal();
 
@@ -5551,6 +5562,7 @@ async function saveReservationChanges() {
       loadReservationHistory()
     ]);
 
+    if (Number(currentRestaurantId) !== restaurantId) return;
     renderTables();
 
     if (!reservationsLoaded) {
@@ -5594,6 +5606,7 @@ async function saveReservationChanges() {
     console.error(
       error
     );
+    if (Number(currentRestaurantId) !== restaurantId) return;
 
     const errorText = String(error?.message || "Rezervaci se nepodařilo kompletně upravit.");
     if (inlineError) {
