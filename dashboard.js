@@ -2201,8 +2201,8 @@ async function showUnassignedAccountState() {
   }
   try {
     const [teamResponse, profileResponse] = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/restaurant_team?user_id=eq.${encodeURIComponent(userId)}&select=id&limit=1`, { headers: getHeaders() }),
-      fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=restaurant_id&limit=1`, { headers: getHeaders() })
+      fetch(`${SUPABASE_URL}/rest/v1/restaurant_team?user_id=eq.${encodeURIComponent(userId)}&select=id&limit=1`, { headers: getHeaders(), signal: AbortSignal.timeout(10000) }),
+      fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=restaurant_id&limit=1`, { headers: getHeaders(), signal: AbortSignal.timeout(10000) })
     ]);
     if (!teamResponse.ok || !profileResponse.ok) {
       throw new Error("membership check failed");
@@ -2210,6 +2210,11 @@ async function showUnassignedAccountState() {
     const [memberships, profiles] = await Promise.all([
       teamResponse.json(), profileResponse.json()
     ]);
+    if (![memberships, profiles].every(rows =>
+      Array.isArray(rows) && rows.every(row =>
+        row !== null && typeof row === "object" && !Array.isArray(row)))) {
+      throw new Error("invalid membership response");
+    }
     if (!memberships.length && !profiles.some(profile => profile.restaurant_id)) {
       showCreateRestaurant();
       return;
