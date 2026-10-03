@@ -3757,6 +3757,7 @@ async function retryStatusEmail(reservationId, statusRevision) {
 }
 
 async function updateStatus(id, status) {
+  const restaurantId = Number(currentRestaurantId);
   const reservationId =
     Number(id);
 
@@ -3872,6 +3873,8 @@ async function updateStatus(id, status) {
         nextStatus
       );
 
+    if (Number(currentRestaurantId) !== restaurantId) return false;
+
     if (
       result?.changed ===
       false
@@ -3879,6 +3882,7 @@ async function updateStatus(id, status) {
       // Jiný request už stejný stav provedl.
       // Server kvůli tomu neposlal druhý e-mail.
       await loadReservations();
+      if (Number(currentRestaurantId) !== restaurantId) return false;
 
       showDashboardNotice(
         nextStatus === "Potvrzeno"
@@ -3894,6 +3898,7 @@ async function updateStatus(id, status) {
       loadReservations(),
       loadReservationHistory()
     ]);
+    if (Number(currentRestaurantId) !== restaurantId) return false;
 
     if (
       result?.email_sent
@@ -3929,15 +3934,18 @@ async function updateStatus(id, status) {
       error
     );
 
+    if (Number(currentRestaurantId) !== restaurantId) return false;
+    const rollbackIndex = reservations.findIndex(item => Number(item.id) === reservationId);
+
     // Server změnu nepotvrdil -> vrátíme původní stav v UI.
     if (
-      reservationIndex >= 0
+      rollbackIndex >= 0
     ) {
       reservations[
-        reservationIndex
+        rollbackIndex
       ] = {
         ...reservations[
-          reservationIndex
+          rollbackIndex
         ],
         status:
           currentStatus
@@ -3956,6 +3964,7 @@ async function updateStatus(id, status) {
 
     if (Number(error?.status) === 409) {
       await loadReservations();
+      if (Number(currentRestaurantId) !== restaurantId) return false;
     }
 
     showDashboardNotice(
@@ -3970,14 +3979,10 @@ async function updateStatus(id, status) {
       reservationId
     );
 
-    setReservationStatusButtonsBusy(
-      reservationId,
-      false
-    );
-
-    renderReservations(
-      reservations
-    );
+    if (Number(currentRestaurantId) === restaurantId) {
+      setReservationStatusButtonsBusy(reservationId, false);
+      renderReservations(reservations);
+    }
   }
 }
 
