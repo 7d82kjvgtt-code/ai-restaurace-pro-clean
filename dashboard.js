@@ -2296,7 +2296,8 @@ async function saveRecoveredPassword(event) {
     document.getElementById("resetPasswordForm").reset();
     await fetch(`${SUPABASE_URL}/auth/v1/logout?scope=local`, {
       method: "POST",
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${usedToken}` }
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${usedToken}` },
+      signal: AbortSignal.timeout(5000)
     }).catch(() => {});
     clearSession();
     showLogin();
