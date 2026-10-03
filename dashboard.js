@@ -2378,12 +2378,14 @@ async function createOwnerRestaurant(event) {
   const name = document.getElementById("newRestaurantName").value.trim();
   const status = document.getElementById("createRestaurantStatus");
   const button = document.querySelector('#createRestaurantForm button[type="submit"]');
+  if (button.disabled) return;
   if (name.length < 2 || name.length > 120) {
     status.textContent = "Zadejte název restaurace (2–120 znaků).";
     return;
   }
   button.disabled = true;
   status.textContent = "Zakládám restauraci...";
+  let restaurantCreated = false;
   try {
     const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/create_owner_restaurant`, {
       method: "POST",
@@ -2396,6 +2398,7 @@ async function createOwnerRestaurant(event) {
         : "Restauraci se nepodařilo založit. Účet může být už přiřazený k týmu nebo e-mail není potvrzený.";
       return;
     }
+    restaurantCreated = true;
     if (!await loadRestaurantContextWithRetry()) {
       status.textContent = "Restaurace byla vytvořena. Obnovte stránku a pokračujte.";
       return;
@@ -2403,9 +2406,11 @@ async function createOwnerRestaurant(event) {
     history.replaceState(null, "", "#restaurace");
     location.reload();
   } catch {
-    status.textContent = "Spojení se nezdařilo. Zkuste to znovu.";
+    status.textContent = restaurantCreated
+      ? "Restaurace byla vytvořena, ale přehled se nepodařilo načíst. Obnovte stránku a pokračujte."
+      : "Výsledek založení nelze ověřit. Obnovte stránku a zkontrolujte účet před dalším pokusem.";
   } finally {
-    button.disabled = false;
+    button.disabled = restaurantCreated;
   }
 }
 
