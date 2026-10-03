@@ -3939,7 +3939,10 @@ async function updateStatus(id, status) {
 
     // Server změnu nepotvrdil -> vrátíme původní stav v UI.
     if (
-      rollbackIndex >= 0
+      rollbackIndex >= 0 &&
+      reservations[rollbackIndex]?.status === nextStatus &&
+      String(reservations[rollbackIndex]?.row_revision ?? "") ===
+        String(currentReservation?.row_revision ?? "")
     ) {
       reservations[
         rollbackIndex
