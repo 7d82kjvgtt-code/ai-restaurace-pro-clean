@@ -2821,7 +2821,8 @@ async function login(event) {
 
     const data = await response.json();
 
-    if (!response.ok || !data.access_token) {
+    if (!response.ok || typeof data?.access_token !== "string" || !data.access_token ||
+        typeof data?.refresh_token !== "string" || !data.refresh_token) {
       error.textContent =
         "Nesprávný e-mail nebo heslo.";
 
