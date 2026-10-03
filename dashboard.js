@@ -5614,6 +5614,7 @@ async function saveReservationChanges() {
 }
 
 async function updateReservation(id, data = {}) {
+  const restaurantId = Number(currentRestaurantId);
   const reservationId =
     Number(id);
 
@@ -5629,7 +5630,7 @@ async function updateReservation(id, data = {}) {
       reservationId
     ) ||
     reservationId < 1 ||
-    !current
+    !current || !Number.isSafeInteger(restaurantId) || restaurantId < 1
   ) {
     showDashboardNotice(
       "Rezervace nebyla nalezena."
@@ -5785,6 +5786,12 @@ async function updateReservation(id, data = {}) {
     }
 
     const savedReservation = result?.reservation;
+    if (result?.success !== true ||
+        Number(savedReservation?.id) !== reservationId ||
+        Number(savedReservation?.restaurant_id) !== restaurantId) {
+      throw new Error("Server nepotvrdil úpravu rezervace. Obnov přehled a zkontroluj aktuální stav.");
+    }
+    if (Number(currentRestaurantId) !== restaurantId) return true;
     if (Number(savedReservation?.id) === reservationId &&
         Number(savedReservation?.restaurant_id) === Number(currentRestaurantId)) {
       reservations = reservations.map(item =>
@@ -5799,6 +5806,7 @@ async function updateReservation(id, data = {}) {
       loadReservationHistory()
     ]);
 
+    if (Number(currentRestaurantId) !== restaurantId) return true;
     if (!reservationsLoaded) {
       renderReservations(getFilteredReservations());
       renderCalendar();
@@ -5813,6 +5821,7 @@ async function updateReservation(id, data = {}) {
     return true;
   } catch (error) {
     console.error(error);
+    if (Number(currentRestaurantId) !== restaurantId) return false;
 
     showDashboardNotice(
       String(
