@@ -7164,6 +7164,8 @@ let saveNewReservationInProgress = false;
 
 async function saveNewReservation() {
   if (saveNewReservationInProgress) return;
+  const restaurantId = Number(currentRestaurantId);
+  if (!Number.isSafeInteger(restaurantId) || restaurantId < 1) return;
   saveNewReservationInProgress = true;
   const saveButton = document.querySelector("#novaRezervace .successButton");
   if (saveButton) saveButton.disabled = true;
@@ -7281,6 +7283,7 @@ async function saveNewReservation() {
       durationMinutes
     });
 
+  if (Number(currentRestaurantId) !== restaurantId) return;
   if (
     !openingAvailability.ok
   ) {
@@ -7297,6 +7300,7 @@ async function saveNewReservation() {
       "Čerstvý stav rezervací se nepodařilo načíst:",
       error
     );
+    if (Number(currentRestaurantId) !== restaurantId) return;
 
     showDashboardNotice(
       "Rezervaci teď nelze bezpečně uložit. Obnov stránku a zkus to znovu."
@@ -7304,6 +7308,7 @@ async function saveNewReservation() {
     return;
   }
 
+  if (Number(currentRestaurantId) !== restaurantId) return;
   const reservationDraft = {
     people,
     date,
@@ -7449,7 +7454,7 @@ async function saveNewReservation() {
     status:
       "Čeká",
     restaurant_id:
-      currentRestaurantId
+      restaurantId
   };
 
   if (
@@ -7494,9 +7499,7 @@ async function saveNewReservation() {
               action:
                 "create-dashboard-reservation",
               restaurant_id:
-                Number(
-                  currentRestaurantId
-                ),
+                restaurantId,
               name,
               people,
               date,
@@ -7529,6 +7532,14 @@ async function saveNewReservation() {
         "Rezervaci se nepodařilo uložit."
       );
     }
+
+    if (result?.success !== true ||
+        !Number.isSafeInteger(Number(result?.reservation?.id)) ||
+        Number(result.reservation.id) < 1 ||
+        Number(result?.reservation?.restaurant_id) !== restaurantId) {
+      throw new Error("Server nepotvrdil vytvoření rezervace. Obnov přehled a zkontroluj jej před dalším pokusem.");
+    }
+    if (Number(currentRestaurantId) !== restaurantId) return;
 
     document
       .getElementById(
@@ -7571,6 +7582,7 @@ async function saveNewReservation() {
       loadReservationHistory()
     ]);
 
+    if (Number(currentRestaurantId) !== restaurantId) return;
     const emailFailed =
       result?.email?.attempted === true &&
       result?.email?.sent !== true;
@@ -7590,6 +7602,7 @@ async function saveNewReservation() {
     console.error(
       error
     );
+    if (Number(currentRestaurantId) !== restaurantId) return;
 
     showDashboardNotice(
       String(
