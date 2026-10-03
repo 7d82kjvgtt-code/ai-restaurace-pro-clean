@@ -2525,7 +2525,8 @@ async function loadRestaurantContext() {
         )}&active=eq.true&select=restaurant_id,role&order=id.asc&limit=2`,
         {
           method: "GET",
-          headers: getHeaders()
+          headers: getHeaders(),
+          signal: AbortSignal.timeout(10000)
         }
       );
 
@@ -2533,10 +2534,7 @@ async function loadRestaurantContext() {
       const memberships =
         await teamResponse.json();
 
-      if (
-        Array.isArray(memberships) &&
-        memberships.length > 1
-      ) {
+      if (!Array.isArray(memberships) || memberships.length > 1) {
         console.error(
           "Účet má více aktivních restaurací. Přepínač restaurací zatím není ve V1 podporovaný."
         );
@@ -2548,7 +2546,8 @@ async function loadRestaurantContext() {
         memberships?.[0];
 
       if (
-        membership?.restaurant_id
+        Number.isSafeInteger(Number(membership?.restaurant_id)) &&
+        Number(membership.restaurant_id) > 0
       ) {
         const teamRole =
           String(
