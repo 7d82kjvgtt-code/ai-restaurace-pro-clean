@@ -3689,7 +3689,20 @@ async function updateReservationStatusRequest(id, status) {
   }
 }
 
+const statusEmailRetriesInFlight = new Set();
+
 async function retryStatusEmail(reservationId, statusRevision) {
+  const id = Number(reservationId);
+  const revision = Number(statusRevision);
+  const restaurantId = Number(currentRestaurantId);
+  if (!Number.isSafeInteger(id) || id < 1 ||
+      !Number.isSafeInteger(revision) || revision < 1) {
+    showDashboardNotice("Neplatná rezervace nebo verze e-mailu.", "error");
+    return;
+  }
+  const retryKey = restaurantId + ":" + id + ":" + revision;
+  if (statusEmailRetriesInFlight.has(retryKey)) return;
+  statusEmailRetriesInFlight.add(retryKey);
   try {
     const response = await authorizedFetch("/api/send-email", {
       method: "POST",
@@ -3697,15 +3710,16 @@ async function retryStatusEmail(reservationId, statusRevision) {
       signal: AbortSignal.timeout(20000),
       body: JSON.stringify({
         action: "retry-reservation-status-email",
-        reservation_id: Number(reservationId),
-        status_revision: Number(statusRevision)
+        reservation_id: id,
+        status_revision: revision
       })
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(data.error || "E-mail se nepodařilo odeslat.");
+    if (!response.ok || data.success !== true || data.email_sent !== true) {
+      throw new Error(data.error || "Odeslání e-mailu nebylo potvrzeno. Kontaktujte hosta ručně.");
     }
-    pendingStatusEmails.delete(Number(reservationId));
+    if (Number(currentRestaurantId) !== restaurantId) return;
+    pendingStatusEmails.delete(id);
     renderReservations(reservations);
     showDashboardNotice(
       data.already_sent
@@ -3715,10 +3729,14 @@ async function retryStatusEmail(reservationId, statusRevision) {
     );
   } catch (error) {
     console.error("Opakování stavového e-mailu selhalo:", error);
-    showDashboardNotice(
-      error?.message || "E-mail se nepodařilo odeslat. Kontaktujte hosta ručně.",
-      "error"
-    );
+    if (Number(currentRestaurantId) === restaurantId) {
+      showDashboardNotice(
+        error?.message || "E-mail se nepodařilo odeslat. Kontaktujte hosta ručně.",
+        "error"
+      );
+    }
+  } finally {
+    statusEmailRetriesInFlight.delete(retryKey);
   }
 }
 
