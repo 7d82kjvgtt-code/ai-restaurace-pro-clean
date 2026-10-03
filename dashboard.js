@@ -3989,13 +3989,25 @@ async function updateStatus(id, status) {
   }
 }
 
+const reservationDeletesInFlight = new Set();
+
 async function deleteReservation(id) {
+  const restaurantId = Number(currentRestaurantId);
+  const reservationId = Number(id);
+  if (!Number.isSafeInteger(restaurantId) || restaurantId < 1 ||
+      !Number.isSafeInteger(reservationId) || reservationId < 1) return false;
+  const deleteKey = `${restaurantId}:${reservationId}`;
+  if (reservationDeletesInFlight.has(deleteKey)) return false;
   if (currentUserRole !== "owner") {
     showDashboardNotice("Rezervaci může smazat jen vlastník restaurace.");
     return;
   }
 
   const reservation = reservations.find(item => Number(item.id) === Number(id));
+  if (!reservation) {
+    showDashboardNotice("Rezervace už není v přehledu. Obnovte jej před mazáním.");
+    return false;
+  }
   const todayInPrague = new Date().toLocaleDateString("sv-SE", {
     timeZone: "Europe/Prague"
   });
@@ -4010,9 +4022,10 @@ async function deleteReservation(id) {
     return;
   }
 
+  reservationDeletesInFlight.add(deleteKey);
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${Number(id)}&restaurant_id=eq.${currentRestaurantId}`,
+      `${SUPABASE_URL}/rest/v1/reservations?id=eq.${reservationId}&restaurant_id=eq.${restaurantId}`,
       {
         method: "DELETE",
         headers: { ...getHeaders(), Prefer: "return=representation" }
@@ -4024,15 +4037,20 @@ async function deleteReservation(id) {
     }
 
     const deleted = await response.json();
-    if (!Array.isArray(deleted) || deleted.length !== 1) {
+    if (!Array.isArray(deleted) || deleted.length !== 1 ||
+        Number(deleted[0]?.id) !== reservationId ||
+        Number(deleted[0]?.restaurant_id) !== restaurantId) {
       throw new Error("Rezervace nebyla smazána.");
     }
 
+    if (Number(currentRestaurantId) !== restaurantId) return true;
     await loadReservations();
+    if (Number(currentRestaurantId) !== restaurantId) return true;
     await loadReservationHistory();
     return true;
   } catch (error) {
     console.error(error);
+    if (Number(currentRestaurantId) !== restaurantId) return false;
 
     const deleteError = String(error?.message || "");
     showDashboardNotice(
@@ -4042,6 +4060,9 @@ async function deleteReservation(id) {
           ? "Budoucí rezervaci nejdřív zrušte a ověřte odeslání zprávy hostovi."
           : "Nepodařilo se smazat rezervaci."
     );
+    return false;
+  } finally {
+    reservationDeletesInFlight.delete(deleteKey);
   }
 }
 
