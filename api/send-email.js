@@ -2906,6 +2906,17 @@ const ipRateKey =
         : rpcResult ||
           null;
 
+    if ((Array.isArray(rpcResult) && rpcResult.length !== 1) ||
+        inserted === null || typeof inserted !== "object" || Array.isArray(inserted) ||
+        !Number.isSafeInteger(Number(inserted.id)) || Number(inserted.id) < 1 ||
+        Number(inserted.restaurant_id) !== restaurantId) {
+      return res.status(503).json({
+        error: cleanLocale === "en"
+          ? "The booking result could not be verified. Please contact the restaurant before trying again."
+          : "Výsledek rezervace nelze ověřit. Před dalším pokusem kontaktujte restauraci."
+      });
+    }
+
     const placeName =
       selectedTable?.name ||
       selectedGroup?.name ||
