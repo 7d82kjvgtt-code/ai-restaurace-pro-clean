@@ -2911,6 +2911,7 @@ const ipRateKey =
         !Number.isSafeInteger(Number(inserted.id)) || Number(inserted.id) < 1 ||
         Number(inserted.restaurant_id) !== restaurantId) {
       return res.status(503).json({
+        code: "BOOKING_RESULT_UNVERIFIED",
         error: cleanLocale === "en"
           ? "The booking result could not be verified. Please contact the restaurant before trying again."
           : "Výsledek rezervace nelze ověřit. Před dalším pokusem kontaktujte restauraci."
