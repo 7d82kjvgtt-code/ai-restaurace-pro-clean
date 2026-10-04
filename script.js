@@ -1402,12 +1402,16 @@ async function loadAvailableReservationTimes() {
   if (availabilityAbortController) availabilityAbortController.abort();
   availabilityAbortController = new AbortController();
 
-  const settings = await loadPublicReservationSettings();
-  if (requestId !== availabilityRequestSequence) return;
   const dateInput = document.getElementById("datum");
   const peopleInput = document.getElementById("osoby");
   const timeSelect = document.getElementById("cas");
   if (!dateInput || !peopleInput || !timeSelect) return;
+  const previousValue = timeSelect.value;
+  timeSelect.disabled = true;
+  timeSelect.innerHTML = `<option value="">${publicText("Načítám volné časy…", "Loading available times…")}</option>`;
+
+  const settings = await loadPublicReservationSettings();
+  if (requestId !== availabilityRequestSequence) return;
 
   if (!settings) {
     timeSelect.innerHTML = `<option value="">${publicText("Časy nejsou dostupné", "Times unavailable")}</option>`;
@@ -1418,7 +1422,8 @@ async function loadAvailableReservationTimes() {
 
   const date = dateInput.value;
   const people = Number(peopleInput.value);
-  const previousValue = timeSelect.value;
+  const matchesCurrentSelection = () => requestId === availabilityRequestSequence &&
+    dateInput.value === date && Number(peopleInput.value) === people;
 
   if (!date || !Number.isInteger(people) || people < publicReservationSettings.min_people || people > publicReservationSettings.max_people) {
     timeSelect.innerHTML = `<option value="">${publicText("Nejdřív vyber datum a počet osob", "Choose a date and number of guests first")}</option>`;
@@ -1485,15 +1490,15 @@ async function loadAvailableReservationTimes() {
       })
     });
 
-    if (requestId !== availabilityRequestSequence) return;
+    if (!matchesCurrentSelection()) return;
 
     const data = await response.json().catch(() => ({}));
-    if (requestId !== availabilityRequestSequence) return;
+    if (!matchesCurrentSelection()) return;
     if (!response.ok) {
       throw new Error(PUBLIC_LOCALE === "en" ? "Available times could not be loaded." : data.error || "Volné časy se nepodařilo načíst.");
     }
 
-    if (!Array.isArray(data.slots) || data.slots.some(slot =>
+    if (data.success !== true || !Array.isArray(data.slots) || data.slots.some(slot =>
       typeof slot !== "string" || !/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(slot)
     )) {
       throw new Error(publicText("Volné časy se nepodařilo načíst.", "Available times could not be loaded."));
@@ -1530,7 +1535,7 @@ async function loadAvailableReservationTimes() {
     if (slots.includes(previousValue)) timeSelect.value = previousValue;
     setAvailableTimesStatus(PUBLIC_LOCALE === "en" ? `${slots.length} available times` : data.message || `${slots.length} volných termínů`, "success");
   } catch (error) {
-    if (requestId !== availabilityRequestSequence) return;
+    if (!matchesCurrentSelection()) return;
     if (error?.name === "AbortError" && !timedOut) return;
     console.error(error);
     timeSelect.innerHTML = `<option value="">${publicText("Časy se nepodařilo načíst", "Times could not be loaded")}</option>`;
@@ -1598,7 +1603,7 @@ async function ulozitRezervaci() {
     return;
   }
 
-  if (!time) {
+  if (!time || document.getElementById("cas").disabled) {
     showPublicReservationNotice(publicText("Vyber volný čas rezervace.", "Choose an available booking time."));
     return;
   }
@@ -1811,6 +1816,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     peopleInput.addEventListener(
       "input",
       () => {
+        ++availabilityRequestSequence;
+        if (availabilityAbortController) availabilityAbortController.abort();
+        if (timeSelect) {
+          timeSelect.disabled = true;
+          timeSelect.innerHTML = `<option value="">${publicText("Načítám volné časy…", "Loading available times…")}</option>`;
+        }
         clearTimeout(
           peopleInput
             ._availabilityTimer
