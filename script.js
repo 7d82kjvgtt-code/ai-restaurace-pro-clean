@@ -1327,6 +1327,7 @@ function odpoved() {
 }
 
 let reservationSubmissionInProgress = false;
+let reservationResultUnverified = false;
 
 function getPublicReservationButton() {
   return document.getElementById("reservationSubmitButton") || document.querySelector('button[onclick*="ulozitRezervaci"]');
@@ -1342,7 +1343,7 @@ function setPublicReservationSubmitting(isSubmitting) {
     button.dataset.originalText = button.textContent.trim() || publicText("Potvrdit rezervaci", "Confirm reservation");
   }
 
-  button.disabled = isSubmitting;
+  button.disabled = isSubmitting || reservationResultUnverified;
   button.setAttribute("aria-busy", String(isSubmitting));
   button.textContent = isSubmitting
     ? publicText("Ukládám rezervaci…", "Saving reservation…")
@@ -1539,7 +1540,19 @@ async function loadAvailableReservationTimes() {
   }
 }
 
+function showUnverifiedPublicReservationResult() {
+  reservationResultUnverified = true;
+  showPublicReservationNotice(publicText(
+    "Výsledek rezervace nelze ověřit. Před dalším odesláním kontaktujte restauraci podle údajů na této stránce.",
+    "We could not verify the booking result. Before submitting again, contact the restaurant using the details on this page."
+  ));
+}
+
 async function ulozitRezervaci() {
+  if (reservationResultUnverified) {
+    showUnverifiedPublicReservationResult();
+    return;
+  }
   if (reservationSubmissionInProgress) return;
   if (!publicReservationSettingsLoaded) {
     showPublicReservationNotice(publicText("Nastavení rezervací se ještě načítá. Zkus to prosím za chvíli.", "Booking settings are still loading. Please try again shortly."));
@@ -1668,6 +1681,11 @@ async function ulozitRezervaci() {
 
     const createData = await createResponse.json().catch(() => ({}));
     if (!createResponse.ok) {
+      if (createData.code === "BOOKING_RESULT_UNVERIFIED" ||
+          [500, 502, 504].includes(createResponse.status)) {
+        showUnverifiedPublicReservationResult();
+        return;
+      }
       const englishError = createResponse.status === 409
         ? "This time is no longer available. Please choose another."
         : createResponse.status === 429
@@ -1685,10 +1703,7 @@ async function ulozitRezervaci() {
     if (createData.success !== true ||
         !Number.isSafeInteger(Number(createData.reservation?.id)) ||
         Number(createData.reservation?.id) < 1) {
-      showPublicReservationNotice(publicText(
-        "Výsledek rezervace nelze ověřit. Před dalším odesláním kontaktujte restauraci podle údajů na této stránce.",
-        "We could not verify the booking result. Before submitting again, contact the restaurant using the details on this page."
-      ));
+      showUnverifiedPublicReservationResult();
       return;
     }
 
@@ -1707,10 +1722,7 @@ async function ulozitRezervaci() {
     loadAvailableReservationTimes();
   } catch (error) {
     console.error(error);
-    showPublicReservationNotice(publicText(
-      "Výsledek rezervace nelze ověřit. Před dalším odesláním kontaktujte restauraci podle údajů na této stránce.",
-      "We could not verify the booking result. Before submitting again, contact the restaurant using the details on this page."
-    ));
+    showUnverifiedPublicReservationResult();
   } finally {
     setPublicReservationSubmitting(false);
   }
