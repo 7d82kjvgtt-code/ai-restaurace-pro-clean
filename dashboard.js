@@ -2245,12 +2245,14 @@ async function requestPasswordReset(event) {
   const email = document.getElementById("recoveryEmail").value.trim();
   const status = document.getElementById("recoveryStatus");
   const button = document.querySelector('#forgotPasswordForm button[type="submit"]');
+  if (button.disabled) return;
   button.disabled = true;
   status.textContent = "Odesílám odkaz...";
   try {
     const redirectTo = encodeURIComponent(location.origin + "/dashboard.html");
     const response = await fetch(`${SUPABASE_URL}/auth/v1/recover?redirect_to=${redirectTo}`, {
       method: "POST",
+      signal: AbortSignal.timeout(15000),
       headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({ email })
     });
@@ -2260,7 +2262,7 @@ async function requestPasswordReset(event) {
         ? "Pokud účet existuje, pošleme odkaz pro změnu hesla na tento e-mail."
         : "Odkaz se nepodařilo odeslat. Zkuste to později.";
   } catch {
-    status.textContent = "Spojení se nezdařilo. Zkuste to znovu.";
+    status.textContent = "Odeslání odkazu nelze ověřit. Zkontrolujte e-mail; pokud odkaz nepřijde, zkuste to později.";
   } finally {
     button.disabled = false;
   }
@@ -2272,6 +2274,7 @@ async function saveRecoveredPassword(event) {
   const password = document.getElementById("newAccountPassword").value;
   const confirmation = document.getElementById("confirmAccountPassword").value;
   const button = document.querySelector('#resetPasswordForm button[type="submit"]');
+  if (button.disabled) return;
   if (password.length < 12 || password !== confirmation) {
     status.textContent = "Zadejte stejné nové heslo o alespoň 12 znacích.";
     return;
@@ -2285,6 +2288,7 @@ async function saveRecoveredPassword(event) {
   try {
     const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       method: "PUT",
+      signal: AbortSignal.timeout(15000),
       headers: {
         apikey: SUPABASE_KEY,
         Authorization: `Bearer ${passwordRecoveryToken}`,
@@ -2308,7 +2312,7 @@ async function saveRecoveredPassword(event) {
     showLogin();
     document.getElementById("error").textContent = "Heslo bylo změněno. Přihlaste se novým heslem.";
   } catch {
-    status.textContent = "Spojení se nezdařilo. Zkuste to znovu.";
+    status.textContent = "Výsledek změny hesla nelze ověřit. Zkuste se přihlásit novým heslem; pokud nefunguje, požádejte o nový odkaz.";
   } finally {
     button.disabled = false;
   }
@@ -2337,6 +2341,7 @@ async function signupOwner(event) {
   const password = document.getElementById("signupPassword").value;
   const status = document.getElementById("signupStatus");
   const button = form.querySelector('button[type="submit"]');
+  if (button.disabled) return;
   if (password.length < 12) {
     status.textContent = "Heslo musí mít alespoň 12 znaků.";
     return;
@@ -2347,6 +2352,7 @@ async function signupOwner(event) {
     const redirectTo = encodeURIComponent(location.origin + "/dashboard.html");
     const response = await fetch(`${SUPABASE_URL}/auth/v1/signup?redirect_to=${redirectTo}`, {
       method: "POST",
+      signal: AbortSignal.timeout(15000),
       headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
     });
@@ -2367,7 +2373,7 @@ async function signupOwner(event) {
       status.textContent = "Zkontrolujte e-mail a potvrďte účet. Pak se přihlaste a založte restauraci.";
     }
   } catch {
-    status.textContent = "Spojení se nezdařilo. Zkuste to znovu.";
+    status.textContent = "Výsledek registrace nelze ověřit. Zkontrolujte e-mail a zkuste přihlášení před dalším pokusem.";
   } finally {
     button.disabled = false;
   }
@@ -2799,6 +2805,8 @@ async function login(event) {
   const button =
     document.getElementById("loginButton");
 
+  if (button.disabled) return;
+
   const email = emailInput.value.trim();
   const password = passwordInput.value;
 
@@ -2817,6 +2825,7 @@ async function login(event) {
       `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
       {
         method: "POST",
+        signal: AbortSignal.timeout(15000),
         headers: {
           apikey: SUPABASE_KEY,
           "Content-Type": "application/json"
@@ -2830,12 +2839,17 @@ async function login(event) {
 
     const data = await response.json();
 
-    if (!response.ok || typeof data?.access_token !== "string" || !data.access_token ||
+    if (!response.ok) {
+      error.textContent = response.status === 429
+        ? "Příliš mnoho pokusů. Zkuste to později."
+        : response.status >= 500
+          ? "Přihlášení teď není dostupné. Zkuste to za chvíli."
+          : "Nesprávný e-mail nebo heslo.";
+      return;
+    }
+    if (typeof data?.access_token !== "string" || !data.access_token ||
         typeof data?.refresh_token !== "string" || !data.refresh_token) {
-      error.textContent =
-        "Nesprávný e-mail nebo heslo.";
-
-      passwordInput.value = "";
+      error.textContent = "Výsledek přihlášení nelze ověřit. Zkuste to znovu.";
       return;
     }
 
@@ -2874,6 +2888,7 @@ async function login(event) {
     error.textContent =
       "Přihlášení se nepodařilo.";
   } finally {
+    passwordInput.value = "";
     button.disabled = false;
   }
 }
