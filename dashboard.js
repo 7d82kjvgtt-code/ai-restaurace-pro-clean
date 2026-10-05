@@ -2404,9 +2404,11 @@ async function createOwnerRestaurant(event) {
   button.disabled = true;
   status.textContent = "Zakládám restauraci...";
   let restaurantCreated = false;
+  let creationUnverified = false;
   try {
     const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/create_owner_restaurant`, {
       method: "POST",
+      signal: AbortSignal.timeout(15000),
       headers: getHeaders(),
       body: JSON.stringify({ p_name: name })
     });
@@ -2416,19 +2418,26 @@ async function createOwnerRestaurant(event) {
         : "Restauraci se nepodařilo založit. Účet může být už přiřazený k týmu nebo e-mail není potvrzený.";
       return;
     }
+    const createdRestaurantId = await response.json();
+    if (!["number", "string"].includes(typeof createdRestaurantId) ||
+        !Number.isSafeInteger(Number(createdRestaurantId)) || Number(createdRestaurantId) < 1) {
+      throw new Error("Invalid restaurant creation response.");
+    }
     restaurantCreated = true;
-    if (!await loadRestaurantContextWithRetry()) {
+    if (!await loadRestaurantContextWithRetry() ||
+        Number(restaurant_id) !== Number(createdRestaurantId)) {
       status.textContent = "Restaurace byla vytvořena. Obnovte stránku a pokračujte.";
       return;
     }
     history.replaceState(null, "", "#restaurace");
     location.reload();
   } catch {
+    creationUnverified = !restaurantCreated;
     status.textContent = restaurantCreated
       ? "Restaurace byla vytvořena, ale přehled se nepodařilo načíst. Obnovte stránku a pokračujte."
       : "Výsledek založení nelze ověřit. Obnovte stránku a zkontrolujte účet před dalším pokusem.";
   } finally {
-    button.disabled = restaurantCreated;
+    button.disabled = restaurantCreated || creationUnverified;
   }
 }
 
