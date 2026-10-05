@@ -2363,8 +2363,20 @@ async function signupOwner(event) {
       return;
     }
     const data = await response.json();
+    if (data === null || typeof data !== "object" || Array.isArray(data)) {
+      throw new Error("Invalid signup response.");
+    }
+    const hasSession = typeof data.access_token === "string" && !!data.access_token.trim() &&
+      typeof data.refresh_token === "string" && !!data.refresh_token.trim();
+    const hasTokenFields = "access_token" in data || "refresh_token" in data;
+    const userId = data.id || data.user?.id;
+    const hasUser = typeof userId === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+    if ((hasTokenFields && !hasSession) || (!hasSession && !hasUser)) {
+      throw new Error("Invalid signup response.");
+    }
     form.reset();
-    if (data.access_token && data.refresh_token) {
+    if (hasSession) {
       sessionStorage.setItem("dashboardLoggedIn", "true");
       sessionStorage.setItem("supabaseAccessToken", data.access_token);
       sessionStorage.setItem("supabaseRefreshToken", data.refresh_token);
