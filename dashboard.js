@@ -374,7 +374,16 @@ document.querySelectorAll(".room-switch").forEach((button) => {
     return;
   }
 
-  if (await ensureValidSession()) {
+  let sessionValid;
+  try {
+    sessionValid = await ensureValidSession();
+  } catch {
+    showLogin();
+    document.getElementById("error").textContent =
+      "Přihlášení se teď nepodařilo ověřit. Zkontrolujte připojení a obnovte stránku.";
+    return;
+  }
+  if (sessionValid) {
     // Po návratu z pozvánky může členství dorazit o zlomek sekundy později.
     // Krátký retry odstraní nutnost ručního refreshu.
     const restaurantLoaded = await loadRestaurantContextWithRetry();
@@ -2702,54 +2711,52 @@ function tokenNeedsRefresh() {
   );
 }
 
+let sessionRefreshInFlight = null;
+
 async function refreshSession() {
   const refreshToken = getRefreshToken();
-
-  if (!refreshToken) {
-    return false;
+  if (!refreshToken) return false;
+  if (sessionRefreshInFlight?.token === refreshToken) {
+    return sessionRefreshInFlight.promise;
   }
 
-  try {
-    const response = await fetch(
-      `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,
-      {
-        method: "POST",
-        headers: {
-          apikey: SUPABASE_KEY,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          refresh_token: refreshToken
-        })
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok || !data.access_token) {
-      return false;
-    }
-
-    sessionStorage.setItem(
-      "dashboardLoggedIn",
-      "true"
-    );
-
-    sessionStorage.setItem(
-      "supabaseAccessToken",
-      data.access_token
-    );
-
-    if (data.refresh_token) {
-      sessionStorage.setItem(
-        "supabaseRefreshToken",
-        data.refresh_token
+  const flight = { token: refreshToken, promise: null };
+  flight.promise = (async () => {
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,
+        {
+          method: "POST",
+          signal: AbortSignal.timeout(15000),
+          headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: refreshToken })
+        }
       );
+      if (getRefreshToken() !== refreshToken) return !!getAccessToken();
+      if (!response.ok) {
+        if ([400, 401, 403].includes(response.status)) return false;
+        throw new Error("Session refresh unavailable.");
+      }
+      const data = await response.json();
+      if (getRefreshToken() !== refreshToken) return !!getAccessToken();
+      if (typeof data?.access_token !== "string" || !data.access_token.trim() ||
+          typeof data?.refresh_token !== "string" || !data.refresh_token.trim()) {
+        throw new Error("Invalid session refresh response.");
+      }
+      sessionStorage.setItem("supabaseAccessToken", data.access_token);
+      sessionStorage.setItem("supabaseRefreshToken", data.refresh_token);
+      sessionStorage.setItem("dashboardLoggedIn", "true");
+      return true;
+    } catch {
+      if (getRefreshToken() !== refreshToken) return !!getAccessToken();
+      throw new Error("Přihlášení se teď nepodařilo ověřit. Zkontrolujte připojení a zkuste to za chvíli.");
     }
-
-    return true;
-  } catch {
-    return false;
+  })();
+  sessionRefreshInFlight = flight;
+  try {
+    return await flight.promise;
+  } finally {
+    if (sessionRefreshInFlight === flight) sessionRefreshInFlight = null;
   }
 }
 
