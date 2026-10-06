@@ -1348,6 +1348,11 @@ function setRestaurantBrandingBusy(busy) {
 }
 
 async function saveRestaurantBranding() {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId && currentUserRole === "owner";
+
   if (restaurantBrandingBusy) return;
   if (
     currentUserRole !==
@@ -1566,10 +1571,11 @@ async function saveRestaurantBranding() {
         );
     }
 
+    if (!contextIsCurrent()) return;
     const response =
       await authorizedFetch(
         `${SUPABASE_URL}/rest/v1/restaurants?id=eq.${Number(
-          currentRestaurantId
+          restaurantId
         )}&select=id,name,slug,address,phone,email,logo_url,short_description,website_url,accent_color,is_published`,
         {
           method:
@@ -1616,10 +1622,11 @@ async function saveRestaurantBranding() {
           () => []
         );
 
+    if (!contextIsCurrent()) return;
     if (
       !response.ok ||
       !Array.isArray(rows) ||
-      !rows[0]
+      !rows[0] || Number(rows[0].id) !== Number(restaurantId)
     ) {
       throw new Error(response.status === 409
         ? "Tento veřejný slug už používá jiná restaurace."
@@ -1704,6 +1711,7 @@ async function saveRestaurantBranding() {
       "success"
     );
   } catch (error) {
+    if (!contextIsCurrent()) return;
     console.error(
       error
     );
@@ -1716,6 +1724,7 @@ async function saveRestaurantBranding() {
       "error"
     );
   } finally {
+    if (!contextIsCurrent()) return;
     setRestaurantBrandingBusy(false);
     if (saveButton) {
       saveButton.disabled =
@@ -1729,6 +1738,11 @@ async function saveRestaurantBranding() {
 
 
 async function removeRestaurantLogo() {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId && currentUserRole === "owner";
+
   if (restaurantBrandingBusy) return;
   if (
     currentUserRole !==
@@ -1741,10 +1755,11 @@ async function removeRestaurantLogo() {
   setRestaurantBrandingBusy(true);
 
   try {
+    if (!contextIsCurrent()) return;
     const response =
       await authorizedFetch(
         `${SUPABASE_URL}/rest/v1/restaurants?id=eq.${Number(
-          currentRestaurantId
+          restaurantId
         )}&select=id,name,slug,address,phone,email,logo_url,short_description,website_url,accent_color,is_published`,
         {
           method:
@@ -1769,12 +1784,13 @@ async function removeRestaurantLogo() {
           () => []
         );
 
+    if (!contextIsCurrent()) return;
     if (
       !response.ok ||
       !Array.isArray(
         rows
       ) ||
-      !rows[0]
+      !rows[0] || Number(rows[0].id) !== Number(restaurantId)
     ) {
       throw new Error(
         "Logo se nepodařilo odebrat."
@@ -1802,6 +1818,7 @@ async function removeRestaurantLogo() {
       "success"
     );
   } catch (error) {
+    if (!contextIsCurrent()) return;
     console.error(
       error
     );
@@ -1814,6 +1831,7 @@ async function removeRestaurantLogo() {
       "error"
     );
   } finally {
+    if (!contextIsCurrent()) return;
     setRestaurantBrandingBusy(false);
   }
 }
