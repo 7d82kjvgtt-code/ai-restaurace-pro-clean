@@ -2510,6 +2510,31 @@ function clearSession() {
 
   currentUserId =
     null;
+  reservations = [];
+  pendingStatusEmails.clear();
+  foods = [];
+  restaurantTables = [];
+  tableGroups = [];
+  customerProfiles = [];
+  teamMembers = [];
+  reservationHistory = [];
+  customerNoteDrafts.clear();
+  openingHours = [];
+  blockedTimes = [];
+  historyHasMore = false;
+  historyOldestId = null;
+  ++historyLoadVersion;
+  shownUpcomingReservationAlerts.clear();
+
+  [
+    "reservationTable", "reservationHistoryList", "customerList", "customerSummary",
+    "upcomingReservationsList", "reservationNotificationList", "dashboardNoticeContainer"
+  ].forEach(id => document.getElementById(id)?.replaceChildren());
+  document.getElementById("reservationModal")?.classList.remove("show");
+  document.querySelectorAll(
+    "#reservationModal input, #reservationModal textarea, #novaRezervace input, #novaRezervace textarea"
+  ).forEach(input => { input.value = ""; });
+
 }
 
 
