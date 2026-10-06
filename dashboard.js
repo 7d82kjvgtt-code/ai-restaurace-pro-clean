@@ -401,6 +401,11 @@ document.querySelectorAll(".room-switch").forEach((button) => {
 });
 
 async function loadCurrentRestaurantInfo() {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+
   const link =
     document.getElementById(
       "publicRestaurantLink"
@@ -467,6 +472,8 @@ async function loadCurrentRestaurantInfo() {
       await response
         .json()
         .catch(() => ({}));
+
+    if (!contextIsCurrent()) return null;
 
     if (
       !response.ok ||
@@ -545,6 +552,7 @@ async function loadCurrentRestaurantInfo() {
 
     return data.restaurant;
   } catch (error) {
+    if (!contextIsCurrent()) return null;
     console.error(
       "Údaje restaurace se nepodařilo načíst:",
       error
@@ -2095,6 +2103,11 @@ function renderSetupChecklist() {
 }
 
 async function loadDashboardData() {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+
   // Role a navigace se aplikují HNED po načtení kontextu uživatele.
   // Zaměstnanec tak po aktivaci pozvánky neuvidí výchozí stav Majitele
   // a nemusí stránku ručně obnovovat.
@@ -2114,7 +2127,9 @@ async function loadDashboardData() {
     loadTeamMembers()
   ]);
 
+  if (!contextIsCurrent()) return;
   await loadReservations();
+  if (!contextIsCurrent()) return;
   renderSetupChecklist();
 
   // Po načtení dat ještě jednou sjednotíme navigaci a oprávnění.
