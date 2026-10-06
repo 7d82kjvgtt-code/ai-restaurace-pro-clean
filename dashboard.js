@@ -2560,6 +2560,21 @@ function clearSession() {
   const aiInput = document.getElementById("dashboardAiInput");
   if (aiInput) aiInput.value = "";
   renderDashboardAiSnapshot({});
+  const logoImage = document.getElementById("restaurantLogoPreviewImage");
+  if (logoImage?.src?.startsWith("blob:")) URL.revokeObjectURL(logoImage.src);
+  const logoInput = document.getElementById("restaurantBrandLogo");
+  if (logoInput) logoInput.value = "";
+  renderRestaurantBrandingForm({});
+  document.title = "AI Restaurace PRO";
+  const restaurantLabel = document.getElementById("currentRestaurantNameLabel");
+  if (restaurantLabel) restaurantLabel.textContent = "Přehled provozu restaurace";
+  ["publicRestaurantLink", "restaurantBrandingPublicLink"].forEach(id => {
+    const link = document.getElementById(id);
+    if (link) {
+      link.hidden = true;
+      link.removeAttribute("href");
+    }
+  });
   document.querySelectorAll(
     "#reservationModal input, #reservationModal textarea, #novaRezervace input, #novaRezervace textarea"
   ).forEach(input => { input.value = ""; });
