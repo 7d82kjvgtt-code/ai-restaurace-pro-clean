@@ -2208,17 +2208,25 @@ async function showUnassignedAccountState() {
     error.textContent = "Platnost přihlášení vypršela. Přihlaste se znovu.";
     return;
   }
+  if (restaurantContextReadFailed) {
+    showLogin();
+    error.textContent = "Oprávnění restaurace se nepodařilo načíst. Zkontrolujte připojení a obnovte stránku.";
+    return;
+  }
+  const sameAccount = () => parseJwt(getAccessToken())?.sub === userId;
   try {
     const [teamResponse, profileResponse] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/restaurant_team?user_id=eq.${encodeURIComponent(userId)}&select=id&limit=1`, { headers: getHeaders(), signal: AbortSignal.timeout(10000) }),
       fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=restaurant_id&limit=1`, { headers: getHeaders(), signal: AbortSignal.timeout(10000) })
     ]);
+    if (!sameAccount()) return;
     if (!teamResponse.ok || !profileResponse.ok) {
       throw new Error("membership check failed");
     }
     const [memberships, profiles] = await Promise.all([
       teamResponse.json(), profileResponse.json()
     ]);
+    if (!sameAccount()) return;
     if (![memberships, profiles].every(rows =>
       Array.isArray(rows) && rows.every(row =>
         row !== null && typeof row === "object" && !Array.isArray(row)))) {
@@ -2232,6 +2240,7 @@ async function showUnassignedAccountState() {
     showLogin();
     error.textContent = "Účet je již přiřazený k restauraci, ale nemá aktivní přístup. Kontaktujte majitele.";
   } catch {
+    if (!sameAccount()) return;
     showLogin();
     error.textContent = "Nepodařilo se ověřit přístup. Zkuste to znovu.";
   }
