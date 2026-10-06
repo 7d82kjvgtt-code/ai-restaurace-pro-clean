@@ -2779,42 +2779,48 @@ async function ensureValidSession() {
 }
 
 async function authorizedFetch(url, options = {}) {
+  const requestUserId = parseJwt(getAccessToken())?.sub;
+  const sameAccount = () => !!requestUserId &&
+    parseJwt(getAccessToken())?.sub === requestUserId;
+  const accountChangedError = () => new Error("Účet se během požadavku změnil. Obnovte stránku.");
+
   if (!(await ensureValidSession())) {
-    clearSession();
-    location.reload();
+    if (sameAccount() || !getAccessToken()) {
+      clearSession();
+      location.reload();
+    }
     throw new Error("Přihlášení vypršelo.");
   }
+  if (!sameAccount()) throw accountChangedError();
 
   const requestHeaders = () => {
     const headers = new Headers(getHeaders());
     new Headers(options.headers || {}).forEach((value, key) => {
       headers.set(key, value);
     });
-    // Always use the current session, including after a refresh.
     headers.set("Authorization", `Bearer ${getAccessToken()}`);
     return headers;
   };
 
-  let response = await fetch(url, {
-    ...options,
-    headers: requestHeaders()
-  });
-
-  if (
-    response.status === 401 &&
-    await refreshSession()
-  ) {
-    response = await fetch(url, {
-      ...options,
-      headers: requestHeaders()
-    });
-  }
+  let sentToken = getAccessToken();
+  let response = await fetch(url, { ...options, headers: requestHeaders() });
+  if (!sameAccount()) throw accountChangedError();
 
   if (response.status === 401) {
+    // A concurrent request may already have refreshed this account.
+    const canRetry = getAccessToken() !== sentToken || await refreshSession();
+    if (!sameAccount()) throw accountChangedError();
+    if (canRetry) {
+      sentToken = getAccessToken();
+      response = await fetch(url, { ...options, headers: requestHeaders() });
+      if (!sameAccount()) throw accountChangedError();
+    }
+  }
+
+  if (response.status === 401 && getAccessToken() === sentToken) {
     clearSession();
     location.reload();
   }
-
   return response;
 }
 
