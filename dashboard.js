@@ -2540,7 +2540,10 @@ function parseJwt(token) {
     return null;
   }
 }
+let restaurantContextReadFailed = false;
+
 async function loadRestaurantContext() {
+  restaurantContextReadFailed = false;
   const token =
     getAccessToken();
 
@@ -2566,11 +2569,25 @@ async function loadRestaurantContext() {
         }
       );
 
+    if (!teamResponse.ok && (teamResponse.status === 429 || teamResponse.status >= 500)) {
+      restaurantContextReadFailed = true;
+      return false;
+    }
     if (teamResponse.ok) {
       const memberships =
         await teamResponse.json();
 
-      if (!Array.isArray(memberships) || memberships.length > 1) {
+      if (!Array.isArray(memberships)) {
+        restaurantContextReadFailed = true;
+        return false;
+      }
+      if (memberships.some(row => row === null || typeof row !== "object" || Array.isArray(row) ||
+          !Number.isSafeInteger(Number(row.restaurant_id)) || Number(row.restaurant_id) < 1 ||
+          !["owner", "manager", "staff"].includes(String(row.role || "").toLowerCase().trim()))) {
+        restaurantContextReadFailed = true;
+        return false;
+      }
+      if (memberships.length > 1) {
         console.error(
           "Účet má více aktivních restaurací. Přepínač restaurací zatím není ve V1 podporovaný."
         );
@@ -2599,6 +2616,7 @@ async function loadRestaurantContext() {
             "staff"
           ].includes(teamRole)
         ) {
+          if (parseJwt(getAccessToken())?.sub !== payload.sub) return false;
           currentUserId =
             payload.sub;
 
@@ -2617,6 +2635,7 @@ async function loadRestaurantContext() {
 
     return false;
   } catch (error) {
+    restaurantContextReadFailed = true;
     console.error(
       "Nepodařilo se načíst restauraci:",
       error
@@ -2627,8 +2646,12 @@ async function loadRestaurantContext() {
 }
 
 async function loadRestaurantContextWithRetry(attempts = 5, delayMs = 350) {
+  const checkedUserId = parseJwt(getAccessToken())?.sub;
   for (let attempt = 0; attempt < attempts; attempt++) {
-    if (await loadRestaurantContext()) return true;
+    if (parseJwt(getAccessToken())?.sub !== checkedUserId) return false;
+    const loaded = await loadRestaurantContext();
+    if (parseJwt(getAccessToken())?.sub !== checkedUserId) return false;
+    if (loaded) return true;
     if (attempt < attempts - 1) {
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
@@ -2644,18 +2667,26 @@ async function refreshCurrentUserContext(options = {}) {
   if (!getAccessToken() || roleRefreshInProgress) return;
   if (!force && Date.now() - lastRoleRefreshAt < 5000) return;
 
+  const checkedUserId = parseJwt(getAccessToken())?.sub;
+  const sameAccount = () => !!checkedUserId && parseJwt(getAccessToken())?.sub === checkedUserId;
   roleRefreshInProgress = true;
   try {
     if (!(await ensureValidSession())) {
+      if (!sameAccount() && getAccessToken()) return;
       clearSession();
       location.reload();
       return;
     }
+    if (!sameAccount()) return;
     const previousRole = currentUserRole;
     const previousRestaurantId = currentRestaurantId;
     const ok = await loadRestaurantContextWithRetry(3, 250);
 
+    if (!sameAccount()) return;
     if (!ok) {
+      if (restaurantContextReadFailed) {
+        throw new Error("Oprávnění se teď nepodařilo ověřit.");
+      }
       clearSession();
       location.reload();
       return;
