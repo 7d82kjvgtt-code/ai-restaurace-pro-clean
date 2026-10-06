@@ -4709,6 +4709,10 @@ async function refreshCustomers(button) {
 }
 
 async function loadCustomerProfiles({ throwOnError = false } = {}) {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
   if (!currentRestaurantId) {
     if (throwOnError) throw new Error("Chybí restaurace pro načtení CRM.");
     return;
@@ -4721,10 +4725,15 @@ async function loadCustomerProfiles({ throwOnError = false } = {}) {
     if (!response.ok) throw new Error(await response.text());
 
     const rows = await response.json();
+    if (!contextIsCurrent()) throw new Error("Session CRM se během načítání změnila.");
     if (!Array.isArray(rows)) throw new Error("Neplatná odpověď CRM.");
     customerProfiles = rows;
     renderCustomers();
   } catch (error) {
+    if (!contextIsCurrent()) {
+      if (throwOnError) throw error;
+      return;
+    }
     console.warn("Profily zákazníků zatím nejsou dostupné:", error);
     // Nemažeme lokální profily při dočasné chybě načtení, aby se právě
     // uložená poznámka nebo označení stálého hosta neztratily z UI.
@@ -4737,10 +4746,13 @@ const customerProfileSaveQueues = new Map();
 
 function saveCustomerProfile(customerKey, changes) {
   const queueKey = `${currentRestaurantId}:${customerKey}`;
+  const sessionVersion = dashboardSessionVersion;
   const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
   const pending = customerProfileSaveQueues.get(queueKey) || Promise.resolve();
   const operation = pending.catch(() => {}).then(() => {
-    if (String(currentRestaurantId) !== String(restaurantId)) return;
+    if (!contextIsCurrent()) return;
     return persistCustomerProfile(customerKey, { ...changes });
   });
   customerProfileSaveQueues.set(queueKey, operation);
@@ -4753,6 +4765,10 @@ function saveCustomerProfile(customerKey, changes) {
 }
 
 async function persistCustomerProfile(customerKey, changes) {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
   const customer = buildCustomers().find(item => item.key === customerKey);
   if (!customer) return;
 
@@ -4783,6 +4799,7 @@ async function persistCustomerProfile(customerKey, changes) {
 
     writeAccepted = true;
     const savedRows = await response.json();
+    if (!contextIsCurrent()) return;
     const saved = Array.isArray(savedRows) && savedRows[0] ? savedRows[0] : payload;
     const index = customerProfiles.findIndex(item => item.customer_key === customerKey);
     if (index >= 0) {
@@ -4796,6 +4813,7 @@ async function persistCustomerProfile(customerKey, changes) {
     // přežila refresh a není jen lokálně v prohlížeči.
     await loadCustomerProfiles({ throwOnError: true });
 
+    if (!contextIsCurrent()) return;
     const persisted = getCustomerProfile(customerKey);
     if (!persisted) throw new Error("Uložený profil se z databáze nenačetl.");
     if (Object.prototype.hasOwnProperty.call(changes, "note") &&
@@ -4813,6 +4831,7 @@ async function persistCustomerProfile(customerKey, changes) {
     }
     showDashboardNotice("Profil zákazníka byl uložen.", "success");
   } catch (error) {
+    if (!contextIsCurrent()) return;
     console.error(error);
     showDashboardNotice(writeAccepted
       ? "Zápis byl přijat, ale uložení profilu se nepodařilo ověřit. Obnov zákazníky a zkontroluj hodnoty."
