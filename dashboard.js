@@ -678,6 +678,10 @@ function renderDashboardAiSnapshot(
 async function askDashboardAi(
   questionOverride = ""
 ) {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId && currentUserRole === "owner" && currentDashboardAiEnabled;
   if (
     currentUserRole !==
       "owner" ||
@@ -772,6 +776,8 @@ async function askDashboardAi(
           () => ({})
         );
 
+    if (!contextIsCurrent()) return;
+
     if (
       !response.ok ||
       !data?.answer
@@ -802,6 +808,7 @@ async function askDashboardAi(
         "";
     }
   } catch (error) {
+    if (!contextIsCurrent()) return;
     console.error(
       "Dashboard AI:",
       error
@@ -817,7 +824,7 @@ async function askDashboardAi(
             );
     }
   } finally {
-    setDashboardAiBusy(
+    if (contextIsCurrent()) setDashboardAiBusy(
       false
     );
   }
@@ -2546,9 +2553,13 @@ function clearSession() {
 
   [
     "reservationTable", "reservationHistoryList", "customerList", "customerSummary",
-    "upcomingReservationsList", "reservationNotificationList", "dashboardNoticeContainer"
+    "upcomingReservationsList", "reservationNotificationList", "dashboardNoticeContainer",
+    "dashboardAiAnswer"
   ].forEach(id => document.getElementById(id)?.replaceChildren());
   document.getElementById("reservationModal")?.classList.remove("show");
+  const aiInput = document.getElementById("dashboardAiInput");
+  if (aiInput) aiInput.value = "";
+  renderDashboardAiSnapshot({});
   document.querySelectorAll(
     "#reservationModal input, #reservationModal textarea, #novaRezervace input, #novaRezervace textarea"
   ).forEach(input => { input.value = ""; });
