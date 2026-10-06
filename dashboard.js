@@ -2472,7 +2472,10 @@ function getRefreshToken() {
   return sessionStorage.getItem("supabaseRefreshToken");
 }
 
+let dashboardSessionVersion = 0;
+
 function clearSession() {
+  ++dashboardSessionVersion;
   sessionStorage.removeItem("dashboardLoggedIn");
   sessionStorage.removeItem("supabaseAccessToken");
   sessionStorage.removeItem("supabaseRefreshToken");
@@ -9237,12 +9240,18 @@ function getSafeHttpImageUrl(value) {
 }
 
 async function loadFoods() {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
   try {
     const response = await authorizedFetch(
       `${SUPABASE_URL}/rest/v1/menu?restaurant_id=eq.${currentRestaurantId}&select=*&order=id.desc`
     );
 
     const data = await response.json();
+
+    if (!contextIsCurrent()) return false;
 
     if (!response.ok) {
       throw new Error(JSON.stringify(data));
@@ -9261,6 +9270,7 @@ async function loadFoods() {
     renderSetupChecklist();
     return true;
   } catch (error) {
+    if (!contextIsCurrent()) return false;
     console.error(error);
 
     if (foods.length) {
@@ -10381,6 +10391,10 @@ function renderTeamMembers() {
 }
 
 async function loadTeamMembers() {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
   if (!currentRestaurantId || currentUserRole !== 'owner') {
     teamMembers = [];
     renderTeamMembers();
@@ -10397,9 +10411,13 @@ async function loadTeamMembers() {
     );
 
     if (!response.ok) throw new Error(await response.text());
-    teamMembers = await response.json();
+    const data = await response.json();
+    if (!contextIsCurrent() || currentUserRole !== 'owner') return;
+    if (!Array.isArray(data)) throw new Error('Invalid team list response.');
+    teamMembers = data;
     renderTeamMembers();
   } catch (error) {
+    if (!contextIsCurrent() || currentUserRole !== 'owner') return;
     console.error('Tým se nepodařilo načíst:', error);
     teamMembers = [];
     if (list) list.innerHTML = `<div class="history-empty">Tým se teď nepodařilo načíst. Zkus stránku obnovit.</div>`;
