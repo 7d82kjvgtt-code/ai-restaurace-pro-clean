@@ -3072,6 +3072,9 @@ function isValidOptionalEmail(value) {
 
 async function fetchReservationsSnapshot() {
   const restaurantId = Number(currentRestaurantId);
+  const sessionVersion = dashboardSessionVersion;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && userId === currentUserId && Number(currentRestaurantId) === restaurantId;
   if (!Number.isInteger(restaurantId) || restaurantId < 1) {
     throw new Error("Restaurace není vybraná.");
   }
@@ -3095,6 +3098,7 @@ async function fetchReservationsSnapshot() {
     }
 
     const rows = await response.json();
+    if (!contextIsCurrent()) throw new Error("Session se během načítání změnila.");
     if (!Array.isArray(rows) || rows.length > pageSize) {
       throw new Error("Neplatná odpověď při načítání rezervací.");
     }
@@ -3123,6 +3127,9 @@ async function fetchReservationsSnapshot() {
 
 async function loadPendingStatusEmails() {
   const restaurantId = Number(currentRestaurantId);
+  const sessionVersion = dashboardSessionVersion;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && userId === currentUserId && Number(currentRestaurantId) === restaurantId;
   const response = await authorizedFetch("/api/send-email", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -3134,7 +3141,7 @@ async function loadPendingStatusEmails() {
   });
   if (!response.ok) throw new Error("Stav e-mailů se nepodařilo načíst.");
   const data = await response.json();
-  if (Number(currentRestaurantId) !== restaurantId ||
+  if (!contextIsCurrent() ||
       !Array.isArray(data?.pending)) {
     throw new Error("Neplatný stav e-mailů restaurace.");
   }
@@ -3153,6 +3160,11 @@ async function loadPendingStatusEmails() {
 }
 
 async function loadReservations() {
+  const restaurantId = Number(currentRestaurantId);
+  const sessionVersion = dashboardSessionVersion;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && userId === currentUserId && Number(currentRestaurantId) === restaurantId;
+
   const table =
     document.getElementById(
       "reservationTable"
@@ -3160,14 +3172,17 @@ async function loadReservations() {
 
   try {
     await fetchReservationsSnapshot();
+    if (!contextIsCurrent()) return false;
     try {
       await loadPendingStatusEmails();
     } catch (emailStateError) {
+      if (!contextIsCurrent()) return false;
       pendingStatusEmails = new Map();
       console.error(emailStateError);
       showDashboardNotice("Stav odeslání e-mailů se nepodařilo načíst. Před mazáním rezervace jej ověřte.", "error");
     }
 
+    if (!contextIsCurrent()) return false;
     updateStatistics();
     renderReservations(
       reservations
@@ -3181,6 +3196,7 @@ async function loadReservations() {
     renderCustomers();
     return true;
   } catch (error) {
+    if (!contextIsCurrent()) return false;
     console.error(
       error
     );
