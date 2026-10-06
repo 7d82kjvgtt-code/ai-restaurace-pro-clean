@@ -6290,18 +6290,25 @@ function renderCharts() {
 ========================================================= */
 
 async function loadTables() {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+
   const list =
     document.getElementById("tableList");
 
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/restaurant_tables?restaurant_id=eq.${currentRestaurantId}&select=*&order=name.asc`
+      `${SUPABASE_URL}/rest/v1/restaurant_tables?restaurant_id=eq.${restaurantId}&select=*&order=name.asc`
     );
+if (!contextIsCurrent()) return;
 const groupsResponse = await authorizedFetch(
-  `${SUPABASE_URL}/rest/v1/table_groups?restaurant_id=eq.${currentRestaurantId}&select=*&order=id.asc`
+  `${SUPABASE_URL}/rest/v1/table_groups?restaurant_id=eq.${restaurantId}&select=*&order=id.asc`
 );
     const data = await response.json();
 const groupsData = await groupsResponse.json();
+    if (!contextIsCurrent()) return;
     if (!response.ok) {
       throw new Error(JSON.stringify(data));
     }
@@ -6325,6 +6332,7 @@ if (!groupsResponse.ok) {
     renderReservations(getFilteredReservations());
     renderSetupChecklist();
   } catch (error) {
+    if (!contextIsCurrent()) return;
     console.error(error);
 
     restaurantTables = [];
@@ -11072,11 +11080,19 @@ let openingHours = [];
 let blockedTimes = [];
 
 async function loadOpeningHours() {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+
   if (!currentRestaurantId) return;
   try {
-    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/opening_hours?restaurant_id=eq.${currentRestaurantId}&select=*&order=day_of_week.asc`, { headers: getHeaders() });
+    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/opening_hours?restaurant_id=eq.${restaurantId}&select=*&order=day_of_week.asc`, { headers: getHeaders() });
     if (!response.ok) throw new Error(await response.text());
-    openingHours = await response.json();
+    const rows = await response.json();
+    if (!contextIsCurrent()) return;
+    if (!Array.isArray(rows)) throw new Error('Invalid opening hours response.');
+    openingHours = rows;
     openingHoursConfigured =
       Array.isArray(openingHours) &&
       openingHours.some(row => row.is_open === true && row.open_time && row.close_time);
@@ -11086,6 +11102,7 @@ async function loadOpeningHours() {
     }
     renderOpeningHours();
   } catch (error) {
+    if (!contextIsCurrent()) return;
     console.error(error);
     showDashboardNotice("Provozní dobu se teď nepodařilo načíst. Zkus stránku obnovit.");
   }
@@ -11140,13 +11157,22 @@ async function saveOpeningHours() {
 }
 
 async function loadBlockedTimes() {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+
   if (!currentRestaurantId) return;
   try {
-    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/blocked_times?restaurant_id=eq.${currentRestaurantId}&select=*&order=date.asc,start_time.asc`, { headers: getHeaders() });
+    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/blocked_times?restaurant_id=eq.${restaurantId}&select=*&order=date.asc,start_time.asc`, { headers: getHeaders() });
     if (!response.ok) throw new Error(await response.text());
-    blockedTimes = await response.json();
+    const rows = await response.json();
+    if (!contextIsCurrent()) return;
+    if (!Array.isArray(rows)) throw new Error('Invalid blocked times response.');
+    blockedTimes = rows;
     renderBlockedTimes();
   } catch (error) {
+    if (!contextIsCurrent()) return;
     console.error(error);
   }
 }
@@ -11292,17 +11318,24 @@ function updateReservationSettingsSummary() {
 }
 
 async function loadReservationSettings() {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+
   if (!currentRestaurantId) return;
 
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/reservation_settings?restaurant_id=eq.${currentRestaurantId}&select=*`,
+      `${SUPABASE_URL}/rest/v1/reservation_settings?restaurant_id=eq.${restaurantId}&select=*`,
       { headers: getHeaders() }
     );
 
     if (!response.ok) throw new Error(await response.text());
 
     const rows = await response.json();
+    if (!contextIsCurrent()) return;
+    if (!Array.isArray(rows)) throw new Error('Invalid reservation settings response.');
     reservationSettingsConfigured =
       Array.isArray(rows) &&
       Boolean(rows[0]);
@@ -11310,6 +11343,7 @@ async function loadReservationSettings() {
     reservationSettings = normalizeReservationSettings(rows[0] || {});
     renderReservationSettings();
   } catch (error) {
+    if (!contextIsCurrent()) return;
     console.error("Nastavení rezervací se nepodařilo načíst:", error);
     reservationSettings = { ...DEFAULT_RESERVATION_SETTINGS };
     renderReservationSettings();
