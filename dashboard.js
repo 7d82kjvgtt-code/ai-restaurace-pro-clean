@@ -2582,6 +2582,9 @@ function clearSession() {
   if (logoImage?.src?.startsWith("blob:")) URL.revokeObjectURL(logoImage.src);
   const logoInput = document.getElementById("restaurantBrandLogo");
   if (logoInput) logoInput.value = "";
+  setRestaurantBrandingBusy(false);
+  const brandingSaveButton = document.getElementById("restaurantBrandSaveButton");
+  if (brandingSaveButton) brandingSaveButton.textContent = "Uložit restauraci";
   renderRestaurantBrandingForm({});
   document.title = "AI Restaurace PRO";
   const restaurantLabel = document.getElementById("currentRestaurantNameLabel");
