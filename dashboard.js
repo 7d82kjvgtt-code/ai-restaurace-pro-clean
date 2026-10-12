@@ -1313,6 +1313,7 @@ async function uploadRestaurantLogo(
       {
         method:
           "POST",
+          signal: AbortSignal.timeout(45000),
         headers:
           getHeaders({
             "Content-Type":
@@ -1580,6 +1581,7 @@ async function saveRestaurantBranding() {
         {
           method:
             "PATCH",
+          signal: AbortSignal.timeout(15000),
           headers:
             getHeaders({
               Prefer:
@@ -1717,7 +1719,9 @@ async function saveRestaurantBranding() {
     );
 
     showDashboardNotice(
-      String(
+      ["AbortError", "TimeoutError", "TypeError"].includes(error?.name)
+        ? "Uložení se nepodařilo potvrdit. Obnov stránku a zkontroluj údaje před dalším uložením."
+        : String(
         error?.message ||
         "Restauraci se nepodařilo uložit."
       ),
@@ -1764,6 +1768,7 @@ async function removeRestaurantLogo() {
         {
           method:
             "PATCH",
+          signal: AbortSignal.timeout(15000),
           headers:
             getHeaders({
               Prefer:
@@ -1824,7 +1829,9 @@ async function removeRestaurantLogo() {
     );
 
     showDashboardNotice(
-      String(
+      ["AbortError", "TimeoutError", "TypeError"].includes(error?.name)
+        ? "Odebrání loga se nepodařilo potvrdit. Obnov stránku a zkontroluj logo před dalším pokusem."
+        : String(
         error?.message ||
         "Logo se nepodařilo odebrat."
       ),
