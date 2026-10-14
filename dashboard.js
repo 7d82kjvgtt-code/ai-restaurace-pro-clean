@@ -2940,7 +2940,7 @@ async function authorizedFetch(url, options = {}) {
   };
 
   let sentToken = getAccessToken();
-  let response = await fetch(url, { ...options, headers: requestHeaders() });
+  let response = await fetch(url, { ...options, signal: options.signal || AbortSignal.timeout(20000), headers: requestHeaders() });
   if (!sameAccount()) throw accountChangedError();
 
   if (response.status === 401) {
@@ -2949,7 +2949,7 @@ async function authorizedFetch(url, options = {}) {
     if (!sameAccount()) throw accountChangedError();
     if (canRetry) {
       sentToken = getAccessToken();
-      response = await fetch(url, { ...options, headers: requestHeaders() });
+      response = await fetch(url, { ...options, signal: options.signal || AbortSignal.timeout(20000), headers: requestHeaders() });
       if (!sameAccount()) throw accountChangedError();
     }
   }
