@@ -2909,7 +2909,29 @@ const ipRateKey =
     if ((Array.isArray(rpcResult) && rpcResult.length !== 1) ||
         inserted === null || typeof inserted !== "object" || Array.isArray(inserted) ||
         !Number.isSafeInteger(Number(inserted.id)) || Number(inserted.id) < 1 ||
-        Number(inserted.restaurant_id) !== restaurantId) {
+        (inserted.restaurant_id != null && Number(inserted.restaurant_id) !== restaurantId)) {
+      return res.status(503).json({
+        code: "BOOKING_RESULT_UNVERIFIED",
+        error: cleanLocale === "en"
+          ? "The booking result could not be verified. Please contact the restaurant before trying again."
+          : "Výsledek rezervace nelze ověřit. Před dalším pokusem kontaktujte restauraci."
+      });
+    }
+
+    // The locale RPC returns the reservation ID, not restaurant_id.
+    // Read back through the resolved tenant before sending any email.
+    let verifiedReservation = null;
+    try {
+      const rows = await supabaseServiceJson(
+        `/rest/v1/reservations?id=eq.${Number(inserted.id)}&restaurant_id=eq.${restaurantId}&select=id,restaurant_id&limit=1`
+      );
+      if (Array.isArray(rows) && rows.length === 1 &&
+          Number(rows[0].id) === Number(inserted.id) &&
+          Number(rows[0].restaurant_id) === restaurantId) verifiedReservation = rows[0];
+    } catch (verificationError) {
+      console.error("Created reservation readback failed:", verificationError);
+    }
+    if (!verifiedReservation) {
       return res.status(503).json({
         code: "BOOKING_RESULT_UNVERIFIED",
         error: cleanLocale === "en"
