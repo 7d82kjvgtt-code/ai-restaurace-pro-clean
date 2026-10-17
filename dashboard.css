@@ -4362,3 +4362,7 @@ td { font-size:13px; }
  .mobile-menu-button { background:#d6ab80!important; color:#1e293b!important; box-shadow:0 4px 14px rgba(0,0,0,.2)!important; }
 }
 @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { animation:none!important; transition:none!important; } }
+
+.login-box .login-icon { display:grid; place-items:center; width:44px; height:44px; margin:0 auto 20px; }
+.login-box #error:empty { display:none; }
+.login-box button:not([type="submit"]) { margin-top:8px; padding:8px 10px; min-height:36px; }
