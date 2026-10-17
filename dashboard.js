@@ -132,7 +132,10 @@ function showDashboardNotice(message, type = "auto", action = null) {
   window.setTimeout(close, action ? 30000 : resolvedType === "error" ? 6500 : 4200);
 }
 
+let tableMergeInProgress = false;
+
 function toggleMergeMode() {
+  if (tableMergeInProgress) return;
   mergeModeActive = !mergeModeActive;
 
   const btn = document.getElementById("mergeModeButton");
@@ -147,17 +150,29 @@ function toggleMergeMode() {
 }
 
   async function confirmTableMerge() {
-  if (selectedTablesForMerge.length < 2) {
+  if (tableMergeInProgress) return;
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+  const canContinue = () => contextIsCurrent() && ["owner", "manager"].includes(currentUserRole);
+  if (!restaurantId || !userId || !canContinue()) return;
+  const selectedIds = [...new Set(selectedTablesForMerge.map(Number))];
+  if (selectedIds.length < 2 || selectedIds.some(id => !Number.isSafeInteger(id) || id < 1)) {
     showDashboardNotice("Vyber alespoň 2 stoly.");
     return;
   }
 
+  tableMergeInProgress = true;
+  try {
   try {
     await Promise.all([
       fetchReservationsSnapshot(),
       loadTables()
     ]);
+    if (!canContinue()) return;
   } catch (error) {
+    if (!canContinue()) return;
     console.error(
       "Čerstvý stav stolů a rezervací se nepodařilo načíst:",
       error
@@ -170,10 +185,10 @@ function toggleMergeMode() {
   }
 
   const selectedTables = restaurantTables.filter((table) =>
-    selectedTablesForMerge.includes(Number(table.id))
+    selectedIds.includes(Number(table.id))
   );
 
-  if (selectedTables.length < 2) {
+  if (selectedTables.length !== selectedIds.length) {
     showDashboardNotice("Vybrané stoly se nepodařilo najít.");
     return;
   }
@@ -250,21 +265,25 @@ function toggleMergeMode() {
       {
         method: "POST",
         headers: getHeaders({
-          Prefer: "return=minimal"
+          Prefer: "return=representation"
         }),
         body: JSON.stringify({
-          restaurant_id: currentRestaurantId,
+          restaurant_id: restaurantId,
           room: rooms[0],
           name: groupName,
-          table_ids: selectedTablesForMerge,
+          table_ids: selectedIds,
           total_capacity: totalCapacity
         })
       }
     );
 
+    if (!canContinue()) return;
     if (!response.ok) {
       throw new Error(await response.text());
     }
+
+    await requireChangedRestaurantRow(response);
+    if (!canContinue()) return;
 
     showDashboardNotice("Stoly byly úspěšně spojeny.");
 
@@ -294,8 +313,12 @@ function toggleMergeMode() {
 
    await loadTables();
   } catch (error) {
+    if (!canContinue()) return;
     console.error(error);
     showDashboardNotice("Spojení stolů se nepodařilo uložit.");
+  }
+  } finally {
+    if (contextIsCurrent()) tableMergeInProgress = false;
   }
 }
   
@@ -2578,6 +2601,14 @@ function clearSession() {
   const foodCancelButton = document.getElementById("cancelEditBtn");
   if (foodCancelButton) foodCancelButton.style.display = "none";
   restaurantTables = [];
+  tableMergeInProgress = false;
+  quickTableInProgress = false;
+  closeQuickTableModal();
+  const quickTableButton = document.querySelector("#quickTableModal .primary-button");
+  if (quickTableButton) {
+    quickTableButton.disabled = false;
+    quickTableButton.textContent = "Přidat stůl";
+  }
   saveTableInProgress = false;
   editingTableId = null;
   selectedTableId = null;
@@ -11085,6 +11116,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateFloorMapZoom();
 });
 document.addEventListener("click", event => {
+  if (quickTableInProgress) return;
   const floorMap = document.getElementById("floorMap");
 
   if (!floorMap) return;
@@ -11153,7 +11185,16 @@ function closeQuickTableModal() {
   pendingTableY = null;
 }
 
+let quickTableInProgress = false;
+
 async function createTableFromMap() {
+  if (quickTableInProgress) return;
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+  const canContinue = () => contextIsCurrent() && ["owner", "manager"].includes(currentUserRole);
+  if (!restaurantId || !userId || !canContinue()) return;
   const nameInput =
     document.getElementById("quickTableName");
 
@@ -11223,6 +11264,7 @@ const roomInput =
     Math.round(pendingTableY - 45)
   );
 
+  quickTableInProgress = true;
   try {
     if (addButton) {
       addButton.disabled = true;
@@ -11235,11 +11277,11 @@ const roomInput =
         method: "POST",
 
         headers: getHeaders({
-          Prefer: "return=minimal"
+          Prefer: "return=representation"
         }),
 
         body: JSON.stringify({
-          restaurant_id: currentRestaurantId,
+          restaurant_id: restaurantId,
           name,
           capacity,
           room,
@@ -11251,18 +11293,23 @@ const roomInput =
       }
     );
 
+    if (!canContinue()) return;
     if (!response.ok) {
       throw new Error(await response.text());
     }
 
+    await requireChangedRestaurantRow(response);
+    if (!canContinue()) return;
     closeQuickTableModal();
 
     await loadTables();
+    if (!canContinue()) return;
 
     renderReservations(
       getFilteredReservations()
     );
   } catch (error) {
+    if (!canContinue()) return;
     console.error(
       "Nepodařilo se vytvořit stůl:",
       error
@@ -11270,9 +11317,12 @@ const roomInput =
 
     showDashboardNotice("Stůl se nepodařilo přidat.");
   } finally {
+    if (contextIsCurrent()) {
+    quickTableInProgress = false;
     if (addButton) {
-      addButton.disabled = false;
+      addButton.disabled = !canContinue();
       addButton.textContent = "Přidat stůl";
+    }
     }
   }
 }
@@ -11686,3 +11736,4 @@ async function saveReservationSettings() {
 ].forEach(id => {
   document.getElementById(id)?.addEventListener("input", updateReservationSettingsSummary);
 });
+
