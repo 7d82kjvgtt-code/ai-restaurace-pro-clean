@@ -2578,6 +2578,24 @@ function clearSession() {
   const foodCancelButton = document.getElementById("cancelEditBtn");
   if (foodCancelButton) foodCancelButton.style.display = "none";
   restaurantTables = [];
+  saveTableInProgress = false;
+  editingTableId = null;
+  selectedTableId = null;
+  selectedTableReservationId = null;
+  ["tableName", "tableCapacity", "tableNote"].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) input.value = "";
+  });
+  const tableActiveInput = document.getElementById("tableActive");
+  if (tableActiveInput) tableActiveInput.checked = true;
+  const tableSaveButton = document.getElementById("tableBtn");
+  if (tableSaveButton) {
+    tableSaveButton.disabled = false;
+    tableSaveButton.textContent = "Přidat stůl";
+  }
+  const tableCancelButton = document.getElementById("cancelTableEditBtn");
+  if (tableCancelButton) tableCancelButton.style.display = "none";
+  document.getElementById("tableModal")?.classList.remove("show");
   tableGroups = [];
   customerProfiles = [];
   teamMembers = [];
@@ -8055,6 +8073,13 @@ let saveTableInProgress = false;
 
 async function saveTable() {
   if (saveTableInProgress) return;
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+  const canContinue = () => contextIsCurrent() && ["owner", "manager"].includes(currentUserRole);
+  if (!restaurantId || !userId || !canContinue()) return;
+  const tableEditingId = editingTableId;
   saveTableInProgress = true;
   const submitButton = document.getElementById("tableBtn");
   if (submitButton) submitButton.disabled = true;
@@ -8106,7 +8131,7 @@ async function saveTable() {
   }
 
   const editing =
-    editingTableId !== null;
+    tableEditingId !== null;
 
   if (
     editing &&
@@ -8114,7 +8139,7 @@ async function saveTable() {
   ) {
     if (
       isTableInActiveGroup(
-        editingTableId
+        tableEditingId
       )
     ) {
       showDashboardNotice(
@@ -8125,7 +8150,7 @@ async function saveTable() {
 
     const blockingReservation =
       getReservationsUsingTableResource(
-        editingTableId
+        tableEditingId
       ).find(
         reservation =>
           reservationHasNotEnded(
@@ -8152,7 +8177,7 @@ async function saveTable() {
           name.toLowerCase() &&
         Number(table.id) !==
           Number(
-            editingTableId
+            tableEditingId
           )
     );
 
@@ -8166,7 +8191,7 @@ async function saveTable() {
   try {
     const url =
       editing
-        ? `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${editingTableId}&restaurant_id=eq.${currentRestaurantId}`
+        ? `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${tableEditingId}&restaurant_id=eq.${restaurantId}`
         : `${SUPABASE_URL}/rest/v1/restaurant_tables`;
 
     const tablePayload = {
@@ -8178,7 +8203,7 @@ async function saveTable() {
 
     if (!editing) {
       tablePayload.restaurant_id =
-        currentRestaurantId;
+        restaurantId;
     }
 
     const response =
@@ -8201,17 +8226,20 @@ async function saveTable() {
         }
       );
 
+    if (!canContinue()) return;
     if (!response.ok) {
       throw new Error(
         await response.text()
       );
     }
 
-    await requireChangedRestaurantRow(response, editing ? editingTableId : null);
+    await requireChangedRestaurantRow(response, editing ? tableEditingId : null);
 
-    resetTableForm();
+    if (!canContinue()) return;
+    resetTableForm(true);
     await loadTables();
 
+    if (!canContinue()) return;
     renderReservations(
       getFilteredReservations()
     );
@@ -8223,6 +8251,7 @@ async function saveTable() {
       "success"
     );
   } catch (error) {
+    if (!canContinue()) return;
     console.error(
       error
     );
@@ -8232,12 +8261,15 @@ async function saveTable() {
     );
   }
   } finally {
-    saveTableInProgress = false;
-    if (submitButton) submitButton.disabled = false;
+    if (contextIsCurrent()) {
+      saveTableInProgress = false;
+      if (submitButton) submitButton.disabled = !canContinue();
+    }
   }
 }
 
 function editTable(id) {
+  if (saveTableInProgress) return;
   const table = restaurantTables.find(
     item => Number(item.id) === Number(id)
   );
@@ -8280,7 +8312,8 @@ function editTable(id) {
   });
 }
 
-function resetTableForm() {
+function resetTableForm(force = false) {
+  if (saveTableInProgress && !force) return;
   editingTableId = null;
 
   document.getElementById(
@@ -8309,6 +8342,13 @@ function resetTableForm() {
 }
 
 async function deleteTable(id) {
+  if (saveTableInProgress) return;
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+  const canContinue = () => contextIsCurrent() && ["owner", "manager"].includes(currentUserRole);
+  if (!restaurantId || !userId || !canContinue()) return;
   const numericId =
     Number(id);
 
@@ -8367,7 +8407,7 @@ async function deleteTable(id) {
   try {
     const response =
       await authorizedFetch(
-        `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${numericId}&restaurant_id=eq.${currentRestaurantId}`,
+        `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${numericId}&restaurant_id=eq.${restaurantId}`,
         {
           method:
             "DELETE",
@@ -8376,6 +8416,7 @@ async function deleteTable(id) {
         }
       );
 
+    if (!canContinue()) return;
     if (!response.ok) {
       throw new Error(
         await response.text()
@@ -8384,6 +8425,7 @@ async function deleteTable(id) {
 
     await requireChangedRestaurantRow(response, numericId);
 
+    if (!canContinue()) return;
     if (
       Number(
         editingTableId
@@ -8407,11 +8449,13 @@ async function deleteTable(id) {
       loadReservations()
     ]);
 
+    if (!canContinue()) return;
     showDashboardNotice(
       "Stůl byl smazán.",
       "success"
     );
   } catch (error) {
+    if (!canContinue()) return;
     console.error(
       error
     );
