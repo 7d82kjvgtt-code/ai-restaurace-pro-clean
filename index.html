@@ -43,7 +43,7 @@
 
 <title>AI Restaurace PRO</title>
 
-<link rel="stylesheet" href="/style.css?v=pilot-v1-20261017-mobile-scope">
+<link rel="stylesheet" href="/style.css?v=pilot-v1-20261017-professional">
 </head>
 
 <body>
@@ -78,7 +78,7 @@
     <a href="#menu" data-restaurant-only>Menu</a>
     <a href="#ai-asistent" data-restaurant-only data-restaurant-ai data-en="AI assistant" hidden>AI asistent</a>
     <a href="#rezervace" data-restaurant-only data-en="Reservations">Rezervace</a>
-    <a href="/dashboard.html" data-restaurant-only data-en="Restaurant dashboard">Správa restaurace</a>
+    <a class="restaurant-admin-link" href="/dashboard.html" data-restaurant-only data-en="Dashboard">Administrace</a>
     <button id="publicLanguageToggle" type="button" data-restaurant-only aria-label="Přepnout do angličtiny" hidden>CZ / EN</button>
     <a href="#cenik" data-saas-only>Pilot</a>
     <a href="#kontakt" data-saas-only>Kontakt</a>
@@ -98,7 +98,7 @@
 
     <h1 id="publicRestaurantHeroTitle">
       Web, rezervace,
-      menu a AI asistent
+      menu a správa stolů
       v jednom systému.
     </h1>
 
@@ -113,6 +113,8 @@
       <a class="btn" href="#rezervace" data-restaurant-only data-en="Book a table">
         Rezervovat stůl
       </a>
+
+      <a class="btn secondary" href="#menu" data-restaurant-only data-en="Explore the menu">Prohlédnout menu</a>
 
       <a class="btn secondary" href="#funkce" data-saas-only>
         Co systém umí
@@ -130,23 +132,14 @@
   </div>
 
 
-  <div class="assistant-card" data-saas-only>
-
-    <h3>🤖 AI Asistent</h3>
-
-    <input
-      id="dotaz"
-      placeholder="Napiš: menu, otevřeno, rezervace"
-    >
-
-    <button onclick="odpoved()">
-      Odeslat
-    </button>
-
-    <div id="vysledek">
-      Zeptejte se asistenta.
-    </div>
-
+  <div class="assistant-card product-overview" data-saas-only>
+    <p class="eyebrow">Od hosta až k vašemu stolu</p>
+    <h2>Rezervace pod kontrolou.</h2>
+    <ol class="product-steps">
+      <li><span>01</span><div><strong>Host vybere termín</strong><p>Dostupnost podle stolů a provozní doby.</p></div></li>
+      <li><span>02</span><div><strong>Vy rozhodnete</strong><p>Přehled rezervací na jednom místě.</p></div></li>
+      <li><span>03</span><div><strong>Host dostane e-mail</strong><p>Přijetí, potvrzení i zrušení rezervace.</p></div></li>
+    </ol>
   </div>
 
 </section>
@@ -172,12 +165,12 @@
     <div class="food-card">
 
       <h3>
-        🤖 AI Asistent
+        Přehled rezervací
       </h3>
 
       <p>
-        Odpovídá hostům na dotazy o menu,
-        rezervacích a otevírací době.
+        Přijetí, potvrzení a zrušení rezervace
+        v jednom přehledu.
       </p>
 
     </div>
@@ -186,7 +179,7 @@
     <div class="food-card">
 
       <h3>
-        📅 Online rezervace
+         Online rezervace
       </h3>
 
       <p>
@@ -199,7 +192,7 @@
     <div class="food-card">
 
       <h3>
-        🍽️ Správa menu
+         Správa menu
       </h3>
 
       <p>
@@ -213,7 +206,7 @@
     <div class="food-card">
 
       <h3>
-        📊 Dashboard
+         Dashboard
       </h3>
 
       <p>
@@ -236,8 +229,8 @@
       Jídelní lístek
     </p>
 
-    <h2 data-en="🍕 Our menu">
-      🍕 Naše menu
+    <h2 data-en="Our menu">
+      Naše menu
     </h2>
 
   </div>
@@ -259,7 +252,7 @@
 >
   <div class="section-head">
     <p class="badge" data-en="AI assistant">AI asistent</p>
-    <h2 data-en="🤖 Ask about the menu or your visit">🤖 Zeptejte se na menu nebo návštěvu</h2>
+    <h2 data-en="🤖 Ask about the menu or your visit"> Zeptejte se na menu nebo návštěvu</h2>
     <p class="restaurant-ai-lead" data-en="The assistant answers using this restaurant's current information.">
       Asistent odpovídá z aktuálních údajů této restaurace.
     </p>
@@ -316,20 +309,22 @@
 
   <div class="section-head">
 
-    <p class="badge" data-en="Reservations PRO">
-      Rezervace PRO
+    <p class="badge" data-en="Your table">
+      Váš stůl
     </p>
 
-    <h2 data-en="📅 Book a table">
-      📅 Rezervovat stůl
+    <h2 data-en="Book a table">
+      Rezervovat stůl
     </h2>
+    <p class="reservation-intro" data-en="Choose your party size and date. We will show available times. Your booking is confirmed by the restaurant.">Vyberte počet hostů a datum. Nabídneme vám volné časy. Rezervaci následně potvrdí restaurace.</p>
 
   </div>
 
 
   <div class="reservation-box">
 
-    <label for="jmeno" data-en="First name">
+    <div class="reservation-field">
+<label for="jmeno" data-en="First name">
       Jméno
     </label>
 
@@ -338,9 +333,11 @@
       placeholder="Jméno" data-en-placeholder="First name"
       autocomplete="given-name"
     >
+</div>
 
 
-    <label for="prijmeni" data-en="Last name">
+    <div class="reservation-field">
+<label for="prijmeni" data-en="Last name">
       Příjmení
     </label>
 
@@ -349,9 +346,11 @@
       placeholder="Příjmení" data-en-placeholder="Last name"
       autocomplete="family-name"
     >
+</div>
 
 
-    <label for="osoby" data-en="Number of guests">
+    <div class="reservation-field">
+<label for="osoby" data-en="Number of guests">
       Počet osob
     </label>
 
@@ -363,9 +362,11 @@
       placeholder="Počet osob" data-en-placeholder="Number of guests"
       required
     >
+</div>
 
 
-    <label for="datum" data-en="Date">
+    <div class="reservation-field">
+<label for="datum" data-en="Date">
       Datum
     </label>
 
@@ -374,9 +375,11 @@
       type="date"
       required
     >
+</div>
 
 
-    <label for="cas" data-en="Available time">
+    <div class="reservation-field reservation-field-wide">
+<label for="cas" data-en="Available time">
       Dostupný čas
     </label>
 
@@ -389,6 +392,7 @@
         Nejdřív vyber datum a počet osob
       </option>
     </select>
+</div>
 
 
     <p
@@ -398,7 +402,8 @@
     ></p>
 
 
-    <label for="telefon" data-en="Phone">
+    <div class="reservation-field">
+<label for="telefon" data-en="Phone">
       Telefon
     </label>
 
@@ -407,9 +412,11 @@
       placeholder="Telefon" data-en-placeholder="Phone"
       autocomplete="tel"
     >
+</div>
 
 
-    <label for="email">
+    <div class="reservation-field">
+<label for="email">
       E-mail
     </label>
 
@@ -419,9 +426,11 @@
       placeholder="E-mail"
       autocomplete="email"
     >
+</div>
 
 
-    <label for="poznamka" data-en="Note">
+    <div class="reservation-field reservation-field-wide">
+<label for="poznamka" data-en="Note">
       Poznámka
     </label>
 
@@ -430,6 +439,7 @@
       placeholder="Poznámka" data-en-placeholder="Note"
       rows="4"
     ></textarea>
+</div>
 
 
     <div
@@ -442,11 +452,11 @@
 
 
     <button
-      id="reservationSubmitButton" data-en="Confirm reservation"
+      id="reservationSubmitButton" data-en="Send reservation"
       type="button"
       onclick="ulozitRezervaci()"
     >
-      Potvrdit rezervaci
+      Odeslat rezervaci
     </button>
 
   </div>
@@ -474,7 +484,7 @@
     <div class="food-card">
 
       <h3>
-        🧩 Vše na jednom místě
+         Vše na jednom místě
       </h3>
 
       <p>
@@ -488,7 +498,7 @@
     <div class="food-card">
 
       <h3>
-        📅 Online rezervace
+         Online rezervace
       </h3>
 
       <p>
@@ -502,7 +512,7 @@
     <div class="food-card">
 
       <h3>
-        ⚡ Rychlá administrace
+         Rychlá administrace
       </h3>
 
       <p>
@@ -516,7 +526,7 @@
     <div class="food-card">
 
       <h3>
-        🔒 Bezpečnost
+         Bezpečnost
       </h3>
 
       <p>
@@ -555,7 +565,7 @@
   >
 
     <h2>
-      🚀 Připraveni posunout restauraci
+       Připraveni posunout restauraci
       na vyšší úroveň?
     </h2>
 
@@ -584,7 +594,7 @@
 >
 
   <h2>
-    📍 Kontakt
+     Kontakt
   </h2>
 
   <p>
@@ -593,6 +603,8 @@
 
 </section>
 
+
+<footer class="restaurant-footer" data-restaurant-only hidden><p data-en="We look forward to welcoming you.">Těšíme se na vaši návštěvu.</p><a href="#rezervace" data-en="Book a table">Rezervovat stůl</a></footer>
 
 <script>
   document.addEventListener(
@@ -622,7 +634,7 @@
 </script>
 
 
-<script src="/script.js?v=pilot-v1-20261017-language-short"></script>
+<script src="/script.js?v=pilot-v1-20261017-professional"></script>
 
 
 <div
@@ -680,3 +692,4 @@
 
 </body>
 </html>
+
