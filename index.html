@@ -43,7 +43,7 @@
 
 <title>AI Restaurace PRO</title>
 
-<link rel="stylesheet" href="/style.css?v=pilot-v1-20261017-professional-r2">
+<link rel="stylesheet" href="/style.css?v=pilot-v1-20261018-editorial">
 </head>
 
 <body>
@@ -78,7 +78,7 @@
     <a href="#menu" data-restaurant-only>Menu</a>
     <a href="#ai-asistent" data-restaurant-only data-restaurant-ai data-en="AI assistant" hidden>AI asistent</a>
     <a href="#rezervace" data-restaurant-only data-en="Reservations">Rezervace</a>
-    <a class="restaurant-admin-link" href="/dashboard.html" data-restaurant-only data-en="Dashboard">Administrace</a>
+
     <button id="publicLanguageToggle" type="button" data-restaurant-only aria-label="Přepnout do angličtiny" hidden>CZ / EN</button>
     <a href="#cenik" data-saas-only>Pilot</a>
     <a href="#kontakt" data-saas-only>Kontakt</a>
@@ -131,6 +131,11 @@
 
   </div>
 
+
+  <figure class="restaurant-hero-media" id="restaurantHeroMedia" hidden>
+    <img id="restaurantHeroImage" alt="" decoding="async" fetchpriority="high">
+    <figcaption><span data-en="From our menu">Z našeho menu</span><span id="restaurantHeroDish"></span></figcaption>
+  </figure>
 
   <div class="assistant-card product-overview" data-saas-only>
     <p class="eyebrow">Od hosta až k vašemu stolu</p>
@@ -235,6 +240,7 @@
 
   </div>
 
+  <nav id="menuCategories" class="menu-categories" aria-label="Kategorie menu" data-en-aria="Menu categories" hidden></nav>
   <div
     id="publicMenu"
     class="grid"
@@ -604,7 +610,7 @@
 </section>
 
 
-<footer class="restaurant-footer" data-restaurant-only hidden><p data-en="We look forward to welcoming you.">Těšíme se na vaši návštěvu.</p><a href="#rezervace" data-en="Book a table">Rezervovat stůl</a></footer>
+<footer class="restaurant-footer" data-restaurant-only hidden><p data-en="We look forward to welcoming you.">Těšíme se na vaši návštěvu.</p><a href="#rezervace" data-en="Book a table">Rezervovat stůl</a><a class="restaurant-admin-link" href="/dashboard.html" data-en="Staff access">Pro personál</a></footer>
 
 <script>
   document.addEventListener(
@@ -634,7 +640,7 @@
 </script>
 
 
-<script src="/script.js?v=pilot-v1-20261017-professional"></script>
+<script src="/script.js?v=pilot-v1-20261018-editorial"></script>
 
 
 <div
