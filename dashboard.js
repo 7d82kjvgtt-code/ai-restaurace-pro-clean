@@ -9920,10 +9920,46 @@ async function deleteFood(id) {
     }
   }
 }
+let calendarRange = { start: 600, end: 1380 };
+
+function getCalendarMinute(value, allowEndOfDay = false) {
+  const text = String(value || "").slice(0, 5);
+  if (allowEndOfDay && text === "24:00") return 1440;
+  if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(text)) return null;
+  return Number(text.slice(0, 2)) * 60 + Number(text.slice(3, 5));
+}
+
+function getCalendarRange(dayReservations, selectedDate) {
+  let start = 600;
+  let end = 1380;
+  const day = new Date(selectedDate + "T12:00:00").getDay();
+  const hours = openingHours.find(row => Number(row.day_of_week) === day && row.is_open === true);
+  const open = getCalendarMinute(hours?.open_time);
+  const close = getCalendarMinute(hours?.close_time, true);
+  if (open !== null) start = Math.min(start, open);
+  if (close !== null) end = Math.max(end, close);
+  for (const reservation of dayReservations) {
+    const minute = getCalendarMinute(reservation.time);
+    if (minute === null) continue;
+    const duration = Number(reservation.duration_minutes || 120);
+    start = Math.min(start, minute);
+    end = Math.max(end, minute + (Number.isFinite(duration) && duration > 0 ? duration : 120));
+  }
+  return {
+    start: Math.max(0, Math.floor(start / 60) * 60),
+    end: Math.min(1440, Math.ceil(end / 60) * 60)
+  };
+}
+
+function getCalendarMoveOffset(offset, duration, start, end) {
+  const max = Math.max(0, Math.floor((Math.min(end, 1440) - start - duration) / 30) * 30);
+  return Math.max(0, Math.min(max, Math.round(offset / 30) * 30));
+}
+
 function createCalendarTimeline(eventsHtml = "") {
   const hours = [];
 
-  for (let hour = 10; hour <= 22; hour++) {
+  for (let hour = calendarRange.start / 60; hour < calendarRange.end / 60; hour++) {
     const time = `${String(hour).padStart(2, "0")}:00`;
 
     hours.push(`
@@ -9935,9 +9971,9 @@ function createCalendarTimeline(eventsHtml = "") {
   }
 
   return `
-    <div class="calendarTimeline">
+    <div class="calendarTimeline" data-start-minute="${calendarRange.start}" data-end-minute="${calendarRange.end}" style="height:${calendarRange.end - calendarRange.start + 10}px;min-height:${calendarRange.end - calendarRange.start + 10}px;">
       ${hours.join("")}
-      <div class="calendarEventsLayer">
+      <div class="calendarEventsLayer" style="height:${calendarRange.end - calendarRange.start}px;">
         ${eventsHtml}
       </div>
 
@@ -9962,9 +9998,9 @@ function updateCalendarCurrentTime() {
   if (!clock) { indicator.hidden = true; return; }
   const selectedDate = dateInput.value || clock.date;
   const currentDate = clock.date;
-  const totalMinutes = clock.minuteOfDay - 10 * 60;
+  const totalMinutes = clock.minuteOfDay - calendarRange.start;
 
-  if (selectedDate !== currentDate || totalMinutes < 0 || totalMinutes > 780) {
+  if (selectedDate !== currentDate || totalMinutes < 0 || totalMinutes >= calendarRange.end - calendarRange.start) {
     indicator.hidden = true;
     return;
   }
@@ -9988,12 +10024,8 @@ function startCalendarCurrentTimeTimer() {
 }
 
 function getCalendarStartMinutes(reservation) {
-  const [hours, minutes] = String(reservation.time || "10:00")
-    .split(":")
-    .map(Number);
-
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return 0;
-  return Math.max(0, ((hours - 10) * 60) + minutes);
+  const minute = getCalendarMinute(reservation.time);
+  return minute === null ? 0 : Math.max(0, minute - calendarRange.start);
 }
 
 function buildCalendarLayout(dayReservations) {
@@ -10093,14 +10125,16 @@ function attachCalendarClickHandler() {
     const rect = eventsLayer.getBoundingClientRect();
     const clickedY = event.clientY - rect.top;
 
-    if (clickedY < 0 || clickedY > 780) return;
+    const start = Number(timeline.dataset.startMinute);
+    const end = Number(timeline.dataset.endMinute);
+    if (clickedY < 0 || clickedY >= end - start) return;
 
     const roundedMinutes = Math.max(
       0,
-      Math.min(720, Math.round(clickedY / 30) * 30)
+      Math.min(end - start - 30, 1410 - start, Math.round(clickedY / 30) * 30)
     );
 
-    const totalMinutes = (10 * 60) + roundedMinutes;
+    const totalMinutes = start + roundedMinutes;
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     const time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
@@ -10135,9 +10169,18 @@ function attachCalendarDragHandlers() {
 
   if (!timeline || !cards?.length) return;
 
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const selectedDate = document.getElementById("calendarDate")?.value || getLocalDateString();
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion &&
+    restaurantId === currentRestaurantId && userId === currentUserId &&
+    selectedDate === (document.getElementById("calendarDate")?.value || getLocalDateString());
+  const rangeStart = Number(timeline.dataset.startMinute);
+  const rangeEnd = Number(timeline.dataset.endMinute);
   cards.forEach(card => {
     card.addEventListener("pointerdown", event => {
-      if (event.button !== 0) return;
+      if (event.button !== 0 || !contextIsCurrent()) return;
 
       const originalTop = Number.parseFloat(card.style.top) || 0;
       const duration = Number(card.dataset.duration || 120);
@@ -10154,13 +10197,13 @@ function attachCalendarDragHandlers() {
         if (Math.abs(deltaY) >= 5) moved = true;
         if (!moved) return;
 
-        const maxTop = Math.max(0, 780 - duration);
+        const maxTop = Math.max(0, Math.min(rangeEnd, 1440) - rangeStart - duration);
         previewTop = Math.max(0, Math.min(maxTop, originalTop + deltaY));
         card.style.top = `${previewTop}px`;
 
-        const snappedMinutes = Math.round(previewTop / 30) * 30;
+        const snappedMinutes = getCalendarMoveOffset(previewTop, duration, rangeStart, rangeEnd);
         card.querySelector(".calendar-time")?.replaceChildren(
-          document.createTextNode(minutesToTime((10 * 60) + snappedMinutes))
+          document.createTextNode(minutesToTime(rangeStart + snappedMinutes))
         );
       };
 
@@ -10180,16 +10223,16 @@ function attachCalendarDragHandlers() {
         upEvent.preventDefault();
         upEvent.stopPropagation();
 
-        const snappedMinutes = Math.max(
-          0,
-          Math.min(780 - duration, Math.round(previewTop / 30) * 30)
-        );
-        const newTime = minutesToTime((10 * 60) + snappedMinutes);
+        if (!contextIsCurrent()) return;
+        const snappedMinutes = getCalendarMoveOffset(previewTop, duration, rangeStart, rangeEnd);
+        const newTime = minutesToTime(rangeStart + snappedMinutes);
         const reservationId = card.dataset.reservationId;
 
         try {
           await fetchReservationsSnapshot();
+          if (!contextIsCurrent()) return;
         } catch (error) {
+          if (!contextIsCurrent()) return;
           console.error(
             "Čerstvý stav rezervací se nepodařilo načíst:",
             error
@@ -10231,6 +10274,7 @@ function attachCalendarDragHandlers() {
                 )
             });
 
+          if (!contextIsCurrent()) return;
           if (!openingAvailability.ok) {
             showDashboardNotice(
               openingAvailability.message
@@ -10280,6 +10324,7 @@ function attachCalendarDragHandlers() {
         card.classList.add("is-saving");
 
         const saved = await updateReservation(reservationId, { time: newTime });
+        if (!contextIsCurrent()) return;
         card.classList.remove("is-saving");
 
         if (saved) {
@@ -10315,6 +10360,8 @@ function renderCalendar() {
   const dayReservations = reservations.filter(
     reservation => reservation.date === selectedDate
   );
+
+  calendarRange = getCalendarRange(dayReservations, selectedDate);
 
   if (dayReservations.length === 0) {
     container.innerHTML = createCalendarTimeline();
