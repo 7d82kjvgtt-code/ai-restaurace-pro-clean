@@ -586,6 +586,7 @@ async function loadPublicRestaurantInfo() {
       {
         method:
           "POST",
+        signal: AbortSignal.timeout(15000),
         headers: {
           "Content-Type":
             "application/json"
@@ -1758,8 +1759,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     );
 
     showPublicRestaurantUnavailable(
-      (PUBLIC_LOCALE === "en" ? null : error?.message) ||
-      publicText("Zkontrolujte prosím odkaz restaurace.", "Please check the restaurant link.")
+      publicText(
+        "Informace restaurace se nepodařilo načíst. Obnovte prosím stránku nebo to zkuste později.",
+        "The restaurant information could not be loaded. Please reload the page or try again later."
+      )
     );
 
     return;
