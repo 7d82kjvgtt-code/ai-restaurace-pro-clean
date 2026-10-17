@@ -9173,6 +9173,12 @@ async function assignTable(
   reservationId,
   value
 ) {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const role = currentUserRole;
+  const canContinue = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId && role === currentUserRole;
+  if (!restaurantId || !userId || !["owner", "manager", "staff"].includes(role)) return;
   const resourceValue =
     String(
       value || ""
@@ -9197,7 +9203,9 @@ async function assignTable(
 
   try {
     await fetchReservationsSnapshot();
+    if (!canContinue()) return;
   } catch (error) {
+    if (!canContinue()) return;
     console.error(
       "Čerstvý stav rezervací se nepodařilo načíst:",
       error
@@ -9424,6 +9432,7 @@ async function assignTable(
       }
     );
 
+  if (!canContinue()) return;
   if (saved) {
     showDashboardNotice(
       "Přiřazení bylo uloženo.",
