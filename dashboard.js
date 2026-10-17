@@ -3876,9 +3876,7 @@ function renderReservations(data) {
     onclick="autoAssignTable(
       ${Number(reservation.id)}
     )"
-  >
-    🪄
-  </button>
+  >Přiřadit</button>
 
   <button
     class="editBtn"
@@ -3887,9 +3885,7 @@ function renderReservations(data) {
     onclick="editReservation(
       ${Number(reservation.id)}
     )"
-  >
-    ✏️
-  </button>
+  >Upravit</button>
               <button
                 type="button"
                 title="${
@@ -3911,9 +3907,7 @@ function renderReservations(data) {
                   ${currentReservationId},
                   'Potvrzeno'
                 )"
-              >
-                ✅
-              </button>
+              >Potvrdit</button>
 
               <button
                 type="button"
@@ -3936,9 +3930,7 @@ function renderReservations(data) {
                   ${currentReservationId},
                   'Zrušeno'
                 )"
-              >
-                ❌
-              </button>
+              >Zrušit</button>
 
               ${currentUserRole === "owner" ? `<button
                 class="deleteBtn"
@@ -3947,9 +3939,7 @@ function renderReservations(data) {
                 onclick="deleteReservation(
                   ${Number(reservation.id)}
                 )"
-              >
-                🗑️
-              </button>` : ""}
+              >Smazat</button>` : ""}
 
             </div>
           </td>
@@ -8133,9 +8123,7 @@ function renderTables() {
               onclick="editTable(
                 ${Number(table.id)}
               )"
-            >
-              ✏️
-            </button>
+            >Upravit</button>
 
             <button
               class="deleteBtn"
@@ -8144,9 +8132,7 @@ function renderTables() {
               onclick="deleteTable(
                 ${Number(table.id)}
               )"
-            >
-              🗑️
-            </button>
+            >Smazat</button>
 
           </div>
 
@@ -9914,9 +9900,7 @@ function renderFoods() {
               onclick="editFood(
                 ${Number(food.id)}
               )"
-            >
-              ✏️
-            </button>
+            >Upravit</button>
 
             <button
               class="deleteBtn"
@@ -9925,9 +9909,7 @@ function renderFoods() {
               onclick="deleteFood(
                 ${Number(food.id)}
               )"
-            >
-              🗑️
-            </button>
+            >Smazat</button>
 
           </div>
 
@@ -11856,4 +11838,5 @@ async function saveReservationSettings() {
 ].forEach(id => {
   document.getElementById(id)?.addEventListener("input", updateReservationSettingsSummary);
 });
+
 
