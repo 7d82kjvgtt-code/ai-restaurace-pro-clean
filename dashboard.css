@@ -4314,3 +4314,51 @@ a.setup-step:hover {
     border-radius: 18px;
   }
 }
+
+
+/* Professional operational UI. Layout, states and role controls stay unchanged. */
+:root { --bg:#111827; --surface:#1c2533; --surface-dark:#101720; --border:#344052; --primary:#d6ab80; --primary-hover:#e2bd97; --muted:#a3afbe; }
+body { background:var(--bg); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
+body * { font-family:inherit; }
+.sidebar { background:var(--surface-dark)!important; border-right:1px solid #2a3544; }
+.sidebar h2 { font-size:19px; font-weight:600; line-height:1.5; letter-spacing:-.02em; }
+.sidebar h2 span { font-size:11px; font-weight:500; letter-spacing:.18em; }
+.sidebar nav { gap:3px; }
+.sidebar nav a { font-size:13px; font-weight:500; border-radius:6px; padding:11px 13px; color:#b9c3ce; }
+.sidebar nav a:hover { background:#202c3a!important; color:#f8fafc; }
+.sidebar nav a.active { background:#263344!important; color:#f3d6b8!important; box-shadow:inset 2px 0 var(--primary); }
+.topbar h1 { font-size:28px; font-weight:600; letter-spacing:-.03em; }
+.topbar p { font-size:14px; }
+h2 { letter-spacing:-.02em; font-weight:600; }
+.panel,.card,.restaurant-branding-preview,.dashboard-ai-card { background:var(--surface)!important; border:1px solid #344052!important; border-radius:12px!important; box-shadow:0 4px 18px rgba(0,0,0,.08)!important; }
+.eyebrow { font-size:10px; font-weight:600; letter-spacing:.12em; }
+.section-heading h2,.panel h2 { font-size:22px; line-height:1.4; }
+button,.primary-btn,.primaryButton,.secondaryButton,.secondary-btn,.secondary-button,.primary-button,.neutralButton,.successButton,.dangerButton { border-radius:7px!important; font-size:13px; font-weight:600; box-shadow:none!important; transition:background .15s,border-color .15s; }
+button:hover { transform:none; }
+button,.neutralButton,.secondaryButton,.secondary-btn,.secondary-button,.successButton { color:#e3e9f0; background:#344255; border:1px solid #46546a; }
+.primary-btn,.primaryButton,.primary-button,button[type="submit"],#tableBtn,#foodBtn,#novaRezervace .successButton { color:#1f2730!important; background:var(--primary)!important; border:1px solid var(--primary)!important; }
+.dangerButton,.danger-btn,.deleteBtn { color:#f2b9b1!important; background:#3f2c30!important; border:1px solid #71464a!important; }
+.tableActions { gap:6px; }
+.tableActions button,.tableActions .editBtn,.tableActions .deleteBtn { min-width:0!important; width:auto!important; font-size:11px!important; padding:8px 10px!important; min-height:36px!important; height:auto!important; border-radius:5px!important; }
+.tableActions button:not(.deleteBtn) { background:#303e50!important; border:1px solid #4b596d!important; color:#dde5ef!important; }
+.tableActions [data-reservation-status-value="Potvrzeno"] { color:#b7d9bc!important; border-color:#52725a!important; background:#283e32!important; }
+.tableActions [data-reservation-status-value="Zrušeno"] { color:#edc5b8!important; border-color:#805a50!important; background:#422f2c!important; }
+input,select,textarea { border-radius:6px!important; border-color:#475469!important; box-shadow:none!important; }
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:2px solid #dfbd96; outline-offset:3px; }
+th { font-size:11px; font-weight:600; letter-spacing:.03em; }
+td { font-size:13px; }
+.status { font-size:11px; font-weight:600; border-radius:5px; }
+.current-role-badge { font-size:10px; letter-spacing:.03em; border-radius:5px; padding:4px 8px; }
+#loginScreen { background:#111827!important; backdrop-filter:none!important; }
+.login-box { background:#1c2533!important; border:1px solid #344052!important; box-shadow:0 24px 80px rgba(0,0,0,.2)!important; border-radius:14px!important; }
+.login-box h2 { font-size:25px; font-weight:600; line-height:1.25; letter-spacing:-.03em; }
+.login-box .login-icon { font:400 28px Georgia,serif; background:#29394a; color:#dfbd96; border:1px solid #45576a; box-shadow:none; border-radius:9px; }
+.login-box button:not([type="submit"]) { background:transparent!important; border-color:transparent; color:#c7d2df; font-size:12px; }
+.reservation-alert-overview { background:#202d3d!important; border-color:#526275!important; border-radius:10px!important; box-shadow:none!important; }
+@media(max-width:760px) {
+ .topbar h1 { font-size:24px; }
+ .section-heading h2,.panel h2 { font-size:20px; }
+ .tableActions button,.tableActions .editBtn,.tableActions .deleteBtn { min-height:44px!important; padding:10px 12px!important; font-size:12px!important; }
+ .mobile-menu-button { background:#d6ab80!important; color:#1e293b!important; box-shadow:0 4px 14px rgba(0,0,0,.2)!important; }
+}
+@media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { animation:none!important; transition:none!important; } }
