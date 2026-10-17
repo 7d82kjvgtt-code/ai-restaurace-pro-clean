@@ -52,6 +52,12 @@ node tests/capacity/live-readonly.mjs --run-authorized-live-check --warm-transpo
 
 Run it again only with authorization and a current traffic/cost assessment. For repeated or heavier tests use isolated hosted staging. No paid staging branch or hosting upgrade was created.
 
+## Browser follow-up
+
+A direct cloud-browser UI check after the Dublin deployment reached the restaurant's loaded heading in approximately 1,143 ms after navigation. This measures heading readiness, not complete loading of every menu image or the full page. Entering 2 guests and 20 October 2026 then produced 22 available times in approximately 470 ms (measured around the date input and waiting for the 18:00 option to attach). No booking was submitted. This is one normal-use UI sample, not a concurrent browser load benchmark and does not remove the hosted-load limitations above.
+
+Vercel plugin installation is verified enabled, but the connected account does not expose the target project through the project API. The next step for internal queue/CPU investigation requires correcting the connector's account/team access; no permission was broadened automatically and no credentials were requested in chat.
+
 ## Limits
 
 These results demonstrate tested tenant isolation and application-level concurrency. They do not certify 100 busy restaurants on the current hosted plan. PGlite 0.5.10 runs PostgreSQL 18.6 with one exclusive connection; production uses PostgreSQL 17. The follow-up section adds a bounded live read-only measurement; pool saturation, hosted CPU/RAM, real concurrent writes, email quotas, 100 real tenant workloads and long-running load are still not measured. Existing double-booking regression checks are separate; this test is not a hosted concurrent-booking test.
