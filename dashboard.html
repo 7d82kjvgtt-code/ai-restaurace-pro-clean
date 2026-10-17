@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Restaurace PRO Dashboard</title>
-  <link rel="stylesheet" href="dashboard.css?v=pilot-v1-20260929-r4">
+  <link rel="stylesheet" href="dashboard.css?v=pilot-v1-20261017-professional">
 </head>
 
 <body>
 
   <div id="loginScreen">
     <form class="login-box" id="loginForm" onsubmit="login(event)">
-      <div class="login-icon">🔐</div>
+      <div class="login-icon" aria-hidden="true">R</div>
 
       <h2>Přihlášení do administrace</h2>
       <p>Správa rezervací, stolů a jídelního lístku</p>
@@ -90,26 +90,26 @@
   <aside class="sidebar" id="dashboardSidebar" inert>
 
     <h2>
-      🍽️ AI Restaurace<br>
+       AI Restaurace<br>
       <span>PRO</span>
     </h2>
 
    <nav>
-    <a href="#prehled" data-section="prehled">🏠 Přehled</a>
-    <a href="#grafy" data-section="grafy">📊 Statistiky</a>
-    <a href="#ai" data-section="ai" data-dashboard-ai hidden>🤖 AI přehled</a>
-    <a href="#rezervace" data-section="rezervace">📅 Rezervace</a>
-    <a href="#historie" data-section="historie">🕘 Historie</a>
-    <a href="#customers" data-section="customers">👤 Zákazníci</a>
-    <a href="#team" data-section="team">👥 Tým</a>
-    <a href="#kalendar" data-section="kalendar">🗓️ Kalendář</a>
-    <a href="#stoly" data-section="stoly">🪑 Stoly</a>
-    <a href="#mapa" data-section="mapa">🗺️ Mapa stolů</a>
-    <a href="#provoz" data-section="provoz">🕒 Provozní doba</a>
-    <a href="#reservationSettings" data-section="reservationSettings">⚙️ Nastavení rezervací</a>
-    <a href="#restaurace" data-section="restaurace">🏪 Restaurace</a>
-    <a href="#menu" data-section="menu">🍕 Menu</a>
-    <a href="/" aria-label="Hlavní stránka AI Restaurace PRO">↗️ Hlavní web</a>
+    <a href="#prehled" data-section="prehled"> Přehled</a>
+    <a href="#grafy" data-section="grafy"> Statistiky</a>
+    <a href="#ai" data-section="ai" data-dashboard-ai hidden> AI přehled</a>
+    <a href="#rezervace" data-section="rezervace"> Rezervace</a>
+    <a href="#historie" data-section="historie"> Historie</a>
+    <a href="#customers" data-section="customers"> Zákazníci</a>
+    <a href="#team" data-section="team"> Tým</a>
+    <a href="#kalendar" data-section="kalendar"> Kalendář</a>
+    <a href="#stoly" data-section="stoly"> Stoly</a>
+    <a href="#mapa" data-section="mapa"> Mapa stolů</a>
+    <a href="#provoz" data-section="provoz"> Provozní doba</a>
+    <a href="#reservationSettings" data-section="reservationSettings"> Nastavení rezervací</a>
+    <a href="#restaurace" data-section="restaurace"> Restaurace</a>
+    <a href="#menu" data-section="menu"> Menu</a>
+    <a href="/" aria-label="Hlavní stránka AI Restaurace PRO">↗ Hlavní web</a>
 </nav>
 
   </aside>
@@ -119,7 +119,7 @@
     <header class="topbar">
 
       <div>
-        <h1>Vítejte zpět 👋</h1>
+        <h1>Vítejte zpět </h1>
         <p id="currentRestaurantNameLabel">Přehled provozu restaurace</p>
         <span class="current-role-badge" id="currentUserRoleBadge"></span>
       </div>
@@ -226,7 +226,7 @@
       <div class="setup-checklist-head">
         <div>
           <span class="eyebrow">První nastavení</span>
-          <h2>🚀 Připrav restauraci ke spuštění</h2>
+          <h2> Připrav restauraci ke spuštění</h2>
           <p id="setupChecklistSummary">Kontroluji, co ještě chybí k ostrému pilotu…</p>
         </div>
         <div class="setup-progress-wrap" aria-label="Průběh prvního nastavení">
@@ -310,7 +310,7 @@
 
         <div class="section-heading">
           <span class="eyebrow">Posledních 7 dní</span>
-          <h2>📊 Vývoj rezervací</h2>
+          <h2> Vývoj rezervací</h2>
         </div>
 
         <div class="chart-wrap">
@@ -323,7 +323,7 @@
 
         <div class="section-heading">
           <span class="eyebrow">Aktuální přehled</span>
-          <h2>✅ Stavy rezervací</h2>
+          <h2> Stavy rezervací</h2>
         </div>
 
         <div class="chart-wrap">
@@ -343,7 +343,7 @@
       <div class="section-heading panel-top dashboard-ai-head">
         <div>
           <span class="eyebrow">AI pro majitele</span>
-          <h2>🤖 AI provozní přehled</h2>
+          <h2> AI provozní přehled</h2>
           <p>
             Ptej se na rezervace, vytížené dny, počty hostů nebo menu.
             AI pracuje jen s agregovanými provozními daty restaurace.
@@ -456,7 +456,7 @@
 
         <div>
           <span class="eyebrow">Správa rezervací</span>
-          <h2>📋 Seznam rezervací</h2>
+          <h2> Seznam rezervací</h2>
         </div>
 
         <div class="filter-actions">
@@ -537,7 +537,7 @@
       <div class="section-heading panel-top">
         <div>
           <span class="eyebrow">Audit rezervací</span>
-          <h2>🕘 Historie změn</h2>
+          <h2> Historie změn</h2>
           <p class="history-help">Automaticky se ukládá vytvoření, změna, přesun, změna stavu i smazání rezervace.</p>
         </div>
         <div class="filter-actions history-actions">
@@ -561,7 +561,7 @@
 <section id="novaRezervace" class="panel" style="display:none;">
     <div class="section-heading">
         <span class="eyebrow">Nová rezervace</span>
-        <h2>➕ Vytvořit rezervaci</h2>
+        <h2> Vytvořit rezervaci</h2>
     </div>
 
     <div class="form-grid">
@@ -606,7 +606,7 @@
       <div class="section-heading panel-top customers-heading">
         <div>
           <span class="eyebrow">CRM hostů</span>
-          <h2>👤 Zákazníci</h2>
+          <h2> Zákazníci</h2>
           <p class="customers-help">Přehled hostů vytvořený z rezervací. Poznámky a označení stálého hosta se ukládají zvlášť.</p>
         </div>
         <div class="customer-toolbar">
@@ -631,7 +631,7 @@
       <div class="section-heading panel-top team-heading">
         <div>
           <span class="eyebrow">SPRÁVA PŘÍSTUPŮ</span>
-          <h2>👥 Tým restaurace</h2>
+          <h2> Tým restaurace</h2>
           <p class="team-help">Majitel může pozvat zaměstnance, změnit jejich roli nebo dočasně vypnout přístup.</p>
         </div>
         <div class="team-count-box"><strong id="teamMemberCount">0</strong><span>aktivních členů</span></div>
@@ -672,7 +672,7 @@
     <div class="section-heading panel-top">
         <div>
             <span class="eyebrow">Kalendář rezervací</span>
-            <h2 class="calendar-title">🗓️ Denní přehled <span class="calendar-live-badge" title="Kalendář se automaticky aktualizuje každých 30 sekund"><span class="calendar-live-dot"></span>Živě</span></h2>
+            <h2 class="calendar-title"> Denní přehled <span class="calendar-live-badge" title="Kalendář se automaticky aktualizuje každých 30 sekund"><span class="calendar-live-dot"></span>Živě</span></h2>
         </div>
 
        <div class="calendar-controls">
@@ -725,14 +725,14 @@
    
 <section class="panel operations-panel" id="provoz">
   <div class="section-heading panel-top">
-    <div><span class="eyebrow">Nastavení rezervací</span><h2>🕒 Provozní doba a blokace</h2></div>
+    <div><span class="eyebrow">Nastavení rezervací</span><h2> Provozní doba a blokace</h2></div>
   </div>
   <p class="operations-help">Nastav otevírací dobu pro každý den. Rezervace musí skončit před zavřením.</p>
   <div id="openingHoursGrid" class="opening-hours-grid"></div>
   <button type="button" class="successButton" onclick="saveOpeningHours()">Uložit otevírací dobu</button>
 
   <div class="blocked-time-form">
-    <h3>🚫 Zablokovat konkrétní čas</h3>
+    <h3> Zablokovat konkrétní čas</h3>
     <input id="blockDate" type="date">
     <input id="blockStart" type="time">
     <input id="blockEnd" type="time">
@@ -746,7 +746,7 @@
   <div class="section-heading panel-top">
     <div>
       <span class="eyebrow">Pravidla rezervací</span>
-      <h2>⚙️ Nastavení rezervací</h2>
+      <h2> Nastavení rezervací</h2>
     </div>
   </div>
 
@@ -756,7 +756,7 @@
 
   <div class="reservation-settings-grid">
     <article class="reservation-settings-card">
-      <h3>⏱️ Automatická délka</h3>
+      <h3>⏱ Automatická délka</h3>
       <div class="reservation-settings-fields">
         <label>1–2 osoby<input id="settingDuration12" type="number" min="30" max="360" step="30" value="90"><span>minut</span></label>
         <label>3–4 osoby<input id="settingDuration34" type="number" min="30" max="360" step="30" value="120"><span>minut</span></label>
@@ -766,7 +766,7 @@
     </article>
 
     <article class="reservation-settings-card">
-      <h3>📅 Pravidla pro hosty</h3>
+      <h3> Pravidla pro hosty</h3>
       <div class="reservation-settings-fields">
         <label>Nejpozději předem<input id="settingMinAdvance" type="number" min="0" max="10080" step="15" value="60"><span>minut</span></label>
         <label>Maximálně dopředu<input id="settingMaxAdvanceDays" type="number" min="1" max="365" step="1" value="30"><span>dní</span></label>
@@ -788,7 +788,7 @@
         <span class="eyebrow">Mapa restaurace</span>
 
         <div class="map-toolbar">
-            <h2>🍽 Mapa stolů <span class="map-live-badge"><i></i>Živě</span></h2>
+            <h2> Mapa stolů <span class="map-live-badge"><i></i>Živě</span></h2>
 
             <div class="zoom-controls">
                 <button onclick="zoomOut()">−</button>
@@ -918,7 +918,7 @@
 
         <div class="section-heading">
           <span class="eyebrow">Rozložení restaurace</span>
-          <h2>🪑 Přidat nebo upravit stůl</h2>
+          <h2> Přidat nebo upravit stůl</h2>
         </div>
 
         <div class="form-grid">
@@ -979,7 +979,7 @@
 
         <div class="section-heading">
           <span class="eyebrow">Aktuální kapacita</span>
-          <h2>📋 Seznam stolů</h2>
+          <h2> Seznam stolů</h2>
         </div>
 
         <div id="tableList">
@@ -995,7 +995,7 @@
       <div class="section-heading panel-top">
         <div>
           <span class="eyebrow">Veřejná prezentace</span>
-          <h2>🏪 Restaurace a branding</h2>
+          <h2> Restaurace a branding</h2>
           <p class="restaurant-branding-help">
             Tyto údaje se zobrazí hostům na veřejné stránce restaurace.
           </p>
@@ -1186,7 +1186,7 @@
 
         <div class="section-heading">
           <span class="eyebrow">Jídelní lístek</span>
-          <h2>🍕 Přidat nebo upravit jídlo</h2>
+          <h2> Přidat nebo upravit jídlo</h2>
         </div>
 
         <div class="form-grid">
@@ -1294,7 +1294,7 @@
 
         <div class="section-heading">
           <span class="eyebrow">Aktuální nabídka</span>
-          <h2>🍽️ Jídelní lístek</h2>
+          <h2> Jídelní lístek</h2>
         </div>
 
         <div id="foodList"></div>
@@ -1439,7 +1439,8 @@
     </div>
 </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="dashboard.js?v=pilot-v1-20261017-r112"></script>
+  <script src="dashboard.js?v=pilot-v1-20261017-professional"></script>
 
 </body>
 </html>
+
