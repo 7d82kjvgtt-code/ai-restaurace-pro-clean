@@ -1209,3 +1209,18 @@ body.restaurant-public-mode #rezervace .reservation-box { border-radius:3px; }
  body.restaurant-public-mode .menu-category h2 { font-size:27px!important; }
 }
 @media(prefers-reduced-motion:reduce) { body.restaurant-public-mode .food-card { transition:none; } }
+
+/* Finishing details for keyboard navigation, prices and touch targets. */
+body.restaurant-public-mode .food-card p { font-variant-numeric:tabular-nums; white-space:nowrap; }
+body.restaurant-public-mode .food-card:focus-visible { outline:2px solid #41614b; outline-offset:5px; background:#eeeee5; }
+body.restaurant-public-mode .menu-categories a { min-height:44px; display:inline-flex; align-items:center; }
+body.restaurant-public-mode .hero .btn:focus-visible { outline-color:#fff6e3; }
+body.restaurant-public-mode .hero .restaurant-contact-item:focus-visible { outline-color:#fff6e3; }
+@media(max-width:480px) {
+ body.restaurant-public-mode .navbar { gap:12px; padding:14px 20px; }
+ body.restaurant-public-mode .nav-links { align-items:center; padding-top:3px; gap:12px 22px; }
+ body.restaurant-public-mode .nav-links a { min-height:36px; display:inline-flex; align-items:center; }
+ body.restaurant-public-mode .nav-links #publicLanguageToggle { margin-left:auto; min-height:40px; }
+ body.restaurant-public-mode .hero .actions { display:flex; flex-wrap:wrap; }
+ body.restaurant-public-mode .hero .btn { flex:1 1 auto; text-align:center; }
+}
