@@ -1159,6 +1159,37 @@ function renderPublicMenu() {
   if (!container) return;
 
   container.replaceChildren();
+  const categoryNav = document.getElementById("menuCategories");
+  if (categoryNav) { categoryNav.replaceChildren(); categoryNav.hidden = true; }
+  const heroMedia = document.getElementById("restaurantHeroMedia");
+  const heroImage = document.getElementById("restaurantHeroImage");
+  const heroDish = document.getElementById("restaurantHeroDish");
+  if (heroMedia && heroImage && heroDish) {
+    heroMedia.hidden = true;
+    document.querySelector(".hero")?.classList.remove("has-menu-photo");
+    if (!publicMenuLoadFailed && PUBLIC_RESTAURANT_SLUG) {
+      for (const item of menu) {
+        try {
+          if (!item.image_url) continue;
+          const url = new URL(String(item.image_url), window.location.origin);
+          if (url.protocol !== "https:") continue;
+          heroImage.onload = () => {
+            heroMedia.hidden = false;
+            document.querySelector(".hero")?.classList.add("has-menu-photo");
+          };
+          heroImage.onerror = () => {
+            heroMedia.hidden = true;
+            document.querySelector(".hero")?.classList.remove("has-menu-photo");
+          };
+          heroImage.alt = String(item.name || publicText("Z našeho menu", "From our menu"));
+          heroDish.textContent = String(item.name || "");
+          heroImage.src = url.href;
+          if (heroImage.complete && heroImage.naturalWidth > 0) heroImage.onload();
+          break;
+        } catch (_) { /* Ignore invalid image URLs. */ }
+      }
+    }
+  }
 
   if (publicMenuLoadFailed) {
     const message = document.createElement("p");
@@ -1204,7 +1235,7 @@ function renderPublicMenu() {
   container.className = "";
   container.style.display = "block";
 
-  categories.forEach(category => {
+  categories.forEach((category, categoryIndex) => {
     const items = menu.filter(
       item => String(item.category || "Hlavní jídlo").trim() === category
     );
@@ -1212,6 +1243,14 @@ function renderPublicMenu() {
 
     const section = document.createElement("section");
     section.className = "menu-category";
+    section.id = `menu-category-${categoryIndex}`;
+    if (categoryNav) {
+      const link = document.createElement("a");
+      link.href = `#${section.id}`;
+      link.textContent = publicText(category, ({ "Předkrm": "Starters", "Hlavní jídlo": "Main courses", "Těstoviny": "Pasta", "Dezert": "Desserts", "Sladká jídla": "Sweet dishes", "Nápoj": "Drinks" })[category] || category);
+      categoryNav.appendChild(link);
+      categoryNav.hidden = false;
+    }
     section.style.cssText = "width:100%;margin-bottom:70px;";
 
     const heading = document.createElement("h2");
