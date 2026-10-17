@@ -2330,6 +2330,8 @@ function showPasswordReset() {
 
 async function requestPasswordReset(event) {
   event.preventDefault();
+  const sessionVersion = dashboardSessionVersion;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion;
   const email = document.getElementById("recoveryEmail").value.trim();
   const status = document.getElementById("recoveryStatus");
   const button = document.querySelector('#forgotPasswordForm button[type="submit"]');
@@ -2344,20 +2346,26 @@ async function requestPasswordReset(event) {
       headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({ email })
     });
+    if (!contextIsCurrent()) return;
     status.textContent = response.status === 429
       ? "Příliš mnoho požadavků. Zkuste to později."
       : response.ok
         ? "Pokud účet existuje, pošleme odkaz pro změnu hesla na tento e-mail."
         : "Odkaz se nepodařilo odeslat. Zkuste to později.";
   } catch {
+    if (!contextIsCurrent()) return;
     status.textContent = "Odeslání odkazu nelze ověřit. Zkontrolujte e-mail; pokud odkaz nepřijde, zkuste to později.";
   } finally {
-    button.disabled = false;
+    if (contextIsCurrent()) button.disabled = false;
   }
 }
 
 async function saveRecoveredPassword(event) {
   event.preventDefault();
+  const sessionVersion = dashboardSessionVersion;
+  const recoveryToken = passwordRecoveryToken;
+  const accessToken = getAccessToken();
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && getAccessToken() === accessToken;
   const status = document.getElementById("resetPasswordStatus");
   const password = document.getElementById("newAccountPassword").value;
   const confirmation = document.getElementById("confirmAccountPassword").value;
@@ -2379,16 +2387,17 @@ async function saveRecoveredPassword(event) {
       signal: AbortSignal.timeout(15000),
       headers: {
         apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${passwordRecoveryToken}`,
+        Authorization: `Bearer ${recoveryToken}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ password })
     });
+    if (!contextIsCurrent()) return;
     if (!response.ok) {
       status.textContent = "Heslo se nepodařilo změnit. Odkaz mohl vypršet; požádejte o nový.";
       return;
     }
-    const usedToken = passwordRecoveryToken;
+    const usedToken = recoveryToken;
     passwordRecoveryToken = null;
     document.getElementById("resetPasswordForm").reset();
     await fetch(`${SUPABASE_URL}/auth/v1/logout?scope=local`, {
@@ -2396,13 +2405,15 @@ async function saveRecoveredPassword(event) {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${usedToken}` },
       signal: AbortSignal.timeout(5000)
     }).catch(() => {});
+    if (!contextIsCurrent()) return;
     clearSession();
     showLogin();
     document.getElementById("error").textContent = "Heslo bylo změněno. Přihlaste se novým heslem.";
   } catch {
+    if (!contextIsCurrent()) return;
     status.textContent = "Výsledek změny hesla nelze ověřit. Zkuste se přihlásit novým heslem; pokud nefunguje, požádejte o nový odkaz.";
   } finally {
-    button.disabled = false;
+    if (contextIsCurrent()) button.disabled = false;
   }
 }
 
@@ -2546,6 +2557,15 @@ let dashboardSessionVersion = 0;
 
 function clearSession() {
   ++dashboardSessionVersion;
+  passwordRecoveryToken = null;
+  ["password", "recoveryEmail", "newAccountPassword", "confirmAccountPassword"].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) input.value = "";
+  });
+  ["#forgotPasswordForm button[type=\"submit\"]", "#resetPasswordForm button[type=\"submit\"]", "#loginButton"].forEach(selector => {
+    const button = document.querySelector(selector);
+    if (button) button.disabled = false;
+  });
   sessionStorage.removeItem("dashboardLoggedIn");
   sessionStorage.removeItem("supabaseAccessToken");
   sessionStorage.removeItem("supabaseRefreshToken");
@@ -2938,13 +2958,15 @@ function tokenNeedsRefresh() {
 let sessionRefreshInFlight = null;
 
 async function refreshSession() {
+  const sessionVersion = dashboardSessionVersion;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion;
   const refreshToken = getRefreshToken();
   if (!refreshToken) return false;
-  if (sessionRefreshInFlight?.token === refreshToken) {
+  if (sessionRefreshInFlight?.token === refreshToken && sessionRefreshInFlight?.sessionVersion === sessionVersion) {
     return sessionRefreshInFlight.promise;
   }
 
-  const flight = { token: refreshToken, promise: null };
+  const flight = { token: refreshToken, sessionVersion, promise: null };
   flight.promise = (async () => {
     try {
       const response = await fetch(
@@ -2956,12 +2978,14 @@ async function refreshSession() {
           body: JSON.stringify({ refresh_token: refreshToken })
         }
       );
+      if (!contextIsCurrent()) return false;
       if (getRefreshToken() !== refreshToken) return !!getAccessToken();
       if (!response.ok) {
         if ([400, 401, 403].includes(response.status)) return false;
         throw new Error("Session refresh unavailable.");
       }
       const data = await response.json();
+      if (!contextIsCurrent()) return false;
       if (getRefreshToken() !== refreshToken) return !!getAccessToken();
       if (typeof data?.access_token !== "string" || !data.access_token.trim() ||
           typeof data?.refresh_token !== "string" || !data.refresh_token.trim()) {
@@ -2972,6 +2996,7 @@ async function refreshSession() {
       sessionStorage.setItem("dashboardLoggedIn", "true");
       return true;
     } catch {
+      if (!contextIsCurrent()) return false;
       if (getRefreshToken() !== refreshToken) return !!getAccessToken();
       throw new Error("Přihlášení se teď nepodařilo ověřit. Zkontrolujte připojení a zkuste to za chvíli.");
     }
@@ -2985,6 +3010,7 @@ async function refreshSession() {
 }
 
 async function ensureValidSession() {
+  const sessionVersion = dashboardSessionVersion;
   if (!getAccessToken()) {
     return false;
   }
@@ -2994,22 +3020,26 @@ async function ensureValidSession() {
   }
 
   const refreshed = await refreshSession();
+  if (sessionVersion !== dashboardSessionVersion) return !!getAccessToken();
 
   if (!refreshed) {
     clearSession();
+    showLogin();
+    document.getElementById("error").textContent = "Platnost přihlášení vypršela. Přihlaste se znovu.";
   }
 
   return refreshed;
 }
 
 async function authorizedFetch(url, options = {}) {
+  const sessionVersion = dashboardSessionVersion;
   const requestUserId = parseJwt(getAccessToken())?.sub;
-  const sameAccount = () => !!requestUserId &&
+  const sameAccount = () => sessionVersion === dashboardSessionVersion && !!requestUserId &&
     parseJwt(getAccessToken())?.sub === requestUserId;
   const accountChangedError = () => new Error("Účet se během požadavku změnil. Obnovte stránku.");
 
   if (!(await ensureValidSession())) {
-    if (sameAccount() || !getAccessToken()) {
+    if (sessionVersion === dashboardSessionVersion && (sameAccount() || !getAccessToken())) {
       clearSession();
       location.reload();
     }
@@ -3050,6 +3080,12 @@ async function authorizedFetch(url, options = {}) {
 
 async function login(event) {
   event?.preventDefault();
+  const sessionVersion = dashboardSessionVersion;
+  let expectedAccessToken = getAccessToken();
+  let signedInUserId = null;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion &&
+    (getAccessToken() === expectedAccessToken ||
+      (signedInUserId && parseJwt(getAccessToken())?.sub === signedInUserId));
 
   const emailInput =
     document.getElementById("loginEmail");
@@ -3095,7 +3131,9 @@ async function login(event) {
       }
     );
 
+    if (!contextIsCurrent()) return;
     const data = await response.json();
+    if (!contextIsCurrent()) return;
 
     if (!response.ok) {
       error.textContent = response.status === 429
@@ -3125,6 +3163,8 @@ async function login(event) {
       "supabaseRefreshToken",
       data.refresh_token
     );
+    expectedAccessToken = data.access_token;
+    signedInUserId = parseJwt(data.access_token)?.sub || null;
 
     passwordInput.value = "";
     error.textContent = "";
@@ -3133,6 +3173,7 @@ async function login(event) {
     // dashboard načetl bez nového kontextu a správná role se někdy objevila
     // až po ručním refreshi.
     const restaurantLoaded = await loadRestaurantContextWithRetry();
+    if (!contextIsCurrent()) return;
     if (!restaurantLoaded) {
       await showUnassignedAccountState();
       return;
@@ -3141,13 +3182,16 @@ async function login(event) {
     history.replaceState(null, "", "#prehled");
     location.reload();
   } catch (loginError) {
+    if (!contextIsCurrent()) return;
     console.error(loginError);
 
     error.textContent =
       "Přihlášení se nepodařilo.";
   } finally {
-    passwordInput.value = "";
-    button.disabled = false;
+    if (contextIsCurrent()) {
+      passwordInput.value = "";
+      button.disabled = false;
+    }
   }
 }
 
