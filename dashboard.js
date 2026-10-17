@@ -2563,6 +2563,20 @@ function clearSession() {
   reservations = [];
   pendingStatusEmails.clear();
   foods = [];
+  saveFoodInProgress = false;
+  editingFoodId = null;
+  editingImageUrl = "";
+  ["foodName", "foodPrice", "foodEmoji", "foodDescription", "foodIngredients", "foodAllergens", "foodWeight", "foodImage"].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) input.value = "";
+  });
+  const foodSaveButton = document.getElementById("foodBtn");
+  if (foodSaveButton) {
+    foodSaveButton.disabled = false;
+    foodSaveButton.textContent = "Přidat jídlo";
+  }
+  const foodCancelButton = document.getElementById("cancelEditBtn");
+  if (foodCancelButton) foodCancelButton.style.display = "none";
   restaurantTables = [];
   tableGroups = [];
   customerProfiles = [];
@@ -9400,6 +9414,12 @@ let saveFoodInProgress = false;
 
 async function saveFood() {
   if (saveFoodInProgress) return;
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+  const canContinue = () => contextIsCurrent() && ["owner", "manager"].includes(currentUserRole);
+  if (!restaurantId || !userId || !canContinue()) return;
   const foodEditingId = editingFoodId;
   saveFoodInProgress = true;
   const submitButton = document.getElementById("foodBtn");
@@ -9511,7 +9531,7 @@ async function saveFood() {
           .toString(36)
           .slice(2)}.` +
         extension;
-      const objectPath = `${currentRestaurantId}/${fileName}`;
+      const objectPath = `${restaurantId}/${fileName}`;
 
       const upload = await authorizedFetch(
         `${SUPABASE_URL}/storage/v1/object/food-images/${objectPath}`,
@@ -9525,6 +9545,7 @@ async function saveFood() {
         }
       );
 
+      if (!canContinue()) return;
       if (!upload.ok) {
         throw new Error(
           await upload.text()
@@ -9545,14 +9566,14 @@ async function saveFood() {
       ingredients,
       allergens,
       weight,
-      restaurant_id: currentRestaurantId
+      restaurant_id: restaurantId
     };
 
     const editing =
       foodEditingId !== null;
 
     const url = editing
-      ? `${SUPABASE_URL}/rest/v1/menu?id=eq.${Number(foodEditingId)}&restaurant_id=eq.${currentRestaurantId}`
+      ? `${SUPABASE_URL}/rest/v1/menu?id=eq.${Number(foodEditingId)}&restaurant_id=eq.${restaurantId}`
       : `${SUPABASE_URL}/rest/v1/menu`;
 
     const response = await authorizedFetch(
@@ -9568,6 +9589,7 @@ async function saveFood() {
       }
     );
 
+    if (!canContinue()) return;
     if (!response.ok) {
       throw new Error(
         await response.text()
@@ -9576,9 +9598,11 @@ async function saveFood() {
 
     await requireChangedRestaurantRow(response, editing ? foodEditingId : null);
 
+    if (!canContinue()) return;
     resetFoodForm(true);
     await loadFoods();
   } catch (error) {
+    if (!canContinue()) return;
     console.error(error);
 
     showDashboardNotice(
@@ -9586,8 +9610,10 @@ async function saveFood() {
     );
   }
   } finally {
-    saveFoodInProgress = false;
-    if (submitButton) submitButton.disabled = false;
+    if (contextIsCurrent()) {
+      saveFoodInProgress = false;
+      if (submitButton) submitButton.disabled = !canContinue();
+    }
   }
 }
 
@@ -9794,6 +9820,12 @@ function resetFoodForm(force = false) {
 
 async function deleteFood(id) {
   if (saveFoodInProgress) return;
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+  const canContinue = () => contextIsCurrent() && ["owner", "manager"].includes(currentUserRole);
+  if (!restaurantId || !userId || !canContinue()) return;
   if (!Number.isSafeInteger(Number(id)) || Number(id) < 1) return;
   if (!confirm("Opravdu smazat jídlo?")) {
     return;
@@ -9806,13 +9838,14 @@ async function deleteFood(id) {
 
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/menu?id=eq.${Number(id)}&restaurant_id=eq.${currentRestaurantId}`,
+      `${SUPABASE_URL}/rest/v1/menu?id=eq.${Number(id)}&restaurant_id=eq.${restaurantId}`,
       {
         method: "DELETE",
         headers: getHeaders({ Prefer: "return=representation" })
       }
     );
 
+    if (!canContinue()) return;
     if (!response.ok) {
       throw new Error(
         await response.text()
@@ -9821,6 +9854,7 @@ async function deleteFood(id) {
 
     await requireChangedRestaurantRow(response, Number(id));
 
+    if (!canContinue()) return;
     if (
       Number(editingFoodId) === Number(id)
     ) {
@@ -9829,14 +9863,17 @@ async function deleteFood(id) {
 
     await loadFoods();
   } catch (error) {
+    if (!canContinue()) return;
     console.error(error);
 
     showDashboardNotice(
       "Nepodařilo se smazat jídlo."
     );
   } finally {
-    saveFoodInProgress = false;
-    if (saveButton) saveButton.disabled = saveButtonWasDisabled;
+    if (contextIsCurrent()) {
+      saveFoodInProgress = false;
+      if (saveButton) saveButton.disabled = saveButtonWasDisabled || !canContinue();
+    }
   }
 }
 function createCalendarTimeline(eventsHtml = "") {
