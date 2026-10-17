@@ -295,6 +295,11 @@ textarea::placeholder{
 }
 
 .food-modal-content {
+  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
   position: relative;
   width: min(520px, 100%);
   background: #0f172a;
@@ -503,6 +508,7 @@ textarea::placeholder{
     max-width: none !important;
     overflow: visible !important;
   }
+}
 @media screen and (min-width: 761px) {
   #rezervace .reservation-form,
   #rezervace form,
