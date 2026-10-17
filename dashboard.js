@@ -6779,6 +6779,12 @@ function openTableGroup(groupId) {
 }
 
  async function unmergeTableGroup(groupId) {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+  const canContinue = () => contextIsCurrent() && ["owner", "manager"].includes(currentUserRole);
+  if (!restaurantId || !userId || !canContinue() || !Number.isSafeInteger(Number(groupId)) || Number(groupId) < 1) return;
   const confirmed = confirm(
     "Opravdu chcete tyto stoly rozpojit?"
   );
@@ -6812,7 +6818,7 @@ function openTableGroup(groupId) {
 
     const groupReservationsResponse =
       await authorizedFetch(
-        `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${currentRestaurantId}&table_group_id=eq.${Number(groupId)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,status`,
+        `${SUPABASE_URL}/rest/v1/reservations?restaurant_id=eq.${restaurantId}&table_group_id=eq.${Number(groupId)}&status=neq.${encodeURIComponent("Zrušeno")}&select=id,date,time,duration_minutes,status`,
         {
           headers:
             getHeaders({
@@ -6822,6 +6828,7 @@ function openTableGroup(groupId) {
         }
       );
 
+    if (!canContinue()) return;
     if (!groupReservationsResponse.ok) {
       throw new Error(
         await groupReservationsResponse.text()
@@ -6831,6 +6838,8 @@ function openTableGroup(groupId) {
     const groupReservations =
       await groupReservationsResponse.json();
 
+    if (!canContinue()) return;
+    if (!Array.isArray(groupReservations)) throw new Error("Invalid group reservations result.");
     if (
       Array.isArray(groupReservations) &&
       groupReservations.some(
@@ -6880,11 +6889,11 @@ function openTableGroup(groupId) {
       );
 
       const tableResponse = await authorizedFetch(
-        `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${table.id}&restaurant_id=eq.${currentRestaurantId}`,
+        `${SUPABASE_URL}/rest/v1/restaurant_tables?id=eq.${table.id}&restaurant_id=eq.${restaurantId}`,
         {
           method: "PATCH",
           headers: getHeaders({
-            Prefer: "return=minimal"
+            Prefer: "return=representation"
           }),
           body: JSON.stringify({
             x: newX,
@@ -6893,20 +6902,23 @@ function openTableGroup(groupId) {
         }
       );
 
+      if (!canContinue()) return;
       if (!tableResponse.ok) {
         throw new Error(await tableResponse.text());
       }
+      await requireChangedRestaurantRow(tableResponse, Number(table.id));
+      if (!canContinue()) return;
     }
 
     // Skupinu nemažeme.
     // Pouze ji deaktivujeme, aby zůstala zachována
     // pro historické rezervace.
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/table_groups?id=eq.${groupId}&restaurant_id=eq.${currentRestaurantId}`,
+      `${SUPABASE_URL}/rest/v1/table_groups?id=eq.${groupId}&restaurant_id=eq.${restaurantId}`,
       {
         method: "PATCH",
         headers: getHeaders({
-          Prefer: "return=minimal"
+          Prefer: "return=representation"
         }),
         body: JSON.stringify({
           active: false
@@ -6914,18 +6926,23 @@ function openTableGroup(groupId) {
       }
     );
 
+    if (!canContinue()) return;
     if (!response.ok) {
       throw new Error(await response.text());
     }
 
+    await requireChangedRestaurantRow(response, Number(groupId));
+    if (!canContinue()) return;
     closeTableModal();
 
     await loadTables();
 
+    if (!canContinue()) return;
     showDashboardNotice(
       "Stoly byly úspěšně rozpojeny."
     );
   } catch (error) {
+    if (!canContinue()) return;
     console.error(error);
 
     showDashboardNotice(
