@@ -809,6 +809,14 @@ async function askModel({
         : ""
     );
 
+    if (payload?.error?.code === "insufficient_quota" ||
+        payload?.error?.type === "insufficient_quota") {
+      const error = new Error("AI provider quota unavailable.");
+      error.status = 503;
+      error.code = "AI_UNAVAILABLE";
+      throw error;
+    }
+
     const error =
       new Error(
         response.status === 429
@@ -1036,7 +1044,11 @@ export default async function handler(
       )
       .json({
         error:
-          aiErrorMessage(status, locale)
+          error?.code === "AI_UNAVAILABLE"
+            ? (locale === "en"
+                ? "The AI assistant is currently unavailable. You can find the menu on this page and book using the reservation form."
+                : "AI asistent momentálně není dostupný. Menu najdeš na této stránce a rezervaci vytvoříš přes rezervační formulář.")
+            : aiErrorMessage(status, locale)
       });
   }
 }
