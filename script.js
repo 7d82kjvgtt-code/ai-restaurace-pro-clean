@@ -1669,6 +1669,7 @@ async function ulozitRezervaci() {
     // proto už nesmí rozhodovat o tom, který stůl je volný.
     const createResponse = await fetch("/api/send-email", {
       method: "POST",
+      signal: AbortSignal.timeout(25000),
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "create-reservation",
@@ -1994,3 +1995,4 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
+
