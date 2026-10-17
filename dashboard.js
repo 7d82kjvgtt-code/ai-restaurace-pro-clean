@@ -2585,6 +2585,30 @@ function clearSession() {
     null;
   reservations = [];
   pendingStatusEmails.clear();
+  reservationStatusUpdatesInFlight.clear();
+  statusEmailRetriesInFlight.clear();
+  reservationDeletesInFlight.clear();
+  saveReservationChangesInProgress = false;
+  saveNewReservationInProgress = false;
+  ["editReservationId", "editReservationName", "editReservationPeople", "editReservationDate", "editReservationTime", "editReservationDuration", "editReservationTable", "editReservationStatus", "editReservationPhone", "editReservationEmail", "editReservationNote", "newName", "newPeople", "newDate", "newTime", "newTable", "newPhone", "newEmail", "newNote"].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) input.value = "";
+  });
+  const editIdInput = document.getElementById("editReservationId");
+  if (editIdInput) delete editIdInput.dataset.rowRevision;
+  const editReservationError = document.getElementById("editReservationError");
+  if (editReservationError) {
+    editReservationError.textContent = "";
+    editReservationError.hidden = true;
+  }
+  const newReservationForm = document.getElementById("novaRezervace");
+  if (newReservationForm) newReservationForm.style.display = "none";
+  const newDurationInput = document.getElementById("newDuration");
+  if (newDurationInput) newDurationInput.value = "120";
+  const editSaveButton = document.querySelector('#reservationModal button[onclick="saveReservationChanges()"]');
+  if (editSaveButton) editSaveButton.disabled = false;
+  const newSaveButton = document.querySelector("#novaRezervace .successButton");
+  if (newSaveButton) newSaveButton.disabled = false;
   foods = [];
   saveFoodInProgress = false;
   editingFoodId = null;
@@ -3699,7 +3723,7 @@ function renderReservations(data) {
 
       const statusBusy =
         reservationStatusUpdatesInFlight.has(
-          currentReservationId
+          `${dashboardSessionVersion}:${Number(currentRestaurantId)}:${currentReservationId}`
         );
       const pendingEmail = pendingStatusEmails.get(currentReservationId);
       const emailPending = Boolean(String(reservation.email || "").trim()) && pendingEmail &&
@@ -3979,12 +4003,18 @@ async function retryStatusEmail(reservationId, statusRevision) {
   const id = Number(reservationId);
   const revision = Number(statusRevision);
   const restaurantId = Number(currentRestaurantId);
+  const sessionVersion = dashboardSessionVersion;
+  const userId = currentUserId;
+  const role = currentUserRole;
+  const sessionIsCurrent = () => sessionVersion === dashboardSessionVersion && userId === currentUserId && Number(currentRestaurantId) === restaurantId;
+  const contextIsCurrent = () => sessionIsCurrent() && role === currentUserRole;
+  if (!userId || !["owner", "manager", "staff"].includes(role) || !Number.isSafeInteger(restaurantId) || restaurantId < 1) return false;
   if (!Number.isSafeInteger(id) || id < 1 ||
       !Number.isSafeInteger(revision) || revision < 1) {
     showDashboardNotice("Neplatná rezervace nebo verze e-mailu.", "error");
     return;
   }
-  const retryKey = restaurantId + ":" + id + ":" + revision;
+  const retryKey = sessionVersion + ":" + restaurantId + ":" + id + ":" + revision;
   if (statusEmailRetriesInFlight.has(retryKey)) return;
   statusEmailRetriesInFlight.add(retryKey);
   try {
@@ -4002,7 +4032,7 @@ async function retryStatusEmail(reservationId, statusRevision) {
     if (!response.ok || data.success !== true || data.email_sent !== true) {
       throw new Error(data.error || "Odeslání e-mailu nebylo potvrzeno. Kontaktujte hosta ručně.");
     }
-    if (Number(currentRestaurantId) !== restaurantId) return;
+    if (!contextIsCurrent()) return;
     const pendingRevision = Number(pendingStatusEmails.get(id)?.status_revision);
     if (pendingRevision > revision) {
       showDashboardNotice(
@@ -4021,7 +4051,7 @@ async function retryStatusEmail(reservationId, statusRevision) {
     );
   } catch (error) {
     console.error("Opakování stavového e-mailu selhalo:", error);
-    if (Number(currentRestaurantId) === restaurantId) {
+    if (contextIsCurrent()) {
       showDashboardNotice(
         error?.message || "E-mail se nepodařilo odeslat. Kontaktujte hosta ručně.",
         "error"
@@ -4034,6 +4064,13 @@ async function retryStatusEmail(reservationId, statusRevision) {
 
 async function updateStatus(id, status) {
   const restaurantId = Number(currentRestaurantId);
+  const sessionVersion = dashboardSessionVersion;
+  const userId = currentUserId;
+  const role = currentUserRole;
+  const sessionIsCurrent = () => sessionVersion === dashboardSessionVersion && userId === currentUserId && Number(currentRestaurantId) === restaurantId;
+  const contextIsCurrent = () => sessionIsCurrent() && role === currentUserRole;
+  if (!userId || !["owner", "manager", "staff"].includes(role) || !Number.isSafeInteger(restaurantId) || restaurantId < 1) return false;
+  const statusKey = `${sessionVersion}:${restaurantId}:${Number(id)}`;
   const reservationId =
     Number(id);
 
@@ -4096,14 +4133,14 @@ async function updateStatus(id, status) {
   // Hlavní ochrana je nově i na serveru.
   if (
     reservationStatusUpdatesInFlight.has(
-      reservationId
+      statusKey
     )
   ) {
     return false;
   }
 
   reservationStatusUpdatesInFlight.add(
-    reservationId
+    statusKey
   );
 
   setReservationStatusButtonsBusy(
@@ -4149,7 +4186,7 @@ async function updateStatus(id, status) {
         nextStatus
       );
 
-    if (Number(currentRestaurantId) !== restaurantId) return false;
+    if (!contextIsCurrent()) return false;
 
     if (
       result?.changed ===
@@ -4158,7 +4195,7 @@ async function updateStatus(id, status) {
       // Jiný request už stejný stav provedl.
       // Server kvůli tomu neposlal druhý e-mail.
       await loadReservations();
-      if (Number(currentRestaurantId) !== restaurantId) return false;
+      if (!contextIsCurrent()) return false;
 
       showDashboardNotice(
         nextStatus === "Potvrzeno"
@@ -4174,7 +4211,7 @@ async function updateStatus(id, status) {
       loadReservations(),
       loadReservationHistory()
     ]);
-    if (Number(currentRestaurantId) !== restaurantId) return false;
+    if (!contextIsCurrent()) return false;
 
     if (
       result?.email_sent
@@ -4210,7 +4247,7 @@ async function updateStatus(id, status) {
       error
     );
 
-    if (Number(currentRestaurantId) !== restaurantId) return false;
+    if (!contextIsCurrent()) return false;
     const rollbackIndex = reservations.findIndex(item => Number(item.id) === reservationId);
 
     // Server změnu nepotvrdil -> vrátíme původní stav v UI.
@@ -4243,7 +4280,7 @@ async function updateStatus(id, status) {
 
     if (Number(error?.status) === 409) {
       await loadReservations();
-      if (Number(currentRestaurantId) !== restaurantId) return false;
+      if (!contextIsCurrent()) return false;
     }
 
     showDashboardNotice(
@@ -4255,10 +4292,10 @@ async function updateStatus(id, status) {
     return false;
   } finally {
     reservationStatusUpdatesInFlight.delete(
-      reservationId
+      statusKey
     );
 
-    if (Number(currentRestaurantId) === restaurantId) {
+    if (contextIsCurrent()) {
       setReservationStatusButtonsBusy(reservationId, false);
       renderReservations(reservations);
     }
@@ -4269,10 +4306,16 @@ const reservationDeletesInFlight = new Set();
 
 async function deleteReservation(id) {
   const restaurantId = Number(currentRestaurantId);
+  const sessionVersion = dashboardSessionVersion;
+  const userId = currentUserId;
+  const role = currentUserRole;
+  const sessionIsCurrent = () => sessionVersion === dashboardSessionVersion && userId === currentUserId && Number(currentRestaurantId) === restaurantId;
+  const contextIsCurrent = () => sessionIsCurrent() && role === currentUserRole;
+  if (!userId || !["owner", "manager", "staff"].includes(role) || !Number.isSafeInteger(restaurantId) || restaurantId < 1) return false;
   const reservationId = Number(id);
   if (!Number.isSafeInteger(restaurantId) || restaurantId < 1 ||
       !Number.isSafeInteger(reservationId) || reservationId < 1) return false;
-  const deleteKey = `${restaurantId}:${reservationId}`;
+  const deleteKey = `${sessionVersion}:${restaurantId}:${reservationId}`;
   if (reservationDeletesInFlight.has(deleteKey)) return false;
   if (currentUserRole !== "owner") {
     showDashboardNotice("Rezervaci může smazat jen vlastník restaurace.");
@@ -4319,14 +4362,14 @@ async function deleteReservation(id) {
       throw new Error("Rezervace nebyla smazána.");
     }
 
-    if (Number(currentRestaurantId) !== restaurantId) return true;
+    if (!contextIsCurrent()) return false;
     await loadReservations();
-    if (Number(currentRestaurantId) !== restaurantId) return true;
+    if (!contextIsCurrent()) return false;
     await loadReservationHistory();
-    return true;
+    return contextIsCurrent();
   } catch (error) {
     console.error(error);
-    if (Number(currentRestaurantId) !== restaurantId) return false;
+    if (!contextIsCurrent()) return false;
 
     const deleteError = String(error?.message || "");
     showDashboardNotice(
@@ -5434,6 +5477,12 @@ let saveReservationChangesInProgress = false;
 async function saveReservationChanges() {
   if (saveReservationChangesInProgress) return;
   const restaurantId = Number(currentRestaurantId);
+  const sessionVersion = dashboardSessionVersion;
+  const userId = currentUserId;
+  const role = currentUserRole;
+  const sessionIsCurrent = () => sessionVersion === dashboardSessionVersion && userId === currentUserId && Number(currentRestaurantId) === restaurantId;
+  const contextIsCurrent = () => sessionIsCurrent() && role === currentUserRole;
+  if (!userId || !["owner", "manager", "staff"].includes(role) || !Number.isSafeInteger(restaurantId) || restaurantId < 1) return false;
   if (!Number.isSafeInteger(restaurantId) || restaurantId < 1) return;
   saveReservationChangesInProgress = true;
   const inlineError = document.getElementById("editReservationError");
@@ -5610,7 +5659,7 @@ async function saveReservationChanges() {
       "Čerstvý stav rezervací se nepodařilo načíst:",
       error
     );
-    if (Number(currentRestaurantId) !== restaurantId) return;
+    if (!contextIsCurrent()) return;
 
     showDashboardNotice(
       "Rezervaci teď nelze bezpečně upravit. Obnov stránku a zkus to znovu."
@@ -5618,7 +5667,7 @@ async function saveReservationChanges() {
     return;
   }
 
-  if (Number(currentRestaurantId) !== restaurantId) return;
+  if (!contextIsCurrent()) return;
   const currentReservation =
     reservations.find(
       reservation =>
@@ -5641,7 +5690,7 @@ async function saveReservationChanges() {
       durationMinutes
     });
 
-  if (Number(currentRestaurantId) !== restaurantId) return;
+  if (!contextIsCurrent()) return;
   if (
     !openingAvailability.ok &&
     status !== "Zrušeno"
@@ -5848,7 +5897,7 @@ async function saveReservationChanges() {
         Number(statusResult?.reservation?.restaurant_id) !== restaurantId) {
       throw new Error("Server nepotvrdil úpravu rezervace. Obnov přehled a zkontroluj aktuální stav.");
     }
-    if (Number(currentRestaurantId) !== restaurantId) return;
+    if (!contextIsCurrent()) return;
     closeReservationModal();
     closeTableModal();
 
@@ -5857,7 +5906,7 @@ async function saveReservationChanges() {
       loadReservationHistory()
     ]);
 
-    if (Number(currentRestaurantId) !== restaurantId) return;
+    if (!contextIsCurrent()) return;
     renderTables();
 
     if (!reservationsLoaded) {
@@ -5901,7 +5950,7 @@ async function saveReservationChanges() {
     console.error(
       error
     );
-    if (Number(currentRestaurantId) !== restaurantId) return;
+    if (!contextIsCurrent()) return;
 
     const errorText = String(error?.message || "Rezervaci se nepodařilo kompletně upravit.");
     if (inlineError) {
@@ -5916,13 +5965,21 @@ async function saveReservationChanges() {
     ]);
   }
   } finally {
-    saveReservationChangesInProgress = false;
-    if (saveButton) saveButton.disabled = false;
+    if (sessionIsCurrent()) {
+      saveReservationChangesInProgress = false;
+      if (saveButton) saveButton.disabled = !["owner", "manager", "staff"].includes(currentUserRole);
+    }
   }
 }
 
 async function updateReservation(id, data = {}) {
   const restaurantId = Number(currentRestaurantId);
+  const sessionVersion = dashboardSessionVersion;
+  const userId = currentUserId;
+  const role = currentUserRole;
+  const sessionIsCurrent = () => sessionVersion === dashboardSessionVersion && userId === currentUserId && Number(currentRestaurantId) === restaurantId;
+  const contextIsCurrent = () => sessionIsCurrent() && role === currentUserRole;
+  if (!userId || !["owner", "manager", "staff"].includes(role) || !Number.isSafeInteger(restaurantId) || restaurantId < 1) return false;
   const reservationId =
     Number(id);
 
@@ -6079,6 +6136,7 @@ async function updateReservation(id, data = {}) {
         }
       );
 
+    if (!contextIsCurrent()) return false;
     const result =
       await response
         .json()
@@ -6086,6 +6144,7 @@ async function updateReservation(id, data = {}) {
           () => ({})
         );
 
+    if (!contextIsCurrent()) return false;
     if (!response.ok) {
       throw new Error(
         result?.error ||
@@ -6099,7 +6158,7 @@ async function updateReservation(id, data = {}) {
         Number(savedReservation?.restaurant_id) !== restaurantId) {
       throw new Error("Server nepotvrdil úpravu rezervace. Obnov přehled a zkontroluj aktuální stav.");
     }
-    if (Number(currentRestaurantId) !== restaurantId) return true;
+    if (!contextIsCurrent()) return false;
     if (Number(savedReservation?.id) === reservationId &&
         Number(savedReservation?.restaurant_id) === Number(currentRestaurantId)) {
       reservations = reservations.map(item =>
@@ -6114,7 +6173,7 @@ async function updateReservation(id, data = {}) {
       loadReservationHistory()
     ]);
 
-    if (Number(currentRestaurantId) !== restaurantId) return true;
+    if (!contextIsCurrent()) return false;
     if (!reservationsLoaded) {
       renderReservations(getFilteredReservations());
       renderCalendar();
@@ -6129,7 +6188,7 @@ async function updateReservation(id, data = {}) {
     return true;
   } catch (error) {
     console.error(error);
-    if (Number(currentRestaurantId) !== restaurantId) return false;
+    if (!contextIsCurrent()) return false;
 
     showDashboardNotice(
       String(
@@ -7498,6 +7557,12 @@ let saveNewReservationInProgress = false;
 async function saveNewReservation() {
   if (saveNewReservationInProgress) return;
   const restaurantId = Number(currentRestaurantId);
+  const sessionVersion = dashboardSessionVersion;
+  const userId = currentUserId;
+  const role = currentUserRole;
+  const sessionIsCurrent = () => sessionVersion === dashboardSessionVersion && userId === currentUserId && Number(currentRestaurantId) === restaurantId;
+  const contextIsCurrent = () => sessionIsCurrent() && role === currentUserRole;
+  if (!userId || !["owner", "manager", "staff"].includes(role) || !Number.isSafeInteger(restaurantId) || restaurantId < 1) return false;
   if (!Number.isSafeInteger(restaurantId) || restaurantId < 1) return;
   saveNewReservationInProgress = true;
   const saveButton = document.querySelector("#novaRezervace .successButton");
@@ -7616,7 +7681,7 @@ async function saveNewReservation() {
       durationMinutes
     });
 
-  if (Number(currentRestaurantId) !== restaurantId) return;
+  if (!contextIsCurrent()) return;
   if (
     !openingAvailability.ok
   ) {
@@ -7633,7 +7698,7 @@ async function saveNewReservation() {
       "Čerstvý stav rezervací se nepodařilo načíst:",
       error
     );
-    if (Number(currentRestaurantId) !== restaurantId) return;
+    if (!contextIsCurrent()) return;
 
     showDashboardNotice(
       "Rezervaci teď nelze bezpečně uložit. Obnov stránku a zkus to znovu."
@@ -7641,7 +7706,7 @@ async function saveNewReservation() {
     return;
   }
 
-  if (Number(currentRestaurantId) !== restaurantId) return;
+  if (!contextIsCurrent()) return;
   const reservationDraft = {
     people,
     date,
@@ -7872,7 +7937,7 @@ async function saveNewReservation() {
         Number(result?.reservation?.restaurant_id) !== restaurantId) {
       throw new Error("Server nepotvrdil vytvoření rezervace. Obnov přehled a zkontroluj jej před dalším pokusem.");
     }
-    if (Number(currentRestaurantId) !== restaurantId) return;
+    if (!contextIsCurrent()) return;
 
     document
       .getElementById(
@@ -7915,7 +7980,7 @@ async function saveNewReservation() {
       loadReservationHistory()
     ]);
 
-    if (Number(currentRestaurantId) !== restaurantId) return;
+    if (!contextIsCurrent()) return;
     const emailFailed =
       result?.email?.attempted === true &&
       result?.email?.sent !== true;
@@ -7935,7 +8000,7 @@ async function saveNewReservation() {
     console.error(
       error
     );
-    if (Number(currentRestaurantId) !== restaurantId) return;
+    if (!contextIsCurrent()) return;
 
     showDashboardNotice(
       String(
@@ -7946,8 +8011,10 @@ async function saveNewReservation() {
     );
   }
   } finally {
-    saveNewReservationInProgress = false;
-    if (saveButton) saveButton.disabled = false;
+    if (sessionIsCurrent()) {
+      saveNewReservationInProgress = false;
+      if (saveButton) saveButton.disabled = !["owner", "manager", "staff"].includes(currentUserRole);
+    }
   }
 }
 
