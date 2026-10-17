@@ -1194,7 +1194,7 @@ function renderPublicMenu() {
   if (publicMenuLoadFailed) {
     const message = document.createElement("p");
     message.setAttribute("role", "alert");
-    message.textContent = publicText("Menu se nepodařilo načíst. Zkus to prosím znovu.", "The menu could not be loaded. Please try again.");
+    message.textContent = publicText("Menu se nepodařilo načíst. Zkuste to prosím znovu.", "The menu could not be loaded. Please try again.");
     const retry = document.createElement("button");
     retry.type = "button";
     retry.textContent = publicText("Zkusit znovu", "Try again");
@@ -1466,7 +1466,7 @@ async function loadAvailableReservationTimes() {
     dateInput.value === date && Number(peopleInput.value) === people;
 
   if (!date || !Number.isInteger(people) || people < publicReservationSettings.min_people || people > publicReservationSettings.max_people) {
-    timeSelect.innerHTML = `<option value="">${publicText("Nejdřív vyber datum a počet osob", "Choose a date and number of guests first")}</option>`;
+    timeSelect.innerHTML = `<option value="">${publicText("Nejprve vyberte datum a počet hostů", "Choose a date and number of guests first")}</option>`;
     timeSelect.disabled = true;
     const invalidPeople = peopleInput.value !== "" &&
       (!Number.isInteger(people) || people < settings.min_people || people > settings.max_people);
@@ -1560,7 +1560,7 @@ async function loadAvailableReservationTimes() {
     timeSelect.replaceChildren();
     const placeholderOption = document.createElement("option");
     placeholderOption.value = "";
-    placeholderOption.textContent = publicText("Vyber čas", "Choose a time");
+    placeholderOption.textContent = publicText("Vyberte čas", "Choose a time");
     timeSelect.appendChild(placeholderOption);
 
     slots.forEach(slot => {
@@ -1600,7 +1600,7 @@ async function ulozitRezervaci() {
   }
   if (reservationSubmissionInProgress) return;
   if (!publicReservationSettingsLoaded) {
-    showPublicReservationNotice(publicText("Nastavení rezervací se ještě načítá. Zkus to prosím za chvíli.", "Booking settings are still loading. Please try again shortly."));
+    showPublicReservationNotice(publicText("Nastavení rezervací se ještě načítá. Zkuste to prosím za chvíli.", "Booking settings are still loading. Please try again shortly."));
     return;
   }
 
@@ -1615,13 +1615,13 @@ async function ulozitRezervaci() {
   const namePattern = /^[\p{L}\p{M}][\p{L}\p{M}\s.'’\-]{1,79}$/u;
 
   if (!namePattern.test(name)) {
-    showPublicReservationNotice(publicText("Zadej platné jméno alespoň o 2 písmenech.", "Enter a valid first name with at least 2 letters."));
+    showPublicReservationNotice(publicText("Zadejte jméno alespoň o 2 písmenech.", "Enter a valid first name with at least 2 letters."));
     document.getElementById("jmeno").value = "";
     return;
   }
 
   if (!namePattern.test(lastName)) {
-    showPublicReservationNotice(publicText("Zadej platné příjmení alespoň o 2 písmenech.", "Enter a valid last name with at least 2 letters."));
+    showPublicReservationNotice(publicText("Zadejte příjmení alespoň o 2 písmenech.", "Enter a valid last name with at least 2 letters."));
     document.getElementById("prijmeni").value = "";
     return;
   }
@@ -1639,12 +1639,12 @@ async function ulozitRezervaci() {
       .split("T")[0];
 
   if (!date) {
-    showPublicReservationNotice(publicText("Zadej platné datum rezervace.", "Choose a valid booking date."));
+    showPublicReservationNotice(publicText("Zvolte platné datum rezervace.", "Choose a valid booking date."));
     return;
   }
 
   if (!time || document.getElementById("cas").disabled) {
-    showPublicReservationNotice(publicText("Vyber volný čas rezervace.", "Choose an available booking time."));
+    showPublicReservationNotice(publicText("Vyberte dostupný čas rezervace.", "Choose an available booking time."));
     return;
   }
 
@@ -1680,13 +1680,13 @@ async function ulozitRezervaci() {
 
   const phoneClean = phone.replace(/\s+/g, "");
   if (!/^\+?\d{9,15}$/.test(phoneClean)) {
-    showPublicReservationNotice(publicText("Zadej platné telefonní číslo.", "Enter a valid phone number."));
+    showPublicReservationNotice(publicText("Zadejte platné telefonní číslo.", "Enter a valid phone number."));
     return;
   }
 
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailPattern.test(email)) {
-    showPublicReservationNotice(publicText("Zadej platnou e-mailovou adresu.", "Enter a valid email address."));
+    showPublicReservationNotice(publicText("Zadejte platnou e-mailovou adresu.", "Enter a valid email address."));
     return;
   }
 
