@@ -1341,7 +1341,7 @@ function setPublicReservationSubmitting(isSubmitting) {
   if (!button) return;
 
   if (!button.dataset.originalText) {
-    button.dataset.originalText = button.textContent.trim() || publicText("Potvrdit rezervaci", "Confirm reservation");
+    button.dataset.originalText = button.textContent.trim() || publicText("Odeslat rezervaci", "Send reservation");
   }
 
   button.disabled = isSubmitting || reservationResultUnverified;
@@ -1995,4 +1995,5 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
+
 
