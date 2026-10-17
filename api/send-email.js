@@ -1554,10 +1554,7 @@ async function getDashboardRestaurantInfoOnServer(
                   restaurant.accent_color
                 )
               : "#f59e0b",
-          ai_enabled:
-            Boolean(
-              process.env.OPENAI_API_KEY
-            )
+          ai_enabled: Boolean(process.env.OPENAI_API_KEY) && process.env.AI_ENABLED === "true"
         }
       });
   } catch (error) {
@@ -1676,10 +1673,7 @@ async function getPublicRestaurantInfoOnServer(
           restaurantNow.date,
         time_zone:
           RESTAURANT_TIME_ZONE,
-        ai_enabled:
-          Boolean(
-            process.env.OPENAI_API_KEY
-          )
+        ai_enabled: Boolean(process.env.OPENAI_API_KEY) && process.env.AI_ENABLED === "true"
       });
   } catch (error) {
     console.error(
