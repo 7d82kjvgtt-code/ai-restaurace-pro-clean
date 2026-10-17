@@ -15,6 +15,10 @@ API source blob tested: 07899edaa0becb80800b5f849de148d2553d39f1.
 
 Migration restrict_client_table_maintenance revokes TRUNCATE, TRIGGER and REFERENCES from anon, authenticated and PUBLIC on public tables and in postgres-owned table defaults. TRUNCATE is not protected by row-level security. Browser CRUD permissions, RLS predicates, trusted service_role operations and existing foreign-key constraints are retained. Production verification returned zero client TRUNCATE/TRIGGER/REFERENCES grants after migration. No tables or data were deleted.
 
+## Remaining security advisor notices
+
+Post-change advisor review still reports four RLS-enabled server-only/no-policy tables, six anonymous public SECURITY DEFINER helper functions, twelve authenticated SECURITY DEFINER helpers and disabled leaked-password protection. The public helpers and role helpers require their privileged design and are intentionally callable; this test does not claim the advisor is warning-free or replace a complete security audit. Leaked-password protection was not changed as part of tenant/capacity verification. Reference: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+
 ## Limits
 
 These results demonstrate tested tenant isolation and application-level concurrency. They do not certify 100 busy restaurants on the current hosted plan. PGlite 0.5.10 runs PostgreSQL 18.6 with one exclusive connection; production uses PostgreSQL 17. Database network latency, pool saturation, hosted CPU/RAM, real concurrent transactions, email quotas, real-world traffic and sustained load are not measured. Existing double-booking regression checks are separate; this test is not a hosted concurrent-booking test.
