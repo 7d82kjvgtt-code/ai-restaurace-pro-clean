@@ -1155,3 +1155,57 @@ body:not(.restaurant-public-mode) .assistant-card:not(.product-overview),.contac
 section[id] { scroll-margin-top:108px; }
 .food-modal-close:hover { background:#dbe1d4; color:#34442d; }
 .reservation-notice-close:hover { background:rgba(30,50,35,.08); color:inherit; }
+
+/* Editorial composition: restaurant-owned menu photography and quiet navigation. */
+body.restaurant-public-mode .navbar { padding-block:18px; }
+body.restaurant-public-mode .hero { position:relative; isolation:isolate; display:flex; align-items:center; width:100%; max-width:none; min-height:590px; padding:80px max(28px,calc((100vw - 1160px)/2)); background:#25372d; color:#faf6ee; border:0; overflow:hidden; }
+body.restaurant-public-mode .hero-text { position:relative; z-index:2; width:100%; max-width:710px; padding-right:28px; }
+body.restaurant-public-mode .hero h1 { color:#faf6ee; font-size:clamp(54px,6.6vw,92px); line-height:1.04; max-width:660px; text-wrap:balance; margin:0; }
+body.restaurant-public-mode .hero .badge { color:#ded2b9; font-size:10px; letter-spacing:.22em; margin-bottom:27px; }
+body.restaurant-public-mode .hero .subtitle { color:#e0e2d8; max-width:440px; font-size:17px; line-height:1.8; margin:28px 0 34px; }
+body.restaurant-public-mode .hero .btn { border-radius:2px; min-height:50px; padding:14px 24px; }
+body.restaurant-public-mode .hero .btn:not(.secondary) { background:#eee7d7; color:#25372d; border-color:#eee7d7; }
+body.restaurant-public-mode .hero .btn:not(.secondary):hover { background:#fff9ec; }
+body.restaurant-public-mode .hero .btn.secondary { background:transparent; border-color:#a5b0a3; color:#faf6ee; }
+body.restaurant-public-mode .hero .btn.secondary:hover { background:#ffffff14; }
+.restaurant-hero-media { position:absolute; inset:0 0 0 34%; margin:0; z-index:0; }
+.restaurant-hero-media[hidden] { display:none!important; }
+.restaurant-hero-media::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg,#25372d 0%,rgba(37,55,45,.78) 17%,rgba(37,55,45,.15) 60%,rgba(10,18,13,.22) 100%); }
+.restaurant-hero-media img { width:100%; height:100%; object-fit:cover; display:block; }
+.restaurant-hero-media figcaption { position:absolute; z-index:1; right:max(28px,calc((100vw - 1160px)/2)); bottom:30px; display:flex; flex-direction:column; gap:5px; text-align:right; color:white; text-shadow:0 1px 6px #000; font-size:14px; }
+.restaurant-hero-media figcaption span:first-child { text-transform:uppercase; font-size:9px; letter-spacing:.18em; }
+body.restaurant-public-mode .hero .restaurant-contact-item { color:#f6f0e3; border-color:#ffffff40; background:#25372d66; }
+body.restaurant-public-mode #menu { padding-top:78px; padding-bottom:68px; }
+body.restaurant-public-mode #menu .section-head { display:flex; justify-content:space-between; align-items:baseline; gap:20px; margin-bottom:30px; padding-bottom:26px; border-bottom:1px solid var(--line); }
+body.restaurant-public-mode #menu .section-head .badge { margin:0; }
+body.restaurant-public-mode #menu .section-head h2 { font-size:clamp(38px,4.3vw,58px); }
+.menu-categories { display:flex; flex-wrap:wrap; gap:10px 28px; padding:0 0 34px; }
+.menu-categories[hidden] { display:none!important; }
+.menu-categories a { color:#596052; font-size:13px; text-decoration:none; padding:8px 0; border-bottom:1px solid #b6bdae; }
+.menu-categories a:hover { color:#202f24; border-color:#202f24; }
+body.restaurant-public-mode .menu-category { scroll-margin-top:110px; }
+body.restaurant-public-mode .menu-category h2 { font:400 30px/1.2 Georgia,serif!important; border:0!important; margin-bottom:10px!important; padding-top:22px!important; }
+body.restaurant-public-mode .food-card img,body.restaurant-public-mode .food-card > div { border-radius:2px!important; }
+body.restaurant-public-mode .food-card { transition:background .15s; }
+body.restaurant-public-mode #rezervace { padding-top:72px; padding-bottom:80px; }
+body.restaurant-public-mode #rezervace .section-head h2 { font-size:clamp(42px,4.4vw,60px); }
+body.restaurant-public-mode #rezervace .reservation-box { border-radius:3px; }
+.restaurant-footer .restaurant-admin-link { color:#777c70; font-size:12px; }
+@media(max-width:760px) {
+ body.restaurant-public-mode .hero { min-height:650px; padding:65px 24px 48px; align-items:flex-end; }
+ body.restaurant-public-mode .hero-text { padding-right:0; }
+ body.restaurant-public-mode .hero h1 { font-size:clamp(48px,12vw,76px); max-width:500px; }
+ body.restaurant-public-mode .hero .subtitle { font-size:16px; max-width:360px; margin:22px 0 26px; }
+ body.restaurant-public-mode .hero .badge { margin-bottom:22px; }
+ .restaurant-hero-media { inset:0; }
+ .restaurant-hero-media::after { background:linear-gradient(0deg,#25372d 0%,rgba(37,55,45,.94) 27%,rgba(37,55,45,.35) 72%,rgba(37,55,45,.08) 100%); }
+ .restaurant-hero-media figcaption { right:22px; top:22px; bottom:auto; font-size:12px; }
+ body.restaurant-public-mode .hero .btn { font-size:13px; padding:13px 18px; }
+ body.restaurant-public-mode #menu { padding-top:46px; padding-bottom:38px; }
+ body.restaurant-public-mode #menu .section-head { display:block; padding-bottom:20px; margin-bottom:16px; }
+ body.restaurant-public-mode #menu .section-head .badge { margin-bottom:12px; }
+ .menu-categories { gap:6px 22px; padding-bottom:16px; }
+ body.restaurant-public-mode #rezervace { padding-top:45px; padding-bottom:45px; }
+ body.restaurant-public-mode .menu-category h2 { font-size:27px!important; }
+}
+@media(prefers-reduced-motion:reduce) { body.restaurant-public-mode .food-card { transition:none; } }
