@@ -11231,8 +11231,14 @@ function renderOpeningHours() {
 }
 
 async function saveOpeningHours() {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+  const canContinue = () => contextIsCurrent() && ["owner", "manager"].includes(currentUserRole);
+  if (!restaurantId || !userId || !canContinue()) return;
   const rows = [...document.querySelectorAll(".opening-day")].map(element => ({
-    restaurant_id: currentRestaurantId,
+    restaurant_id: restaurantId,
     day_of_week: Number(element.dataset.day),
     is_open: element.querySelector(".day-open").checked,
     open_time: element.querySelector(".day-from").value,
@@ -11250,13 +11256,18 @@ async function saveOpeningHours() {
       headers: getHeaders({ Prefer: "resolution=merge-duplicates,return=representation" }),
       body: JSON.stringify(rows)
     });
+    if (!canContinue()) return;
     if (!response.ok) throw new Error(await response.text());
-    openingHours = await response.json();
+    const savedRows = await response.json();
+    if (!canContinue()) return;
+    if (!Array.isArray(savedRows) || savedRows.length !== rows.length || savedRows.some(row => Number(row?.restaurant_id) !== Number(restaurantId))) throw new Error("Invalid opening hours result.");
+    openingHours = savedRows;
     openingHoursConfigured = openingHours.some(row => row.is_open === true && row.open_time && row.close_time);
     renderOpeningHours();
     renderSetupChecklist();
     showDashboardNotice("Otevírací doba byla uložena.", "success");
   } catch (error) {
+    if (!canContinue()) return;
     console.error(error);
     showDashboardNotice("Otevírací dobu se nepodařilo uložit.");
   }
@@ -11297,6 +11308,12 @@ function renderBlockedTimes() {
 }
 
 async function addBlockedTime() {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+  const canContinue = () => contextIsCurrent() && ["owner", "manager"].includes(currentUserRole);
+  if (!restaurantId || !userId || !canContinue()) return;
   const date = document.getElementById("blockDate").value;
   const start_time = document.getElementById("blockStart").value;
   const end_time = document.getElementById("blockEnd").value;
@@ -11315,25 +11332,42 @@ async function addBlockedTime() {
     const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/blocked_times`, {
       method: "POST",
       headers: getHeaders({ Prefer: "return=representation" }),
-      body: JSON.stringify({ restaurant_id: currentRestaurantId, date, start_time, end_time, reason })
+      body: JSON.stringify({ restaurant_id: restaurantId, date, start_time, end_time, reason })
     });
+    if (!canContinue()) return;
     if (!response.ok) throw new Error(await response.text());
+    await requireChangedRestaurantRow(response);
+    if (!canContinue()) return;
     document.getElementById("blockReason").value = "";
     await loadBlockedTimes();
+    if (!canContinue()) return;
     showDashboardNotice("Čas byl zablokován.", "success");
   } catch (error) {
+    if (!canContinue()) return;
     console.error(error);
     showDashboardNotice("Blokaci se nepodařilo uložit.");
   }
 }
 
 async function deleteBlockedTime(id) {
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+  const canContinue = () => contextIsCurrent() && ["owner", "manager"].includes(currentUserRole);
+  if (!restaurantId || !userId || !canContinue()) return;
+  if (!Number.isSafeInteger(Number(id)) || Number(id) < 1) return;
   try {
-    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/blocked_times?id=eq.${Number(id)}&restaurant_id=eq.${currentRestaurantId}`, { method: "DELETE", headers: getHeaders() });
+    const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/blocked_times?id=eq.${Number(id)}&restaurant_id=eq.${restaurantId}`, { method: "DELETE", headers: getHeaders({ Prefer: "return=representation" }) });
+    if (!canContinue()) return;
     if (!response.ok) throw new Error(await response.text());
+    await requireChangedRestaurantRow(response, Number(id));
+    if (!canContinue()) return;
     await loadBlockedTimes();
+    if (!canContinue()) return;
     showDashboardNotice("Blokace byla odstraněna.", "success");
   } catch (error) {
+    if (!canContinue()) return;
     console.error(error);
     showDashboardNotice("Blokaci se nepodařilo odstranit.");
   }
