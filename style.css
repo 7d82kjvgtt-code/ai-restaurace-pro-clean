@@ -1075,7 +1075,7 @@ body.restaurant-public-mode .food-card:hover { transform:none; background:#f0f0e
 body.restaurant-public-mode .food-card img,body.restaurant-public-mode .food-card > div { grid-column:1; grid-row:1/3; width:112px!important; height:112px!important; max-height:112px!important; border-radius:7px!important; margin:0!important; object-fit:cover!important; background:#e9e7df!important; font-size:36px!important; }
 body.restaurant-public-mode .food-card h3 { grid-column:2; align-self:end; margin:0 0 8px; font-size:18px; font-weight:600; line-height:1.35; overflow-wrap:anywhere; }
 body.restaurant-public-mode .food-card p { grid-column:2; align-self:start; margin:0; color:#5f6b5c; font-size:15px; font-weight:500; }
-body.restaurant-public-mode #rezervace { max-width:1210px; display:grid; grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); gap:55px; align-items:start; border-top:1px solid var(--line); }
+body.restaurant-public-mode #rezervace { max-width:1210px!important; width:100%!important; display:grid; grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); gap:55px; align-items:start; border-top:1px solid var(--line); }
 body.restaurant-public-mode #rezervace > div { max-width:none!important; min-width:0; }
 .reservation-intro { color:var(--subtle); font-size:15px; line-height:1.8; margin-top:24px; max-width:340px; }
 body.restaurant-public-mode #rezervace .reservation-box { background:var(--white); border:1px solid var(--line); border-radius:12px; box-shadow:0 12px 36px rgba(33,40,30,.04); backdrop-filter:none; padding:30px!important; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 18px; width:100%!important; }
@@ -1151,3 +1151,7 @@ body:not(.restaurant-public-mode) .assistant-card:not(.product-overview),.contac
  body.restaurant-public-mode #rezervace .reservation-box { grid-template-columns:1fr; }
 }
 @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { transition:none!important; animation:none!important; } }
+
+section[id] { scroll-margin-top:108px; }
+.food-modal-close:hover { background:#dbe1d4; color:#34442d; }
+.reservation-notice-close:hover { background:rgba(30,50,35,.08); color:inherit; }
