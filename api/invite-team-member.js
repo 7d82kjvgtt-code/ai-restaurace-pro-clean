@@ -389,11 +389,15 @@ module.exports =
       }
 
       const activeMemberships =
-        await activeMembershipsResponse
-          .json()
-          .catch(
-            () => []
-          );
+        await activeMembershipsResponse.json().catch(() => null);
+
+      if (!Array.isArray(activeMemberships) || activeMemberships.length > 2 ||
+          activeMemberships.some(item =>
+            item === null || typeof item !== "object" || Array.isArray(item) ||
+            !Number.isSafeInteger(Number(item.restaurant_id)) || Number(item.restaurant_id) < 1
+          )) {
+        throw new Error("Neplatná odpověď při ověřování stávajícího členství.");
+      }
 
       const activeElsewhere =
         (
@@ -445,6 +449,16 @@ module.exports =
 
       const existingRows =
         await existingResponse.json();
+
+      if (!Array.isArray(existingRows) || existingRows.length > 1 ||
+          existingRows.some(item =>
+            item === null || typeof item !== "object" || Array.isArray(item) ||
+            !Number.isSafeInteger(Number(item.id)) || Number(item.id) < 1 ||
+            typeof item.active !== "boolean" ||
+            !["owner", "manager", "staff"].includes(String(item.role || "").toLowerCase())
+          )) {
+        throw new Error("Neplatná odpověď při ověřování člena týmu.");
+      }
 
       const existing =
         Array.isArray(
