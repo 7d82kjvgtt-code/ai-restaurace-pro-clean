@@ -327,7 +327,7 @@
   </div>
 
 
-  <div class="reservation-box">
+  <form id="reservationForm" class="reservation-box" onsubmit="event.preventDefault(); ulozitRezervaci()">
 
     <div class="reservation-field">
 <label for="jmeno" data-en="First name">
@@ -336,6 +336,10 @@
 
     <input
       id="jmeno"
+      type="text"
+      minlength="2"
+      maxlength="80"
+      required
       placeholder="Jméno" data-en-placeholder="First name"
       autocomplete="given-name"
     >
@@ -349,6 +353,10 @@
 
     <input
       id="prijmeni"
+      type="text"
+      minlength="2"
+      maxlength="80"
+      required
       placeholder="Příjmení" data-en-placeholder="Last name"
       autocomplete="family-name"
     >
@@ -415,6 +423,10 @@
 
     <input
       id="telefon"
+      type="tel"
+      inputmode="tel"
+      maxlength="40"
+      required
       placeholder="Telefon" data-en-placeholder="Phone"
       autocomplete="tel"
     >
@@ -428,6 +440,8 @@
 
     <input
       id="email"
+      maxlength="320"
+      required
       type="email"
       placeholder="E-mail"
       autocomplete="email"
@@ -442,6 +456,7 @@
 
     <textarea
       id="poznamka"
+      maxlength="1000"
       placeholder="Poznámka" data-en-placeholder="Note"
       rows="4"
     ></textarea>
@@ -459,13 +474,12 @@
 
     <button
       id="reservationSubmitButton" data-en="Send reservation"
-      type="button"
-      onclick="ulozitRezervaci()"
+      type="submit"
     >
       Odeslat rezervaci
     </button>
 
-  </div>
+  </form>
 
 </section>
 
