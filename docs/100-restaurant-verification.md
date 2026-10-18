@@ -78,6 +78,13 @@ Added api-boundaries.mjs against the full current API handler (blob 07899edaa0be
 
 The isolated tenant suite (1,506 assertions) and synthetic handler concurrency suite (1,000 requests / 100 simultaneous) also passed again after adding the test entry point. No production load test or email delivery was repeated. No application behavior change was needed for these assertions.
 
+## Subsequent booking and invitation safeguards — 18 October 2026
+
+- Private API boundary suite now covers 28 cases, including authenticated callers without membership in the reservation's actual restaurant. Foreign access returns 403 and no private fixture data or mutation escapes.
+- Invitation API rejects malformed membership responses before invitation or team mutation. Sixteen mocked cases cover owner-only permissions, foreign invitees, invalid upstream data, tenant scoping and a configured redirect independent of request Host.
+- Public booking treats every unverified 5xx result as uncertain and blocks repeat submission while preserving the draft. Two pre-creation 503 paths now explicitly return BOOKING_NOT_CREATED; only that 503 marker permits a known-safe retry. Forty CZ/EN frontend cases cover duplicate submission, uncertain response, known rejection and failed receipt delivery.
+- These suites use current repository sources with intercepted transport; they send no real reservations or emails. GitHub Actions runs them with the isolated database and handler concurrency suites on relevant main/PR changes. This workflow reports checks; no deployment gate or branch-protection rule was configured.
+
 ## Reproduce safely
 
 ```bash
