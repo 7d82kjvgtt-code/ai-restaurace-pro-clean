@@ -7,6 +7,9 @@ import { performance } from 'node:perf_hooks';
 // Run the real handler; all transport is intercepted. No production reads or writes.
 const source = fs.readFileSync(new URL('../../api/send-email.js', import.meta.url), 'utf8');
 let calls = 0;
+let foreignTenant = false;
+let membershipChecks = 0;
+let reservationReads = 0;
 const context = vm.createContext({
   createHash, URL, URLSearchParams, Date, Intl, AbortSignal, performance,
   process: { env: { SUPABASE_SERVICE_ROLE_KEY: 'local-fixture-only' } },
@@ -15,6 +18,29 @@ const context = vm.createContext({
     calls++;
     const url = new URL(raw);
     assert.equal(url.hostname, 'decpnnbaejxjbpmyjocs.supabase.co');
+    if (foreignTenant) {
+      assert.equal(options.method || 'GET', 'GET', 'Forbidden mutation attempted');
+      if (url.pathname === '/auth/v1/user') {
+        assert.equal(options.headers.Authorization, 'Bearer foreign-fixture-token');
+        return { ok: true, status: 200, json: async () => ({ id: 'fixture-owner-of-other-restaurant' }) };
+      }
+      let data;
+      if (url.pathname === '/rest/v1/restaurant_team') {
+        membershipChecks++;
+        assert.equal(url.searchParams.get('restaurant_id'), 'eq.2');
+        assert.equal(url.searchParams.get('user_id'), 'eq.fixture-owner-of-other-restaurant');
+        assert.equal(url.searchParams.get('active'), 'eq.true');
+        data = [];
+      } else if (url.pathname === '/rest/v1/reservations') {
+        reservationReads++;
+        assert.equal(url.searchParams.get('id'), 'eq.1');
+        data = [{ id: 1, restaurant_id: 2, status: 'Potvrzeno', row_revision: 0,
+          status_revision: 1, name: 'PRIVATE-GUEST-MARKER', email: 'private-guest@example.invalid' }];
+      } else {
+        assert.fail('Foreign tenant access reached unexpected data or email transport: ' + url.pathname);
+      }
+      return { ok: true, status: 200, text: async () => JSON.stringify(data) };
+    }
     assert.equal(url.pathname, '/auth/v1/user', 'Unauthenticated access reached database or email transport');
     assert.equal(options.method, 'GET');
     assert.equal(options.headers.Authorization, 'Bearer rejected-fixture-token');
@@ -37,7 +63,7 @@ async function request(method, body, headers = {}) {
   assert.equal(responseHeaders['Cache-Control'], 'no-store');
   assert.ok(result && typeof result.error === 'string');
   cases++;
-  return { status, responseHeaders };
+  return { status, responseHeaders, result };
 }
 
 for (const method of ['GET', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']) {
@@ -70,4 +96,19 @@ for (const action of actions) {
   })).status, 401, action);
   assert.equal(calls, before + 1, `${action}: invalid token must stop at identity validation`);
 }
-console.log(`PASS ${cases} real-handler boundary cases: method enforcement, unknown actions, six private routes reject missing/invalid credentials; zero database queries, writes or emails.`);
+foreignTenant = true;
+for (const action of actions) {
+  const beforeMembership = membershipChecks;
+  const beforeReads = reservationReads;
+  const usesReservation = ['update-reservation', 'update-reservation-status', 'retry-reservation-status-email'].includes(action);
+  // Supplying a different body restaurant_id must not override the reservation's true tenant.
+  const response = await request('POST', {
+    ...fields, restaurant_id: usesReservation ? 1 : 2, action
+  }, { authorization: 'Bearer foreign-fixture-token' });
+  assert.equal(response.status, 403, action + ': authenticated foreign owner must be rejected');
+  assert.equal(membershipChecks, beforeMembership + 1, action + ': verify target membership');
+  assert.equal(reservationReads, beforeReads + (usesReservation ? 1 : 0));
+  assert.doesNotMatch(JSON.stringify(response.result), /PRIVATE-GUEST-MARKER|private-guest@example/);
+  assert.deepEqual(Object.keys(response.result), ['error'], action + ': do not return private records');
+}
+console.log(`PASS ${cases} real-handler boundary cases: method enforcement, unknown actions, six private routes reject missing/invalid credentials and authenticated foreign owners; no external calls, mutations or emails.`);
