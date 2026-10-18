@@ -72,12 +72,17 @@ These results demonstrate tested tenant isolation and application-level concurre
 
 Before promising production capacity at that scale, run a sustained end-to-end benchmark on an isolated hosted staging environment with the intended compute plan, connection limits and email sandbox. Do not run unrestricted production load tests or create 100 real customer restaurants as a substitute. The narrowly authorized read-only diagnostic above does not replace hosted staging.
 
+## Authentication boundary regression — 18 October 2026
+
+Added api-boundaries.mjs against the full current API handler (blob 07899edaa0becb80800b5f849de148d2553d39f1). All 22 cases pass: six non-POST methods return 405 with Allow: POST; four absent/unknown actions return 400; all six private actions reject missing credentials with 401 before transport and reject invalid credentials with 401 after only the identity endpoint. Mock transport asserts that no database query, mutation or email call occurs. This covers unauthenticated boundaries, not every authenticated role or tenant combination.
+
+The isolated tenant suite (1,506 assertions) and synthetic handler concurrency suite (1,000 requests / 100 simultaneous) also passed again after adding the test entry point. No production load test or email delivery was repeated. No application behavior change was needed for these assertions.
+
 ## Reproduce safely
 
 ```bash
 npm ci --prefix tests/capacity
-node tests/capacity/isolation.mjs
-node tests/capacity/concurrency.mjs
+npm test --prefix tests/capacity
 ```
 
 No secrets are required. isolation.mjs does not connect to production; concurrency.mjs replaces fetch and forbids writes. Results are written beside the tests as isolation-result.json and concurrency-result.json. Snapshot contains schema definitions only, no customer records. To refresh the snapshot, obtain metadata with a trusted administrator and review that no data or credentials are included.
