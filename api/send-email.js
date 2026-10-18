@@ -2478,12 +2478,14 @@ async function createReservationOnServer(
       Array.isArray(rows) && rows.every(row =>
         row !== null && typeof row === "object" && !Array.isArray(row)))) {
       return res.status(503).json({
+        code: "BOOKING_NOT_CREATED",
         error: "Online rezervace momentálně nejsou dostupné."
       });
     }
 
     if (!Array.isArray(settingsRows) || !settingsRows[0]) {
       return res.status(503).json({
+        code: "BOOKING_NOT_CREATED",
         error: "Online rezervace momentálně nejsou dostupné."
       });
     }
