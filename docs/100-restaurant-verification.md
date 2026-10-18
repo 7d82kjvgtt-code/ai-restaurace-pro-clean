@@ -58,6 +58,14 @@ A direct cloud-browser UI check after the Dublin deployment reached the restaura
 
 Vercel plugin installation is verified enabled, but the connected account does not expose the target project through the project API. The next step for internal queue/CPU investigation requires correcting the connector's account/team access; no permission was broadened automatically and no credentials were requested in chat.
 
+## Vercel dashboard observation — 18 October 2026, 13:52 Prague
+
+User-provided screenshots show the production project on main and request logs for the last 30 minutes. Five visible POST /api/send-email requests returned HTTP 200; the sidebar reported zero Warning, Error and Fatal console entries in that selected interval.
+
+The selected request started at 13:51:27.91 GMT+2. Its detail showed ingress Frankfurt (fra1), function routing Dublin (dub1), execution duration 111 ms, memory display 205 MB, and “Response finished in 152ms”. Three outbound Supabase GET entries were visible. These are observations transcribed from the dashboard screenshots, not metrics retrieved by the connector.
+
+This establishes a fast successful ordinary production request and confirms Dublin routing. The request action/body is not visible, so it must not be described as a confirmed booking, an email delivery, or a specific availability operation. The 152 ms is Vercel's request observation, not browser-perceived end-to-end latency. This sample does not explain or supersede the earlier concurrent runner results; CPU utilization, queuing under load and sustained hosted write capacity remain unmeasured. The project connector's missing project access remains unresolved.
+
 ## Limits
 
 These results demonstrate tested tenant isolation and application-level concurrency. They do not certify 100 busy restaurants on the current hosted plan. PGlite 0.5.10 runs PostgreSQL 18.6 with one exclusive connection; production uses PostgreSQL 17. The follow-up section adds a bounded live read-only measurement; pool saturation, hosted CPU/RAM, real concurrent writes, email quotas, 100 real tenant workloads and long-running load are still not measured. Existing double-booking regression checks are separate; this test is not a hosted concurrent-booking test.
