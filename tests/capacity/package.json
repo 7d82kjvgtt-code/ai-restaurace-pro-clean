@@ -3,6 +3,6 @@
     "@electric-sql/pglite": "0.5.10"
   },
   "scripts": {
-    "test": "node api-boundaries.mjs && node invite-boundaries.mjs && node isolation.mjs && node concurrency.mjs"
+    "test": "node api-boundaries.mjs && node invite-boundaries.mjs && node public-booking.mjs && node isolation.mjs && node concurrency.mjs"
   }
 }
