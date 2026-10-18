@@ -1727,8 +1727,9 @@ async function ulozitRezervaci() {
 
     const createData = await createResponse.json().catch(() => ({}));
     if (!createResponse.ok) {
+      const knownNotCreated = createResponse.status === 503 && createData.code === "BOOKING_NOT_CREATED";
       if (createData.code === "BOOKING_RESULT_UNVERIFIED" ||
-          [500, 502, 504].includes(createResponse.status)) {
+          (createResponse.status >= 500 && createResponse.status <= 599 && !knownNotCreated)) {
         showUnverifiedPublicReservationResult();
         return;
       }
