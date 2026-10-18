@@ -26,6 +26,12 @@ try {
 } catch (_) {}
 
 
+function formatCzechCount(value, one, few, many) {
+  const count = Number(value);
+  const word = count === 1 ? one : Number.isInteger(count) && count >= 2 && count <= 4 ? few : many;
+  return `${count} ${word}`;
+}
+
 const RESTAURANT_LOGO_TYPES = new Map([
   ["image/jpeg", "jpg"],
   ["image/png", "png"],
@@ -3498,13 +3504,13 @@ function refreshReservationNotifications() {
         <span class="reservation-notification-dot"></span>
         <span class="reservation-notification-copy">
           <strong>${escapeHtml(fullName)}</strong>
-          <small>${escapeHtml(formatDate(reservation.date))} · ${escapeHtml(String(reservation.time || "").slice(0,5))} · ${people} ${people === 1 ? "osoba" : "osob"}</small>
+          <small>${escapeHtml(formatDate(reservation.date))} · ${escapeHtml(String(reservation.time || "").slice(0,5))} · ${formatCzechCount(people, "osoba", "osoby", "osob")}</small>
           <em>${escapeHtml(tableLabel || "Bez stolu")}</em>
         </span>
       </button>`;
   }).join("");
 
-  if (title) title.textContent = count === 1 ? "1 nepřečtené upozornění" : `${count} nepřečtených upozornění`;
+  if (title) title.textContent = formatCzechCount(count, "nepřečtené upozornění", "nepřečtená upozornění", "nepřečtených upozornění");
   if (text) {
     const newest = unread[0];
     const guest = getReservationGuestName(newest) === "-" ? "Nový host" : getReservationGuestName(newest);
@@ -5355,7 +5361,7 @@ function updateEditReservationTableOptions(
         occupied;
 
       let label =
-        `${table.name} (${table.capacity} míst)`;
+        `${table.name} (${formatCzechCount(table.capacity, "místo", "místa", "míst")})`;
 
       if (!table.active) {
         label +=
@@ -5444,7 +5450,7 @@ function updateEditReservationTableOptions(
         occupied;
 
       let label =
-        `🔗 ${group.name || "Spojené stoly"} (${capacity} míst)`;
+        `🔗 ${group.name || "Spojené stoly"} (${formatCzechCount(capacity, "místo", "místa", "míst")})`;
 
       if (!usable) {
         label +=
@@ -5793,7 +5799,7 @@ async function saveReservationChanges() {
       )
     ) {
       showDashboardNotice(
-        `${selectedTable.name} má jen ${selectedTable.capacity} míst.`
+        `${selectedTable.name} má jen ${formatCzechCount(selectedTable.capacity, "místo", "místa", "míst")}.`
       );
       return;
     }
@@ -5856,7 +5862,7 @@ async function saveReservationChanges() {
       groupCapacity
     ) {
       showDashboardNotice(
-        `${selectedGroup.name || "Spojené stoly"} mají jen ${groupCapacity} míst.`
+        `${selectedGroup.name || "Spojené stoly"} mají jen ${formatCzechCount(groupCapacity, "místo", "místa", "míst")}.`
       );
       return;
     }
@@ -6792,7 +6798,7 @@ function renderFloorMap() {
               : `data-table-id="${safeItemId}"`
           }
           style="left:${safeX}px; top:${safeY}px;"
-          title="${escapeHtml(item.name || `Stůl ${item.id}`)} • ${Number(capacity) || 0} míst • ${escapeHtml(statusLabel)}"
+          title="${escapeHtml(item.name || `Stůl ${item.id}`)} • ${formatCzechCount(Number(capacity) || 0, "místo", "místa", "míst")} • ${escapeHtml(statusLabel)}"
           ${clickAction}
         >
           <span class="table-map-name">
@@ -7476,7 +7482,7 @@ function updateNewTableRecommendation() {
     );
 
   detail.textContent =
-    `${bestResource.capacity} míst · volné po celou dobu rezervace`;
+    `${formatCzechCount(bestResource.capacity, "místo", "místa", "míst")} · volné po celou dobu rezervace`;
 
   box.replaceChildren(
     strong,
@@ -7842,7 +7848,7 @@ async function saveNewReservation() {
     resourceCapacity
   ) {
     showDashboardNotice(
-      `${resourceName} má pouze ${resourceCapacity} míst.`
+      `${resourceName} má pouze ${formatCzechCount(resourceCapacity, "místo", "místa", "míst")}.`
     );
     return;
   }
@@ -8094,10 +8100,7 @@ function renderTables() {
             </b>
 
             <div class="tableCapacity">
-              ${escapeHtml(
-                table.capacity || 0
-              )}
-              míst
+              ${escapeHtml(formatCzechCount(table.capacity || 0, "místo", "místa", "míst"))}
             </div>
 
             <small>
@@ -9251,7 +9254,7 @@ async function autoAssignTable(
   const confirmed =
     confirm(
       `Doporučení: ${bestResource.type === "group" ? "🔗 " : ""}${bestResource.name}\n` +
-      `Kapacita: ${bestResource.capacity} míst\n` +
+      `Kapacita: ${formatCzechCount(bestResource.capacity, "místo", "místa", "míst")}\n` +
       `Rezervace: ${reservation.people} osob\n\n` +
       "Přiřadit toto místo?"
     );
@@ -9414,7 +9417,7 @@ async function assignTable(
       )
   ) {
     showDashboardNotice(
-      `${selectedTable.name} má pouze ${selectedTable.capacity} míst, ale rezervace je pro ${reservation.people} osob.`
+      `${selectedTable.name} má pouze ${formatCzechCount(selectedTable.capacity, "místo", "místa", "míst")}, ale rezervace je pro ${reservation.people} osob.`
     );
 
     renderReservations(
@@ -9483,7 +9486,7 @@ async function assignTable(
       groupCapacity
     ) {
       showDashboardNotice(
-        `${selectedGroup.name || "Spojené stoly"} mají pouze ${groupCapacity} míst, ale rezervace je pro ${reservation.people} osob.`
+        `${selectedGroup.name || "Spojené stoly"} mají pouze ${formatCzechCount(groupCapacity, "místo", "místa", "míst")}, ale rezervace je pro ${reservation.people} osob.`
       );
 
       renderReservations(
