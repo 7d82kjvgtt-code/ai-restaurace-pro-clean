@@ -927,6 +927,10 @@ export default async function handler(
       });
   }
 
+  if (!OPENAI_API_KEY || process.env.AI_ENABLED !== "true") {
+    return res.status(503).json({ error: locale === "en" ? "The AI assistant is not available yet." : "AI asistent ještě není aktivovaný." });
+  }
+
   try {
     const restaurant =
       await getPublishedRestaurant(
@@ -947,9 +951,6 @@ export default async function handler(
         });
     }
 
-    if (!OPENAI_API_KEY || process.env.AI_ENABLED !== "true") {
-      return res.status(503).json({ error: locale === "en" ? "The AI assistant is not available yet." : "AI asistent ještě není aktivovaný." });
-    }
 
     const [
       menuRows,
