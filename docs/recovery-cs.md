@@ -1,11 +1,13 @@
 # Obnova služby a dat
 
-Stav ověřen 18. 10. 2026. Produkční Supabase projekt decpnnbaejxjbpmyjocs hlásí ACTIVE_HEALTHY; PostgreSQL 17.6.1.141, eu-west-1. To potvrzuje dostupnost projektu, nikoli existenci nebo obnovitelnost záloh.
+Stav ověřen 20. 10. 2026. Produkční Supabase projekt decpnnbaejxjbpmyjocs hlásí ACTIVE_HEALTHY; PostgreSQL 17.6.1.141, eu-west-1. Projekt používá Free plán a podle zobrazené stránky Backups nemá spravované projektové zálohy.
 
 ## Neuzavřené body
 
-- Poslední dokončená databázová záloha a dostupné období obnovy: nezjištěno. Dostupný konektor nemá čtení seznamu záloh; plán a zálohy z tohoto metadata výpisu nelze odvodit.
-- Záloha souborů ze Storage: neověřena.
+- Jednorázový databázový export: dokončen 20. 10. 2026 přibližně ve 12:18 Europe/Prague. Soubor restaurant-20261020-121815.dump, 609 740 bajtů; pg_dump 17.11, formát custom. Následný pg_restore --file=/dev/null přečetl celý archiv bez chyby. Nejde o test skutečné obnovy.
+- Storage: staženo všech 14 objektů veřejného bucketu food-images, včetně 3 souborů v podsložce 1. Celkem 2 314 474 bajtů; ověřeny evidované velikosti, SHA-256 a čitelnost ZIPu. Databáze a soubory mají samostatné okamžiky exportu.
+- Soukromý společný balíček databáze a obrázků byl vytvořen a ověřen. Potvrzení druhé kopie mimo Mac vlastníka: dosud chybí.
+- Pravidelný export, retence, kontrola chyb a odpovědná osoba: dosud nezavedeny.
 - Zkušební obnova do odděleného prostředí: neprovedena.
 - Přijatelná ztráta dat (RPO) a doba obnovy (RTO): dosud nejsou se zákazníkem dohodnuty.
 
@@ -13,8 +15,8 @@ Tyto body se nesmějí označit jako splněné podle testů syntetické databáz
 
 ## Co ověřit před ostrým předáním
 
-1. V Supabase otevřít tento projekt → Database → Backups. Zapsat čas a stav poslední dostupné zálohy, retenci a případný rozsah PITR. Nezapínat placený plán ani doplněk automaticky.
-2. Pokud není použitelná záloha dostupná, připravit pravidelný export pomocí oficiálního Supabase CLI a chráněné úložiště mimo projekt. Připojení nastavit přímo v důvěryhodném prostředí; hesla a přístupové tokeny nesdílet v chatu ani v repozitáři.
+1. Jednorázový export z 20. 10. 2026 uchovat; nepovažovat jej za průběžné zálohování. Na Free plánu nejsou v tomto projektu dostupné spravované zálohy. Nezapínat placený plán ani doplněk automaticky.
+2. Zavést pravidelný export a chráněné úložiště mimo projekt. První export vznikl pomocí nativního pg_dump 17.11 přes session pooler s TLS; heslo bylo zadáno v lokální výzvě. pg_dump neobsahuje globální definice rolí; doplnit samostatný export rolí bez hesel nebo ověřený postup jejich rekonstrukce. Pro přesun šifrovaných dat Vault zohlednit původní šifrovací kořenový klíč. Připojení nastavit přímo v důvěryhodném prostředí; hesla a přístupové tokeny nesdílet v chatu ani v repozitáři.
 3. Samostatně zálohovat objekty Storage a jejich vazby na menu/logo. Databázová záloha obsahuje metadata, ne samotné objekty.
 4. Zachovat zdrojové kódy a migrace v GitHubu. Soupis názvů potřebné konfigurace vést odděleně od hodnot tajných klíčů.
 5. Před příslibem obnovitelnosti vyzkoušet obnovu v odděleném prostředí se stejnou hlavní verzí PostgreSQL. Neobnovovat produkci jako zkoušku. Případné placené prostředí musí být nejprve dohodnuto.
