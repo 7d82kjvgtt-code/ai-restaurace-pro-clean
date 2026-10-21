@@ -4995,19 +4995,21 @@ async function persistCustomerProfile(customerKey, changes) {
   const restaurantId = currentRestaurantId;
   const userId = currentUserId;
   const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+  if (!restaurantId || !userId || !["owner", "manager", "staff"].includes(currentUserRole)) return;
   const customer = buildCustomers().find(item => item.key === customerKey);
   if (!customer) return;
 
   const existing = getCustomerProfileForCustomer(customer);
   const payload = {
-    restaurant_id: Number(currentRestaurantId),
+    restaurant_id: Number(restaurantId),
     customer_key: customerKey,
     name: customer.name || null,
     phone: customer.phone || null,
     email: customer.email || null,
     note: existing?.note || "",
     is_regular: Boolean(existing?.is_regular),
-    ...changes,
+    ...(Object.prototype.hasOwnProperty.call(changes, "note") ? { note: String(changes.note || "") } : {}),
+    ...(Object.prototype.hasOwnProperty.call(changes, "is_regular") ? { is_regular: Boolean(changes.is_regular) } : {}),
     updated_at: new Date().toISOString()
   };
 
@@ -5021,12 +5023,18 @@ async function persistCustomerProfile(customerKey, changes) {
         body: JSON.stringify(payload)
       }
     );
+    if (!contextIsCurrent()) return;
     if (!response.ok) throw new Error(await response.text());
 
     writeAccepted = true;
     const savedRows = await response.json();
     if (!contextIsCurrent()) return;
-    const saved = Array.isArray(savedRows) && savedRows[0] ? savedRows[0] : payload;
+    if (!Array.isArray(savedRows) || savedRows.length !== 1 ||
+        Number(savedRows[0]?.restaurant_id) !== Number(restaurantId) ||
+        savedRows[0]?.customer_key !== customerKey) {
+      throw new Error("Invalid saved customer profile.");
+    }
+    const saved = savedRows[0];
     const index = customerProfiles.findIndex(item => item.customer_key === customerKey);
     if (index >= 0) {
       customerProfiles[index] = { ...customerProfiles[index], ...saved };
@@ -11546,6 +11554,12 @@ async function saveOpeningHours() {
     close_time: element.querySelector(".day-to").value
   }));
 
+  if (rows.length !== 7 || new Set(rows.map(row => row.day_of_week)).size !== 7 ||
+      rows.some(row => !Number.isInteger(row.day_of_week) || row.day_of_week < 0 || row.day_of_week > 6)) {
+    showDashboardNotice("Týden se nenačetl celý. Obnov stránku a zkus to znovu.");
+    return;
+  }
+
   if (rows.some(row => row.is_open && (!row.open_time || !row.close_time || row.close_time <= row.open_time))) {
     showDashboardNotice("U otevřených dnů musí být konec později než začátek.");
     return;
@@ -11561,7 +11575,18 @@ async function saveOpeningHours() {
     if (!response.ok) throw new Error(await response.text());
     const savedRows = await response.json();
     if (!canContinue()) return;
-    if (!Array.isArray(savedRows) || savedRows.length !== rows.length || savedRows.some(row => Number(row?.restaurant_id) !== Number(restaurantId))) throw new Error("Invalid opening hours result.");
+    const requestedDays = new Map(rows.map(row => [row.day_of_week, row]));
+    if (!Array.isArray(savedRows) || savedRows.length !== rows.length ||
+        new Set(savedRows.map(row => row?.day_of_week)).size !== 7 ||
+        savedRows.some(row => {
+          const requested = requestedDays.get(row?.day_of_week);
+          return !requested || Number(row.restaurant_id) !== Number(restaurantId) ||
+            row.is_open !== requested.is_open ||
+            (requested.is_open && (
+              String(row.open_time || "").slice(0, 5) !== requested.open_time ||
+              String(row.close_time || "").slice(0, 5) !== requested.close_time
+            ));
+        })) throw new Error("Invalid opening hours result.");
     openingHours = savedRows;
     openingHoursConfigured = openingHours.some(row => row.is_open === true && row.open_time && row.close_time);
     renderOpeningHours();
