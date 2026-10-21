@@ -2,6 +2,16 @@
 
 Implementace z 21. 10. 2026 zahrnuje výběr restaurace, její další založení a ověřování role pro konkrétní podnik v pozvánkách. Nové založení se v administraci nabízí pouze po dostupnosti databázové funkce multi_restaurant_enabled().
 
+## Stav nasazení a kontrol
+
+- Aplikace: commit 349315ccd2546e4a46f1168f8adf17bbf4903783; Vercel nasazení AgM4wBqwm4bB4r2XSEwqHdXFaLaP úspěšné. Produkční dashboard.js a restaurant-context.js mají stejné SHA-256 jako ověřený zdroj.
+- GitHub Actions 39684313693: všechny kroky úspěšné, včetně původní regresní sady, 53 kontrol nového UI, 29 databázových kontrol a 25 scénářů endpointu pozvánek.
+- Produkční databázová změna provedena v transakci přes execute_sql po dvou technických chybách relace nástroje apply_migration. Před opakováním byl potvrzen nezměněný stav databáze. Verze 20261021215459 a přesné SQL byly zaznamenány do supabase_migrations.schema_migrations ve stejné transakci.
+- Následná kontrola potvrdila odstranění dvou globálních indexů, zachování obou UNIQUE omezení v rámci podniku, triggeru posledního majitele a RLS na všech veřejných tabulkách. EXECUTE nové zakládací funkce: anon false, authenticated true.
+- Obě nové RPC přes skutečné HTTP odmítly nepřihlášeného klienta stavem 401. Read-only test na produkčním PostgreSQL s neexistující syntetickou identitou potvrdil nulový přístup k rezervacím, týmu a CRM a odmítnutí založení bez ověřeného účtu. Celý test byl vrácen ROLLBACKem; nevznikly testovací podniky ani pozvánky.
+- Poradce přidal očekávané upozornění na novou SECURITY DEFINER funkci dostupnou authenticated; omezení EXECUTE, prázdný search_path a vnitřní kontroly jsou ověřené. Ostatní skupiny upozornění zůstaly stejné, nejde o prohlášení, že projekt nemá žádná bezpečnostní upozornění.
+- Produkční přihlašovací stránka se načetla bez chyby aplikace. Skutečný průchod přihlášeného účtu se dvěma restauracemi v prohlížeči dosud není potvrzen.
+
 ## Chování
 
 - Jedno aktivní členství se otevře automaticky. Více členství vyžaduje výběr; zapamatovaný výběr je v sessionStorage vázaný na uživatele.

@@ -13,6 +13,10 @@ Dokument aktualizován 21. 10. 2026; níže uvedený stav projektu ověřen 20. 
 
 Tyto body se nesmějí označit jako splněné podle testů syntetické databáze, úspěšného GitHub běhu nebo stavu Ready ve Vercelu.
 
+## Změna schématu po exportu
+
+Databázový export z 20. 10. 2026 předchází změně více restaurací z 21. 10. 2026. Při obnově této starší zálohy je nutné sladit schéma se zvolenou verzí aplikace; pro aktuální aplikaci zahrnout migraci supabase/migrations/20261021215459_multi_restaurant_context.sql. Starý dump obsahuje globální omezení jednoho aktivního členství. Nepovažovat nasazení nové funkce za vytvoření nové zálohy a neobnovovat staré unikátní indexy po vzniku více členství naslepo.
+
 ## Co ověřit před ostrým předáním
 
 1. Jednorázový export z 20. 10. 2026 uchovat; nepovažovat jej za průběžné zálohování. Na Free plánu nejsou v tomto projektu dostupné spravované zálohy. Nezapínat placený plán ani doplněk automaticky.
