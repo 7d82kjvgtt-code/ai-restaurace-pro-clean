@@ -2499,10 +2499,17 @@ async function signupOwner(event) {
 
 async function createOwnerRestaurant(event) {
   event.preventDefault();
+  const sessionVersion = dashboardSessionVersion;
+  const userId = parseJwt(getAccessToken())?.sub;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && !!userId && parseJwt(getAccessToken())?.sub === userId;
   const name = document.getElementById("newRestaurantName").value.trim();
   const status = document.getElementById("createRestaurantStatus");
   const button = document.querySelector('#createRestaurantForm button[type="submit"]');
   if (button.disabled) return;
+  if (!contextIsCurrent()) {
+    status.textContent = "Platnost přihlášení vypršela. Přihlaste se znovu.";
+    return;
+  }
   if (name.length < 2 || name.length > 120) {
     status.textContent = "Zadejte název restaurace (2–120 znaků).";
     return;
@@ -2518,32 +2525,41 @@ async function createOwnerRestaurant(event) {
       headers: getHeaders(),
       body: JSON.stringify({ p_name: name })
     });
+    if (!contextIsCurrent()) return;
     if (!response.ok) {
+      if (response.status >= 500) {
+        creationUnverified = true;
+        status.textContent = "Výsledek založení nelze ověřit. Obnovte stránku a zkontrolujte účet před dalším pokusem.";
+        return;
+      }
       status.textContent = response.status === 401
         ? "Platnost přihlášení vypršela. Přihlaste se znovu."
         : "Restauraci se nepodařilo založit. Účet může být už přiřazený k týmu nebo e-mail není potvrzený.";
       return;
     }
     const createdRestaurantId = await response.json();
+    if (!contextIsCurrent()) return;
     if (!["number", "string"].includes(typeof createdRestaurantId) ||
         !Number.isSafeInteger(Number(createdRestaurantId)) || Number(createdRestaurantId) < 1) {
       throw new Error("Invalid restaurant creation response.");
     }
     restaurantCreated = true;
-    if (!await loadRestaurantContextWithRetry() ||
-        Number(restaurant_id) !== Number(createdRestaurantId)) {
+    const contextLoaded = await loadRestaurantContextWithRetry();
+    if (!contextIsCurrent()) return;
+    if (!contextLoaded || Number(currentRestaurantId) !== Number(createdRestaurantId)) {
       status.textContent = "Restaurace byla vytvořena. Obnovte stránku a pokračujte.";
       return;
     }
     history.replaceState(null, "", "#restaurace");
     location.reload();
   } catch {
+    if (!contextIsCurrent()) return;
     creationUnverified = !restaurantCreated;
     status.textContent = restaurantCreated
       ? "Restaurace byla vytvořena, ale přehled se nepodařilo načíst. Obnovte stránku a pokračujte."
       : "Výsledek založení nelze ověřit. Obnovte stránku a zkontrolujte účet před dalším pokusem.";
   } finally {
-    button.disabled = restaurantCreated || creationUnverified;
+    if (contextIsCurrent()) button.disabled = restaurantCreated || creationUnverified;
   }
 }
 
