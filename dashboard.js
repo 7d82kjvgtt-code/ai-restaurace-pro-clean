@@ -2276,6 +2276,7 @@ function showLogin() {
 }
 
 async function showUnassignedAccountState() {
+  const sessionVersion = dashboardSessionVersion;
   const userId = parseJwt(getAccessToken())?.sub;
   const error = document.getElementById("error");
   if (!userId) {
@@ -2289,7 +2290,7 @@ async function showUnassignedAccountState() {
     error.textContent = "Oprávnění restaurace se nepodařilo načíst. Zkontrolujte připojení a obnovte stránku.";
     return;
   }
-  const sameAccount = () => parseJwt(getAccessToken())?.sub === userId;
+  const sameAccount = () => sessionVersion === dashboardSessionVersion && parseJwt(getAccessToken())?.sub === userId;
   try {
     const [teamResponse, profileResponse] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/restaurant_team?user_id=eq.${encodeURIComponent(userId)}&select=id&limit=1`, { headers: getHeaders(), signal: AbortSignal.timeout(10000) }),
@@ -2773,6 +2774,9 @@ function parseJwt(token) {
 let restaurantContextReadFailed = false;
 
 async function loadRestaurantContext() {
+  const sessionVersion = dashboardSessionVersion;
+  const checkedUserId = parseJwt(getAccessToken())?.sub;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && !!checkedUserId && parseJwt(getAccessToken())?.sub === checkedUserId;
   restaurantContextReadFailed = false;
   const token =
     getAccessToken();
@@ -2799,6 +2803,7 @@ async function loadRestaurantContext() {
         }
       );
 
+    if (!contextIsCurrent()) return false;
     if (!teamResponse.ok && (teamResponse.status === 429 || teamResponse.status >= 500)) {
       restaurantContextReadFailed = true;
       return false;
@@ -2806,6 +2811,7 @@ async function loadRestaurantContext() {
     if (teamResponse.ok) {
       const memberships =
         await teamResponse.json();
+      if (!contextIsCurrent()) return false;
 
       if (!Array.isArray(memberships)) {
         restaurantContextReadFailed = true;
@@ -2846,7 +2852,7 @@ async function loadRestaurantContext() {
             "staff"
           ].includes(teamRole)
         ) {
-          if (parseJwt(getAccessToken())?.sub !== payload.sub) return false;
+          if (!contextIsCurrent()) return false;
           currentUserId =
             payload.sub;
 
@@ -2865,6 +2871,7 @@ async function loadRestaurantContext() {
 
     return false;
   } catch (error) {
+    if (!contextIsCurrent()) return false;
     restaurantContextReadFailed = true;
     console.error(
       "Nepodařilo se načíst restauraci:",
@@ -2876,11 +2883,13 @@ async function loadRestaurantContext() {
 }
 
 async function loadRestaurantContextWithRetry(attempts = 5, delayMs = 350) {
+  const sessionVersion = dashboardSessionVersion;
   const checkedUserId = parseJwt(getAccessToken())?.sub;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && !!checkedUserId && parseJwt(getAccessToken())?.sub === checkedUserId;
   for (let attempt = 0; attempt < attempts; attempt++) {
-    if (parseJwt(getAccessToken())?.sub !== checkedUserId) return false;
+    if (!contextIsCurrent()) return false;
     const loaded = await loadRestaurantContext();
-    if (parseJwt(getAccessToken())?.sub !== checkedUserId) return false;
+    if (!contextIsCurrent()) return false;
     if (loaded) return true;
     if (attempt < attempts - 1) {
       await new Promise(resolve => setTimeout(resolve, delayMs));
