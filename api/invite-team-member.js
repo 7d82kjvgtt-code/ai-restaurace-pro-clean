@@ -119,13 +119,14 @@ async function getAuthenticatedUser(
 
 
 async function getOwnerContext(
-  userId
+  userId,
+  targetRestaurantId = null
 ) {
   const membershipResponse =
     await supabase(
       `/rest/v1/restaurant_team?user_id=eq.${encodeURIComponent(
         userId
-      )}&active=eq.true&select=restaurant_id,role&order=id.asc&limit=2`
+      )}&active=eq.true${targetRestaurantId === null ? "" : `&restaurant_id=eq.${targetRestaurantId}`}&select=restaurant_id,role&order=id.asc&limit=2`
     );
 
   if (!membershipResponse.ok) {
@@ -153,7 +154,7 @@ async function getOwnerContext(
   ) {
     const error =
       new Error(
-        "Účet má více aktivních restaurací. Přepínač restaurací zatím není ve V1 podporovaný."
+        "Vyber restauraci, do které chceš člena týmu přidat."
       );
 
     error.status =
@@ -168,6 +169,12 @@ async function getOwnerContext(
     )
       ? memberships[0]
       : null;
+
+  if (!Array.isArray(memberships) || memberships.some(row =>
+      !row || !Number.isSafeInteger(Number(row.restaurant_id)) || Number(row.restaurant_id) < 1 ||
+      (targetRestaurantId !== null && Number(row.restaurant_id) !== targetRestaurantId))) {
+    throw new Error("Neplatná odpověď při ověřování oprávnění majitele.");
+  }
 
   // Pokud aktivní team membership existuje,
   // je autoritativní. Manager/staff nesmí obejít
@@ -359,6 +366,11 @@ module.exports =
       );
     }
 
+    const targetRestaurantId = req.body?.restaurant_id == null ? null : Number(req.body.restaurant_id);
+    if (targetRestaurantId !== null &&
+        (!["number", "string"].includes(typeof req.body.restaurant_id) || !Number.isSafeInteger(targetRestaurantId) || targetRestaurantId < 1)) {
+      return send(res, 400, { error: "Neplatná restaurace." });
+    }
     try {
       const caller =
         await getAuthenticatedUser(
@@ -367,7 +379,7 @@ module.exports =
 
       const ownerContext =
         await getOwnerContext(
-          caller.id
+          caller.id, targetRestaurantId
         );
 
       const restaurantId =
@@ -377,7 +389,7 @@ module.exports =
         await supabase(
           `/rest/v1/restaurant_team?email=eq.${encodeURIComponent(
             email
-          )}&active=eq.true&select=restaurant_id&limit=2`
+          )}&active=eq.true&select=restaurant_id,user_id&limit=101`
         );
 
       if (
@@ -391,7 +403,7 @@ module.exports =
       const activeMemberships =
         await activeMembershipsResponse.json().catch(() => null);
 
-      if (!Array.isArray(activeMemberships) || activeMemberships.length > 2 ||
+      if (!Array.isArray(activeMemberships) || activeMemberships.length > 100 ||
           activeMemberships.some(item =>
             item === null || typeof item !== "object" || Array.isArray(item) ||
             !Number.isSafeInteger(Number(item.restaurant_id)) || Number(item.restaurant_id) < 1
@@ -399,32 +411,12 @@ module.exports =
         throw new Error("Neplatná odpověď při ověřování stávajícího členství.");
       }
 
-      const activeElsewhere =
-        (
-          Array.isArray(
-            activeMemberships
-          )
-            ? activeMemberships
-            : []
-        ).some(
-          item =>
-            Number(
-              item?.restaurant_id
-            ) !==
-            Number(
-              restaurantId
-            )
-        );
-
-      if (activeElsewhere) {
-        return send(
-          res,
-          409,
-          {
-            error:
-              "Tento e-mail je už aktivně přiřazený k jiné restauraci. Pilotní V1 podporuje jednu aktivní restauraci na účet."
-          }
-        );
+      if (activeMemberships.length >= 100) {
+        return send(res, 409, { error: "Účet dosáhl limitu 100 restaurací." });
+      }
+      const existingUserIds = [...new Set(activeMemberships.map(row => row.user_id).filter(Boolean))];
+      if (existingUserIds.length > 1 || existingUserIds.some(id => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id)))) {
+        throw new Error("Neplatné propojení účtu člena týmu.");
       }
 
       const existingResponse =
@@ -481,6 +473,24 @@ module.exports =
         );
       }
 
+      if (!existingUserIds.length && existing?.user_id) {
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(existing.user_id))) {
+          throw new Error("Neplatný účet stávajícího člena týmu.");
+        }
+        existingUserIds.push(existing.user_id);
+      }
+      let inviteData;
+      let existingAccount = false;
+      if (existingUserIds.length === 1) {
+        const userResponse = await supabase(`/auth/v1/admin/users/${encodeURIComponent(existingUserIds[0])}`);
+        const user = await userResponse.json().catch(() => null);
+        if (!userResponse.ok || user?.id !== existingUserIds[0] ||
+            String(user?.email || "").trim().toLowerCase() !== email || !user?.email_confirmed_at) {
+          return send(res, 409, { error: "Účet se nepodařilo ověřit. Uživatel musí nejdřív potvrdit svůj e-mail." });
+        }
+        inviteData = { id: user.id };
+        existingAccount = true;
+      } else {
       const redirectTo =
         getInviteRedirectUrl(
           req
@@ -512,7 +522,7 @@ module.exports =
           }
         );
 
-      const inviteData =
+      inviteData =
         await inviteResponse
           .json()
           .catch(
@@ -548,6 +558,8 @@ module.exports =
                 : message
           }
         );
+      }
+
       }
 
       const userId =
@@ -599,7 +611,7 @@ module.exports =
                     .toISOString(),
 
                 joined_at:
-                  null
+                  existingAccount ? new Date().toISOString() : null
               })
           }
         );
@@ -640,7 +652,9 @@ module.exports =
           ok: true,
 
           message:
-            `Pozvánka byla odeslána na ${email}.`
+            existingAccount
+              ? `Uživatel ${email} byl přidán do týmu. Přihlásí se svým stávajícím účtem.`
+              : `Pozvánka byla odeslána na ${email}.`
         }
       );
     } catch (error) {

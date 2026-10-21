@@ -1,32 +1,38 @@
 # Více restaurací pod jedním účtem
 
-Stav kontroly: 21. 10. 2026. Funkce zatím není implementována ani zapnuta. Produkční databáze byla v této kontrole pouze čtena; žádná členství ani oprávnění se nezměnila.
+Implementace z 21. 10. 2026 zahrnuje výběr restaurace, její další založení a ověřování role pro konkrétní podnik v pozvánkách. Nové založení se v administraci nabízí pouze po dostupnosti databázové funkce multi_restaurant_enabled().
 
-## Potvrzené závislosti
+## Chování
 
-- restaurant_team_one_active_user_uidx povoluje nejvýše jedno aktivní členství na user_id. restaurant_team_one_active_email_uidx obdobně omezuje normalizovaný e-mail napříč restauracemi. Omezení UNIQUE (restaurant_id, user_id) a UNIQUE (restaurant_id, email) mají i po změně zůstat.
-- current_restaurant_id() a current_restaurant_role() vybírají první aktivní členství podle id. Po pouhém odstranění globálních indexů by výběr podniku a role mohl být nesprávný.
-- create_owner_restaurant(p_name) odmítá existující členství i navázaný profiles.restaurant_id. Slug odvozuje pouze z user_id, takže není vhodný pro více podniků stejného majitele. Zachovat potvrzený e-mail, ověření auth.uid(), transakční zámek a neveřejné založení.
-- loadRestaurantContext() v dashboard.js načítá nejvýše dvě aktivní členství a více než jedno odmítá. Není zde výběr restaurace.
-- api/invite-team-member.js určuje podnik z jediného aktivního členství majitele a blokuje aktivní e-mail v jiném podniku. Případný výběr podniku musí server ověřit proti konkrétnímu aktivnímu členství s rolí owner.
-- api/send-email.js má operace s explicitním restaurant_id a kontrolou členství. Před rozšířením ověřit každou akci samostatně; vybraná hodnota v prohlížeči sama oprávnění nedokazuje.
+- Jedno aktivní členství se otevře automaticky. Více členství vyžaduje výběr; zapamatovaný výběr je v sessionStorage vázaný na uživatele.
+- Přepnutí upozorní na neuloženou práci, zneplatní relaci starých požadavků a načte stránku znovu. Odebrání přístupu a přechod na jiný podnik také vyvolají nové načtení.
+- Název i role v přepínači pocházejí z aktivního členství. Výběr v prohlížeči není oprávnění: všechny politiky nadále ověřují členství a roli pro cílové restaurant_id.
+- Další podnik může založit jen účet s potvrzeným e-mailem a aktivní rolí owner alespoň v jedné restauraci. Zůstává neveřejný. Limit je 100 aktivních členství na účet.
+- Založení má UUID požadavku a transakční zámek uživatele. Opakování stejného požadavku vrátí stejný podnik; rozepsaný požadavek se uchovává pro ověření po výpadku.
+- Pozvánka obsahuje cílové restaurant_id. Server ověřuje aktivní roli owner právě v tomto podniku. Starý klient bez ID funguje jen s jednoznačným jediným členstvím.
+- U existujícího účtu zjištěného přes členství se před přidáním ověří ID, e-mail a jeho potvrzení v Auth. Nevytváří se druhý účet ani nové heslo. Nový uživatel prochází dosavadní e-mailovou pozvánkou.
+- Legacy profiles zůstává pouze kompatibilní kopií; nepoužívá se jako důkaz role. Pomocné current_restaurant_id/role vracejí pro více aktivních členství NULL.
 
-## Pořadí implementace
+## Databáze a pořadí nasazení
 
-1. Doplnit izolované databázové případy jednoho uživatele ve více podnicích s rozdílnými rolemi. Zmapovat všechny politiky a funkce používající implicitní první podnik; neomezit kontrolu jen na dvě pomocné funkce.
-2. Navrhnout explicitní kontext restaurace. Identifikátor z klienta je nedůvěryhodný; každý privilegovaný endpoint i databázová cesta musí ověřit aktivní členství a roli pro cílový podnik.
-3. Upravit zakládání s unikátním slugem pro každý podnik a ochranou proti souběhu a opakování po nejasném výsledku.
-4. Upravit pozvánky a kontroly členství. Zachovat zákaz neoprávněného přidělení role owner a ochranu posledního majitele.
-5. Přidat výběr a přepínání v administraci. Před změnou kontextu zneplatnit staré požadavky a vyprázdnit data, rozpracované formuláře, fronty a upozornění starého podniku. U rozepsané práce vyřešit upozornění na ztrátu změn. Zapamatování výběru vázat na účet.
-6. Teprve po společném ověření připravit a provést migraci omezujících indexů a helperů. Změny klienta, API a databáze koordinovat; neprohlásit podporu za hotovou samotným přepínačem.
-7. Ověřit v přihlášeném prohlížeči načtení, změnu podniku a ztrátu členství včetně skutečných databázových oprávnění.
+Migrace: supabase/migrations/20261021215459_multi_restaurant_context.sql, vytvořená Supabase CLI.
 
-## Přejímka
+1. Nasadit dashboard, restaurant-context.js a aktualizovaný endpoint pozvánek. Tlačítko přidání je bez nové databázové funkce skryté.
+2. Po úspěšných kontrolách použít celou migraci v transakci. Ta odstraní pouze dva globální indexy omezující účet/e-mail na jeden podnik. UNIQUE (restaurant_id, user_id), UNIQUE (restaurant_id, email), RLS a ochrana posledního majitele zůstávají.
+3. Ověřit funkce, jejich oprávnění a poradce. Založení je SECURITY DEFINER s prázdným search_path, kontrolou auth.uid(), potvrzeného e-mailu a aktivního majitele. EXECUTE mají jen authenticated; PUBLIC a anon jsou odebrány. Upozornění poradce na dostupnou privilegovanou funkci je z tohoto důvodu záměrně posouzené, ne vyřešené odstraněním kontroly.
+4. Při přejímce v přihlášeném prohlížeči ověřit dva vlastní podniky a účet s rolí owner v A a staff v B. Tato přejímka není nahrazena offline testy.
 
-- Majitel A a obsluha B ve stejném účtu mají v každém podniku správné funkce.
-- Cizí ID, podvržená role, neaktivní členství a stará relace neumožní číst ani zapisovat cizí data.
-- Všechny rezervace, CRM, historie, stoly, skupiny, menu, obrázky, nastavení, tým a upozornění patří vybranému podniku.
-- Pozvánka se vztahuje na zvolený podnik a neudělí širší oprávnění.
-- Opakované/souběžné založení, odhlášení během operace a odebrání přístupu během přepínání mají bezpečný výsledek.
-- Existující účty s jednou restaurací fungují dál.
-- Do úspěšné přejímky zůstává omezení jednoho aktivního podniku zachováno.
+## Ověření
+
+- multi-restaurant-db.mjs aplikuje skutečnou migraci na rekonstruované tabulky, pravidla, funkce a triggery. Ověřuje přístupy napříč podniky s různými rolemi, zákaz zvýšení role, posledního majitele, potvrzený e-mail, opakování založení, cizí účet a limit členství. Používá pouze syntetická data a embedded PostgreSQL; není testem skutečné kapacity hostovaného prostředí ani přihlášení Supabase Auth.
+- multi-restaurant-ui.mjs ověřuje výběr vázaný na účet, zapamatování, odmítnutí neznámého podniku, zrušené přepnutí, změnu přístupu, dvojí kliknutí a opakování po nejistém výsledku.
+- invite-boundaries.mjs ověřuje autorizaci cílové restaurace, ověření existujícího účtu a odmítnutí vadných odpovědí. E-maily se v testech neodesílají.
+- Stávající regresní kontroly zůstávají v npm test --prefix tests/capacity a v GitHub Actions.
+
+## Návrat při potížích
+
+Neobnovovat globální unikátní indexy naslepo: po vzniku dalších členství už nemusí být splnitelné. Zastavení dalšího zakládání lze provést vrácením false z multi_restaurant_enabled() a odebráním EXECUTE na create_additional_owner_restaurant(text,uuid) roli authenticated. Existující členství i možnost výběru ponechat funkční. Žádné podniky ani členství při návratu automaticky nemazat.
+
+Supabase funkce a oprávnění: https://supabase.com/docs/guides/database/functions
+RLS: https://supabase.com/docs/guides/database/postgres/row-level-security
+Upozornění na privilegované funkce: https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable

@@ -10,6 +10,7 @@ for(const scenario of ['owner','manager','staff','empty','multiple','invalid-rol
   let token='fixture';
   let requests=0;
   const context=vm.createContext({
+    availableRestaurantMemberships:[],selectRestaurantMembership:rows=>rows.length===1?rows[0]:null,renderRestaurantChoices(){},showRestaurantChooser(){},
     dashboardSessionVersion:1,restaurantContextReadFailed:false,currentUserId:'new-marker',currentRestaurantId:99,currentUserRole:'new-marker',
     SUPABASE_URL:'https://fixture.invalid',AbortSignal,
     getAccessToken:()=>token,parseJwt:()=>scenario==='no-user'?null:{sub:token==='other'?'other':'same-user'},getHeaders:()=>({}),
@@ -42,6 +43,7 @@ for(const scenario of ['owner','manager','staff','empty','multiple','invalid-rol
 for(const scenario of ['same-user-new-session','token-refresh']) {
   let requests=0,waits=0;
   const context=vm.createContext({
+    availableRestaurantMemberships:[],selectRestaurantMembership:rows=>rows.length===1?rows[0]:null,renderRestaurantChoices(){},showRestaurantChooser(){},
     dashboardSessionVersion:1,restaurantContextReadFailed:false,currentUserId:null,currentRestaurantId:null,currentUserRole:null,
     SUPABASE_URL:'https://fixture.invalid',AbortSignal,getAccessToken:()=> 'fixture',parseJwt:()=>({sub:'same-user'}),getHeaders:()=>({}),console:{error(){}},
     setTimeout:resolve=>{waits++;if(scenario==='same-user-new-session') context.dashboardSessionVersion++;resolve();},
@@ -58,6 +60,7 @@ for(const scenario of ['new-owner','inactive','profile-linked','http-error','mal
   let clears=0,logins=0,creates=0,requests=0;
   const error={textContent:''};
   const context=vm.createContext({
+    availableRestaurantMemberships:[],selectRestaurantMembership:rows=>rows.length===1?rows[0]:null,renderRestaurantChoices(){},showRestaurantChooser(){},
     dashboardSessionVersion:1,restaurantContextReadFailed:scenario==='read-failed',SUPABASE_URL:'https://fixture.invalid',AbortSignal,
     getAccessToken:()=> 'fixture',parseJwt:()=>({sub:'same-user'}),getHeaders:()=>({}),document:{getElementById:()=>error},
     clearSession:()=>clears++,showLogin:()=>logins++,showCreateRestaurant:()=>creates++,

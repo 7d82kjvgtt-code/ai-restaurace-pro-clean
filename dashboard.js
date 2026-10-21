@@ -2185,7 +2185,8 @@ async function loadDashboardData() {
     loadReservationSettings(),
     loadReservationHistory(),
     loadCustomerProfiles(),
-    loadTeamMembers()
+    loadTeamMembers(),
+    loadMultiRestaurantCapability()
   ]);
 
   if (!contextIsCurrent()) return;
@@ -2273,12 +2274,18 @@ function showLogin() {
   document.getElementById("createRestaurantForm").style.display = "none";
   document.getElementById("forgotPasswordForm").style.display = "none";
   document.getElementById("resetPasswordForm").style.display = "none";
+  document.getElementById("restaurantChooserForm").style.display = "none";
+  document.getElementById("additionalRestaurantForm").style.display = "none";
 }
 
 async function showUnassignedAccountState() {
   const sessionVersion = dashboardSessionVersion;
   const userId = parseJwt(getAccessToken())?.sub;
   const error = document.getElementById("error");
+  if (userId && availableRestaurantMemberships.length > 1) {
+    showRestaurantChooser();
+    return;
+  }
   if (!userId) {
     clearSession();
     showLogin();
@@ -2438,6 +2445,8 @@ function showCreateRestaurant() {
   document.getElementById("createRestaurantForm").style.display = "";
   document.getElementById("forgotPasswordForm").style.display = "none";
   document.getElementById("resetPasswordForm").style.display = "none";
+  document.getElementById("restaurantChooserForm").style.display = "none";
+  document.getElementById("additionalRestaurantForm").style.display = "none";
 }
 
 async function signupOwner(event) {
@@ -2580,6 +2589,11 @@ let dashboardSessionVersion = 0;
 
 function clearSession() {
   ++dashboardSessionVersion;
+  availableRestaurantMemberships = [];
+  roleRefreshInProgress = false;
+  lastRoleRefreshAt = 0;
+  multiRestaurantEnabled = false;
+  sessionStorage.removeItem("dashboardRestaurantSelection");
   passwordRecoveryToken = null;
   ["password", "recoveryEmail", "newAccountPassword", "confirmAccountPassword"].forEach(id => {
     const input = document.getElementById(id);
@@ -2811,7 +2825,7 @@ async function loadRestaurantContext() {
       await fetch(
         `${SUPABASE_URL}/rest/v1/restaurant_team?user_id=eq.${encodeURIComponent(
           payload.sub
-        )}&active=eq.true&select=restaurant_id,role&order=id.asc&limit=2`,
+        )}&active=eq.true&select=restaurant_id,role,restaurants(name)&order=id.asc&limit=101`,
         {
           method: "GET",
           headers: getHeaders(),
@@ -2829,7 +2843,7 @@ async function loadRestaurantContext() {
         await teamResponse.json();
       if (!contextIsCurrent()) return false;
 
-      if (!Array.isArray(memberships)) {
+      if (!Array.isArray(memberships) || memberships.length > 100 || new Set(memberships.map(row => Number(row?.restaurant_id))).size !== memberships.length) {
         restaurantContextReadFailed = true;
         return false;
       }
@@ -2839,16 +2853,9 @@ async function loadRestaurantContext() {
         restaurantContextReadFailed = true;
         return false;
       }
-      if (memberships.length > 1) {
-        console.error(
-          "Účet má více aktivních restaurací. Přepínač restaurací zatím není ve V1 podporovaný."
-        );
-
-        return false;
-      }
-
-      const membership =
-        memberships?.[0];
+      availableRestaurantMemberships = memberships.map(row => ({ ...row, role: String(row.role).toLowerCase().trim() }));
+      const membership = selectRestaurantMembership(availableRestaurantMemberships, payload.sub);
+      if (!membership && memberships.length > 1) return false;
 
       if (
         Number.isSafeInteger(Number(membership?.restaurant_id)) &&
@@ -2878,6 +2885,7 @@ async function loadRestaurantContext() {
           currentUserRole =
             teamRole;
 
+          renderRestaurantChoices();
           return true;
         }
       }
@@ -2907,6 +2915,7 @@ async function loadRestaurantContextWithRetry(attempts = 5, delayMs = 350) {
     const loaded = await loadRestaurantContext();
     if (!contextIsCurrent()) return false;
     if (loaded) return true;
+    if (availableRestaurantMemberships.length > 1 && !restaurantContextReadFailed) return false;
     if (attempt < attempts - 1) {
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
@@ -2922,8 +2931,9 @@ async function refreshCurrentUserContext(options = {}) {
   if (!getAccessToken() || roleRefreshInProgress) return;
   if (!force && Date.now() - lastRoleRefreshAt < 5000) return;
 
+  const checkedSessionVersion = dashboardSessionVersion;
   const checkedUserId = parseJwt(getAccessToken())?.sub;
-  const sameAccount = () => !!checkedUserId && parseJwt(getAccessToken())?.sub === checkedUserId;
+  const sameAccount = () => checkedSessionVersion === dashboardSessionVersion && !!checkedUserId && parseJwt(getAccessToken())?.sub === checkedUserId;
   roleRefreshInProgress = true;
   try {
     if (!(await ensureValidSession())) {
@@ -2939,6 +2949,13 @@ async function refreshCurrentUserContext(options = {}) {
 
     if (!sameAccount()) return;
     if (!ok) {
+      if (availableRestaurantMemberships.length > 1 && !restaurantContextReadFailed) {
+        ++dashboardSessionVersion;
+        currentRestaurantId = null;
+        currentUserRole = null;
+        showRestaurantChooser();
+        return;
+      }
       if (restaurantContextReadFailed) {
         throw new Error("Oprávnění se teď nepodařilo ověřit.");
       }
@@ -2947,6 +2964,16 @@ async function refreshCurrentUserContext(options = {}) {
       return;
     }
 
+    if (previousRestaurantId != null && Number(previousRestaurantId) !== Number(currentRestaurantId)) {
+      ++dashboardSessionVersion;
+      currentRestaurantId = null;
+      currentUserId = null;
+      currentUserRole = null;
+      showLogin();
+      document.getElementById("error").textContent = "Přístup k restauraci se změnil. Načítám nový přehled…";
+      location.reload();
+      return;
+    }
     lastRoleRefreshAt = Date.now();
     applyRolePermissions();
     showDashboardSection(window.location.hash.replace("#", "") || "prehled", {
@@ -2964,7 +2991,7 @@ async function refreshCurrentUserContext(options = {}) {
   } catch (error) {
     console.error("Aktualizace role se nepodařila:", error);
   } finally {
-    roleRefreshInProgress = false;
+    if (checkedSessionVersion === dashboardSessionVersion) roleRefreshInProgress = false;
   }
 }
 
@@ -10906,7 +10933,7 @@ async function inviteTeamMember(event) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${getAccessToken()}`
       },
-      body: JSON.stringify({ full_name: fullName, email, role })
+      body: JSON.stringify({ full_name: fullName, email, role, restaurant_id: restaurantId })
     });
 
     if (!canContinue()) return;

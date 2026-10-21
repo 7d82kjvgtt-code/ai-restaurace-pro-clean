@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Restaurace PRO Dashboard</title>
-  <link rel="stylesheet" href="dashboard.css?v=pilot-v1-20261017-professional-r2">
+  <link rel="stylesheet" href="dashboard.css?v=multi-restaurant-20261021">
 </head>
 
 <body>
@@ -41,6 +41,23 @@
       <p id="error" role="alert"></p>
       <button type="button" onclick="showSignup()">Nový majitel? Založit účet</button>
       <button type="button" onclick="showForgotPassword()">Zapomenuté heslo</button>
+    </form>
+    <form class="login-box" id="restaurantChooserForm" style="display:none" onsubmit="event.preventDefault(); switchDashboardRestaurant(document.getElementById('restaurantChooserSelect').value, false)">
+      <h2>Vyber restauraci</h2>
+      <p>Každý podnik má vlastní rezervace, tým a nastavení.</p>
+      <label for="restaurantChooserSelect">Restaurace</label>
+      <select id="restaurantChooserSelect" required></select>
+      <button type="submit">Otevřít administraci</button>
+      <button type="button" onclick="logoutDashboard()">Odhlásit</button>
+    </form>
+    <form class="login-box" id="additionalRestaurantForm" style="display:none" onsubmit="createAdditionalRestaurant(event)">
+      <h2>Přidat restauraci</h2>
+      <p>Nový podnik bude mít vlastní tým, rezervace a menu. Zůstane neveřejný do dokončení nastavení.</p>
+      <label for="additionalRestaurantName">Název restaurace</label>
+      <input id="additionalRestaurantName" minlength="2" maxlength="120" required>
+      <button type="submit" id="additionalRestaurantButton">Založit restauraci</button>
+      <p id="additionalRestaurantStatus" role="status"></p>
+      <button type="button" id="additionalRestaurantCancel" onclick="closeAdditionalRestaurantForm()">Zpět do administrace</button>
     </form>
     <form class="login-box" id="signupForm" onsubmit="signupOwner(event)" style="display:none">
       <h2>Nový účet majitele</h2>
@@ -125,6 +142,11 @@
       </div>
 
       <div class="topbar-actions">
+        <label class="restaurant-switcher" id="restaurantSwitcherWrapper" hidden>
+          <span>Restaurace</span>
+          <select id="restaurantSwitcher" onchange="switchDashboardRestaurant(this.value)" aria-label="Aktuální restaurace"></select>
+        </label>
+        <button class="secondaryButton" type="button" id="addRestaurantButton" hidden onclick="showAdditionalRestaurantForm()">＋ Přidat restauraci</button>
         <div class="reservation-notification-wrapper" id="reservationNotificationWrapper">
           <button
             type="button"
@@ -1439,7 +1461,8 @@
     </div>
 </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="dashboard.js?v=pilot-v1-20261017-professional"></script>
+  <script src="restaurant-context.js?v=multi-20261021"></script>
+  <script src="dashboard.js?v=multi-restaurant-20261021"></script>
 
 </body>
 </html>
