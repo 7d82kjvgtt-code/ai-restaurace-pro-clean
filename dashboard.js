@@ -2680,6 +2680,17 @@ function clearSession() {
   tableGroups = [];
   customerProfiles = [];
   teamMembers = [];
+  ["teamInviteName", "teamInviteEmail"].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) input.value = "";
+  });
+  const inviteRole = document.getElementById("teamInviteRole");
+  if (inviteRole) inviteRole.value = "staff";
+  const inviteButton = document.getElementById("teamInviteButton");
+  if (inviteButton) {
+    inviteButton.disabled = false;
+    inviteButton.textContent = "Pozvat zaměstnance";
+  }
   reservationHistory = [];
   customerNoteDrafts.clear();
   openingHours = [];
@@ -10819,15 +10830,18 @@ async function loadTeamMembers() {
 
 async function inviteTeamMember(event) {
   event?.preventDefault();
-  if (currentUserRole !== 'owner') {
-    showDashboardNotice('Pozvat zaměstnance může pouze majitel.');
-    return;
-  }
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const canContinue = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId && currentUserRole === 'owner';
+  if (!restaurantId || !userId || !canContinue()) return;
 
   const nameInput = document.getElementById('teamInviteName');
   const emailInput = document.getElementById('teamInviteEmail');
   const roleInput = document.getElementById('teamInviteRole');
   const button = document.getElementById('teamInviteButton');
+
+  if (!button || button.disabled) return;
 
   const fullName = nameInput?.value.trim() || '';
   const email = emailInput?.value.trim().toLowerCase() || '';
@@ -10862,15 +10876,19 @@ async function inviteTeamMember(event) {
       body: JSON.stringify({ full_name: fullName, email, role })
     });
 
+    if (!canContinue()) return;
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || 'Pozvánku se nepodařilo odeslat.');
+    if (!canContinue()) return;
+    if (!response.ok || data?.ok !== true) throw new Error(data?.error || 'Výsledek pozvánky nelze ověřit. Obnov tým a zkontroluj stav před dalším pozváním.');
 
     nameInput.value = '';
     emailInput.value = '';
     roleInput.value = 'staff';
     await loadTeamMembers();
+    if (!canContinue()) return;
     showDashboardNotice(data.message || 'Pozvánka zaměstnanci byla odeslána.', 'success');
   } catch (error) {
+    if (!canContinue()) return;
     console.error(error);
     const msg = String(error.message || 'Pozvánku se nepodařilo odeslat.');
     showDashboardNotice(
@@ -10878,34 +10896,45 @@ async function inviteTeamMember(event) {
       "error"
     );
   } finally {
+    if (canContinue()) {
     button.disabled = false;
     button.textContent = oldText;
+    }
   }
 }
 
 async function updateTeamMemberRole(memberId, role) {
-  if (currentUserRole !== 'owner' || !['manager', 'staff'].includes(role)) return;
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const canContinue = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId && currentUserRole === 'owner';
+  if (!restaurantId || !userId || !canContinue()) return;
+  if (!Number.isSafeInteger(Number(memberId)) || Number(memberId) < 1 || !['manager', 'staff'].includes(role)) return;
 
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/restaurant_team?id=eq.${Number(memberId)}&restaurant_id=eq.${currentRestaurantId}`,
+      `${SUPABASE_URL}/rest/v1/restaurant_team?id=eq.${Number(memberId)}&restaurant_id=eq.${restaurantId}`,
       {
         method: 'PATCH',
         headers: getHeaders({ Prefer: 'return=representation' }),
         body: JSON.stringify({ role })
       }
     );
+    if (!canContinue()) return;
     if (!response.ok) throw new Error(await response.text());
     const changedMembers = await response.json();
+    if (!canContinue()) return;
     if (!Array.isArray(changedMembers) || changedMembers.length !== 1 ||
         Number(changedMembers[0]?.id) !== Number(memberId) ||
-        Number(changedMembers[0]?.restaurant_id) !== Number(currentRestaurantId) ||
+        Number(changedMembers[0]?.restaurant_id) !== Number(restaurantId) ||
         changedMembers[0]?.role !== role) {
       throw new Error("Team role update did not change the requested member.");
     }
     await loadTeamMembers();
+    if (!canContinue()) return;
     showDashboardNotice('Role zaměstnance byla změněna.', 'success');
   } catch (error) {
+    if (!canContinue()) return;
     console.error(error);
     showDashboardNotice('Roli zaměstnance se nepodařilo změnit.');
     await loadTeamMembers();
@@ -10913,28 +10942,37 @@ async function updateTeamMemberRole(memberId, role) {
 }
 
 async function toggleTeamMemberActive(memberId, active) {
-  if (currentUserRole !== 'owner') return;
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const canContinue = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId && currentUserRole === 'owner';
+  if (!restaurantId || !userId || !canContinue()) return;
+  if (!Number.isSafeInteger(Number(memberId)) || Number(memberId) < 1 || typeof active !== 'boolean') return;
 
   try {
     const response = await authorizedFetch(
-      `${SUPABASE_URL}/rest/v1/restaurant_team?id=eq.${Number(memberId)}&restaurant_id=eq.${currentRestaurantId}`,
+      `${SUPABASE_URL}/rest/v1/restaurant_team?id=eq.${Number(memberId)}&restaurant_id=eq.${restaurantId}`,
       {
         method: 'PATCH',
         headers: getHeaders({ Prefer: 'return=representation' }),
         body: JSON.stringify({ active: Boolean(active) })
       }
     );
+    if (!canContinue()) return;
     if (!response.ok) throw new Error(await response.text());
     const changedMembers = await response.json();
+    if (!canContinue()) return;
     if (!Array.isArray(changedMembers) || changedMembers.length !== 1 ||
         Number(changedMembers[0]?.id) !== Number(memberId) ||
-        Number(changedMembers[0]?.restaurant_id) !== Number(currentRestaurantId) ||
+        Number(changedMembers[0]?.restaurant_id) !== Number(restaurantId) ||
         changedMembers[0]?.active !== Boolean(active)) {
       throw new Error("Team activation update did not change the requested member.");
     }
     await loadTeamMembers();
+    if (!canContinue()) return;
     showDashboardNotice(active ? 'Zaměstnanec byl aktivován.' : 'Zaměstnanec byl deaktivován.', 'success');
   } catch (error) {
+    if (!canContinue()) return;
     console.error(error);
     showDashboardNotice('Stav zaměstnance se nepodařilo změnit.');
     await loadTeamMembers();
