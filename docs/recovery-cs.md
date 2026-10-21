@@ -1,14 +1,14 @@
 # Obnova služby a dat
 
-Stav ověřen 20. 10. 2026. Produkční Supabase projekt decpnnbaejxjbpmyjocs hlásí ACTIVE_HEALTHY; PostgreSQL 17.6.1.141, eu-west-1. Projekt používá Free plán a podle zobrazené stránky Backups nemá spravované projektové zálohy.
+Dokument aktualizován 21. 10. 2026; níže uvedený stav projektu ověřen 20. 10. 2026. Produkční Supabase projekt decpnnbaejxjbpmyjocs hlásí ACTIVE_HEALTHY; PostgreSQL 17.6.1.141, eu-west-1. Projekt používá Free plán a podle zobrazené stránky Backups nemá spravované projektové zálohy.
 
 ## Neuzavřené body
 
 - Jednorázový databázový export: dokončen 20. 10. 2026 přibližně ve 12:18 Europe/Prague. Soubor restaurant-20261020-121815.dump, 609 740 bajtů; pg_dump 17.11, formát custom. Následný pg_restore --file=/dev/null přečetl celý archiv bez chyby. Nejde o test skutečné obnovy.
 - Storage: staženo všech 14 objektů veřejného bucketu food-images, včetně 3 souborů v podsložce 1. Celkem 2 314 474 bajtů; ověřeny evidované velikosti, SHA-256 a čitelnost ZIPu. Databáze a soubory mají samostatné okamžiky exportu.
-- Soukromý společný balíček databáze a obrázků byl vytvořen a ověřen. Potvrzení druhé kopie mimo Mac vlastníka: dosud chybí.
+- Soukromý společný balíček databáze a obrázků byl vytvořen a ověřen. Samostatný databázový dump a Storage ZIP byly podle obrazovek vlastníka nahrány na Google Drive. Omezení sdílení a shoda hashů zpětně stažených kopií dosud nejsou potvrzeny; u dumpu bylo dříve zobrazeno sdílení komukoli s odkazem. Změnit na Omezeno a ověřit u obou souborů.
 - Pravidelný export, retence, kontrola chyb a odpovědná osoba: dosud nezavedeny.
-- Zkušební obnova do odděleného prostředí: neprovedena.
+- Zkušební obnova schémat auth a public do oddělené místní databáze PostgreSQL 17.11 dne 20. 10. 2026: dokončena podle výstupu vlastníka. Kontrolní dotaz našel 2 restaurace, 129 rezervací a 3 uživatele. Použito --no-owner a --no-privileges s připravenými rolemi a rozšířeními; původní vlastnictví a oprávnění tím nejsou ověřena. Úplná obnova Supabase včetně Storage, Vault, Realtime, konfigurace a přihlášení aplikace zůstává neověřená.
 - Přijatelná ztráta dat (RPO) a doba obnovy (RTO): dosud nejsou se zákazníkem dohodnuty.
 
 Tyto body se nesmějí označit jako splněné podle testů syntetické databáze, úspěšného GitHub běhu nebo stavu Ready ve Vercelu.

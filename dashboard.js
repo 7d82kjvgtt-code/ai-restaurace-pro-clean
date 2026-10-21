@@ -11755,10 +11755,15 @@ async function loadReservationSettings() {
 }
 
 async function saveReservationSettings() {
-  if (!currentRestaurantId) return;
+  const sessionVersion = dashboardSessionVersion;
+  const restaurantId = currentRestaurantId;
+  const userId = currentUserId;
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
+  const canContinue = () => contextIsCurrent() && ["owner", "manager"].includes(currentUserRole);
+  if (!restaurantId || !userId || !canContinue()) return;
 
   const values = {
-    restaurant_id: Number(currentRestaurantId),
+    restaurant_id: Number(restaurantId),
     duration_1_2: Number(document.getElementById("settingDuration12")?.value),
     duration_3_4: Number(document.getElementById("settingDuration34")?.value),
     duration_5_6: Number(document.getElementById("settingDuration56")?.value),
@@ -11815,15 +11820,21 @@ async function saveReservationSettings() {
       }
     );
 
+    if (!canContinue()) return;
     if (!response.ok) throw new Error(await response.text());
 
     const rows = await response.json();
-    reservationSettings = normalizeReservationSettings(rows[0] || values);
+    if (!canContinue()) return;
+    if (!Array.isArray(rows) || rows.length !== 1 || Number(rows[0]?.restaurant_id) !== Number(restaurantId)) {
+      throw new Error("Invalid reservation settings result.");
+    }
+    reservationSettings = normalizeReservationSettings(rows[0]);
     reservationSettingsConfigured = true;
     renderReservationSettings();
     renderSetupChecklist();
     showDashboardNotice("Nastavení rezervací bylo uloženo.", "success");
   } catch (error) {
+    if (!canContinue()) return;
     console.error(error);
     showDashboardNotice("Nastavení rezervací se nepodařilo uložit.");
   }
