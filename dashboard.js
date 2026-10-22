@@ -27,6 +27,10 @@ try {
 
 
 function formatCzechCount(value, one, few, many) {
+  if (dashboardLanguage() === "en") {
+    const forms = { osoba: ["guest", "guests"], místo: ["seat", "seats"], "nepřečtené upozornění": ["unread notification", "unread notifications"] }[one];
+    if (forms) return `${Number(value)} ${forms[Number(value) === 1 ? 0 : 1]}`;
+  }
   const count = Number(value);
   const word = count === 1 ? one : Number.isInteger(count) && count >= 2 && count <= 4 ? few : many;
   return `${count} ${word}`;
@@ -468,7 +472,7 @@ async function loadCurrentRestaurantInfo() {
 
     if (label) {
       label.textContent =
-        "Přehled provozu restaurace";
+        dashboardText("Přehled provozu restaurace");
     }
 
     return null;
@@ -534,7 +538,7 @@ async function loadCurrentRestaurantInfo() {
     if (label) {
       label.textContent =
         currentRestaurantName ||
-        "Přehled provozu restaurace";
+        dashboardText("Přehled provozu restaurace");
     }
 
     currentRestaurantIsPublished =
@@ -609,7 +613,7 @@ async function loadCurrentRestaurantInfo() {
 
     if (label) {
       label.textContent =
-        "Přehled provozu restaurace";
+        dashboardText("Přehled provozu restaurace");
     }
 
     return null;
@@ -1075,7 +1079,7 @@ function updateRestaurantBrandingPreview() {
         Array.from(name)[0] ||
         "R"
       ).toLocaleUpperCase(
-        "cs-CZ"
+        dashboardLocale()
       );
   }
 
@@ -1691,7 +1695,7 @@ async function saveRestaurantBranding() {
     if (nameLabel) {
       nameLabel.textContent =
         currentRestaurantName ||
-        "Přehled provozu restaurace";
+        dashboardText("Přehled provozu restaurace");
     }
 
     if (currentRestaurantName) {
@@ -2092,7 +2096,9 @@ function renderSetupChecklist() {
 
   if (summary) {
     summary.textContent =
-      `Hotovo ${completed} z ${total} kroků. Dokonči základní nastavení a restaurace bude připravená pro pilot.`;
+      dashboardLanguage() === "en"
+        ? `${completed} of ${total} steps complete. Finish setup to prepare the restaurant for the pilot.`
+        : `Hotovo ${completed} z ${total} kroků. Dokonči základní nastavení a restaurace bude připravená pro pilot.`;
   }
 
   if (progressValue) {
@@ -2139,10 +2145,10 @@ function renderSetupChecklist() {
   if (publicHint) {
     publicHint.textContent =
       checks.public
-        ? "Veřejná stránka restaurace je aktivní."
+        ? dashboardText("Veřejná stránka restaurace je aktivní.")
         : readyToPublish
-          ? "V sekci Restaurace zapni veřejný web a ulož změny."
-          : "Nejdřív dokonči nastavení restaurace, pak ji zveřejni.";
+          ? dashboardText("V sekci Restaurace zapni veřejný web a ulož změny.")
+          : dashboardText("Nejdřív dokonči nastavení restaurace, pak ji zveřejni.");
   }
 
   const publishLink = document.getElementById("setupPublishLink");
@@ -2289,12 +2295,12 @@ async function showUnassignedAccountState() {
   if (!userId) {
     clearSession();
     showLogin();
-    error.textContent = "Platnost přihlášení vypršela. Přihlaste se znovu.";
+    error.textContent = dashboardText("Platnost přihlášení vypršela. Přihlaste se znovu.");
     return;
   }
   if (restaurantContextReadFailed) {
     showLogin();
-    error.textContent = "Oprávnění restaurace se nepodařilo načíst. Zkontrolujte připojení a obnovte stránku.";
+    error.textContent = dashboardText("Oprávnění restaurace se nepodařilo načíst. Zkontrolujte připojení a obnovte stránku.");
     return;
   }
   const sameAccount = () => sessionVersion === dashboardSessionVersion && parseJwt(getAccessToken())?.sub === userId;
@@ -2322,11 +2328,11 @@ async function showUnassignedAccountState() {
     }
     clearSession();
     showLogin();
-    error.textContent = "Účet je již přiřazený k restauraci, ale nemá aktivní přístup. Kontaktujte majitele.";
+    error.textContent = dashboardText("Účet je již přiřazený k restauraci, ale nemá aktivní přístup. Kontaktujte majitele.");
   } catch {
     if (!sameAccount()) return;
     showLogin();
-    error.textContent = "Nepodařilo se ověřit přístup. Zkuste to znovu.";
+    error.textContent = dashboardText("Nepodařilo se ověřit přístup. Zkuste to znovu.");
   }
 }
 
@@ -2351,7 +2357,7 @@ async function requestPasswordReset(event) {
   const button = document.querySelector('#forgotPasswordForm button[type="submit"]');
   if (button.disabled) return;
   button.disabled = true;
-  status.textContent = "Odesílám odkaz...";
+  status.textContent = dashboardText("Odesílám odkaz...");
   try {
     const redirectTo = encodeURIComponent(location.origin + "/dashboard.html");
     const response = await fetch(`${SUPABASE_URL}/auth/v1/recover?redirect_to=${redirectTo}`, {
@@ -2362,13 +2368,13 @@ async function requestPasswordReset(event) {
     });
     if (!contextIsCurrent()) return;
     status.textContent = response.status === 429
-      ? "Příliš mnoho požadavků. Zkuste to později."
+      ? dashboardText("Příliš mnoho požadavků. Zkuste to později.")
       : response.ok
-        ? "Pokud účet existuje, pošleme odkaz pro změnu hesla na tento e-mail."
-        : "Odkaz se nepodařilo odeslat. Zkuste to později.";
+        ? dashboardText("Pokud účet existuje, pošleme odkaz pro změnu hesla na tento e-mail.")
+        : dashboardText("Odkaz se nepodařilo odeslat. Zkuste to později.");
   } catch {
     if (!contextIsCurrent()) return;
-    status.textContent = "Odeslání odkazu nelze ověřit. Zkontrolujte e-mail; pokud odkaz nepřijde, zkuste to později.";
+    status.textContent = dashboardText("Odeslání odkazu nelze ověřit. Zkontrolujte e-mail; pokud odkaz nepřijde, zkuste to později.");
   } finally {
     if (contextIsCurrent()) button.disabled = false;
   }
@@ -2386,15 +2392,15 @@ async function saveRecoveredPassword(event) {
   const button = document.querySelector('#resetPasswordForm button[type="submit"]');
   if (button.disabled) return;
   if (password.length < 12 || password !== confirmation) {
-    status.textContent = "Zadejte stejné nové heslo o alespoň 12 znacích.";
+    status.textContent = dashboardText("Zadejte stejné nové heslo o alespoň 12 znacích.");
     return;
   }
   if (!passwordRecoveryToken) {
-    status.textContent = "Odkaz vypršel. Požádejte o nový.";
+    status.textContent = dashboardText("Odkaz vypršel. Požádejte o nový.");
     return;
   }
   button.disabled = true;
-  status.textContent = "Ukládám nové heslo...";
+  status.textContent = dashboardText("Ukládám nové heslo...");
   try {
     const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       method: "PUT",
@@ -2408,7 +2414,7 @@ async function saveRecoveredPassword(event) {
     });
     if (!contextIsCurrent()) return;
     if (!response.ok) {
-      status.textContent = "Heslo se nepodařilo změnit. Odkaz mohl vypršet; požádejte o nový.";
+      status.textContent = dashboardText("Heslo se nepodařilo změnit. Odkaz mohl vypršet; požádejte o nový.");
       return;
     }
     const usedToken = recoveryToken;
@@ -2422,10 +2428,10 @@ async function saveRecoveredPassword(event) {
     if (!contextIsCurrent()) return;
     clearSession();
     showLogin();
-    document.getElementById("error").textContent = "Heslo bylo změněno. Přihlaste se novým heslem.";
+    document.getElementById("error").textContent = dashboardText("Heslo bylo změněno. Přihlaste se novým heslem.");
   } catch {
     if (!contextIsCurrent()) return;
-    status.textContent = "Výsledek změny hesla nelze ověřit. Zkuste se přihlásit novým heslem; pokud nefunguje, požádejte o nový odkaz.";
+    status.textContent = dashboardText("Výsledek změny hesla nelze ověřit. Zkuste se přihlásit novým heslem; pokud nefunguje, požádejte o nový odkaz.");
   } finally {
     if (contextIsCurrent()) button.disabled = false;
   }
@@ -2458,11 +2464,11 @@ async function signupOwner(event) {
   const button = form.querySelector('button[type="submit"]');
   if (button.disabled) return;
   if (password.length < 12) {
-    status.textContent = "Heslo musí mít alespoň 12 znaků.";
+    status.textContent = dashboardText("Heslo musí mít alespoň 12 znaků.");
     return;
   }
   button.disabled = true;
-  status.textContent = "Vytvářím účet...";
+  status.textContent = dashboardText("Vytvářím účet...");
   try {
     const redirectTo = encodeURIComponent(location.origin + "/dashboard.html");
     const response = await fetch(`${SUPABASE_URL}/auth/v1/signup?redirect_to=${redirectTo}`, {
@@ -2473,8 +2479,8 @@ async function signupOwner(event) {
     });
     if (!response.ok) {
       status.textContent = response.status === 429
-        ? "Příliš mnoho pokusů. Zkuste to později."
-        : "Registrace se nepodařila. Zkontrolujte e-mail a zkuste to znovu.";
+        ? dashboardText("Příliš mnoho pokusů. Zkuste to později.")
+        : dashboardText("Registrace se nepodařila. Zkontrolujte e-mail a zkuste to znovu.");
       return;
     }
     const data = await response.json();
@@ -2497,10 +2503,10 @@ async function signupOwner(event) {
       sessionStorage.setItem("supabaseRefreshToken", data.refresh_token);
       showCreateRestaurant();
     } else {
-      status.textContent = "Zkontrolujte e-mail a potvrďte účet. Pak se přihlaste a založte restauraci.";
+      status.textContent = dashboardText("Zkontrolujte e-mail a potvrďte účet. Pak se přihlaste a založte restauraci.");
     }
   } catch {
-    status.textContent = "Výsledek registrace nelze ověřit. Zkontrolujte e-mail a zkuste přihlášení před dalším pokusem.";
+    status.textContent = dashboardText("Výsledek registrace nelze ověřit. Zkontrolujte e-mail a zkuste přihlášení před dalším pokusem.");
   } finally {
     button.disabled = false;
   }
@@ -2516,15 +2522,15 @@ async function createOwnerRestaurant(event) {
   const button = document.querySelector('#createRestaurantForm button[type="submit"]');
   if (button.disabled) return;
   if (!contextIsCurrent()) {
-    status.textContent = "Platnost přihlášení vypršela. Přihlaste se znovu.";
+    status.textContent = dashboardText("Platnost přihlášení vypršela. Přihlaste se znovu.");
     return;
   }
   if (name.length < 2 || name.length > 120) {
-    status.textContent = "Zadejte název restaurace (2–120 znaků).";
+    status.textContent = dashboardText("Zadejte název restaurace (2–120 znaků).");
     return;
   }
   button.disabled = true;
-  status.textContent = "Zakládám restauraci...";
+  status.textContent = dashboardText("Zakládám restauraci...");
   let restaurantCreated = false;
   let creationUnverified = false;
   try {
@@ -2538,12 +2544,12 @@ async function createOwnerRestaurant(event) {
     if (!response.ok) {
       if (response.status >= 500) {
         creationUnverified = true;
-        status.textContent = "Výsledek založení nelze ověřit. Obnovte stránku a zkontrolujte účet před dalším pokusem.";
+        status.textContent = dashboardText("Výsledek založení nelze ověřit. Obnovte stránku a zkontrolujte účet před dalším pokusem.");
         return;
       }
       status.textContent = response.status === 401
-        ? "Platnost přihlášení vypršela. Přihlaste se znovu."
-        : "Restauraci se nepodařilo založit. Účet může být už přiřazený k týmu nebo e-mail není potvrzený.";
+        ? dashboardText("Platnost přihlášení vypršela. Přihlaste se znovu.")
+        : dashboardText("Restauraci se nepodařilo založit. Účet může být už přiřazený k týmu nebo e-mail není potvrzený.");
       return;
     }
     const createdRestaurantId = await response.json();
@@ -2556,7 +2562,7 @@ async function createOwnerRestaurant(event) {
     const contextLoaded = await loadRestaurantContextWithRetry();
     if (!contextIsCurrent()) return;
     if (!contextLoaded || Number(currentRestaurantId) !== Number(createdRestaurantId)) {
-      status.textContent = "Restaurace byla vytvořena. Obnovte stránku a pokračujte.";
+      status.textContent = dashboardText("Restaurace byla vytvořena. Obnovte stránku a pokračujte.");
       return;
     }
     history.replaceState(null, "", "#restaurace");
@@ -2565,8 +2571,8 @@ async function createOwnerRestaurant(event) {
     if (!contextIsCurrent()) return;
     creationUnverified = !restaurantCreated;
     status.textContent = restaurantCreated
-      ? "Restaurace byla vytvořena, ale přehled se nepodařilo načíst. Obnovte stránku a pokračujte."
-      : "Výsledek založení nelze ověřit. Obnovte stránku a zkontrolujte účet před dalším pokusem.";
+      ? dashboardText("Restaurace byla vytvořena, ale přehled se nepodařilo načíst. Obnovte stránku a pokračujte.")
+      : dashboardText("Výsledek založení nelze ověřit. Obnovte stránku a zkontrolujte účet před dalším pokusem.");
   } finally {
     if (contextIsCurrent()) button.disabled = restaurantCreated || creationUnverified;
   }
@@ -2750,7 +2756,7 @@ function clearSession() {
   renderRestaurantBrandingForm({});
   document.title = "AI Restaurace PRO";
   const restaurantLabel = document.getElementById("currentRestaurantNameLabel");
-  if (restaurantLabel) restaurantLabel.textContent = "Přehled provozu restaurace";
+  if (restaurantLabel) restaurantLabel.textContent = dashboardText("Přehled provozu restaurace");
   ["publicRestaurantLink", "restaurantBrandingPublicLink"].forEach(id => {
     const link = document.getElementById(id);
     if (link) {
@@ -3175,13 +3181,13 @@ async function login(event) {
 
   if (!email || !password) {
     error.textContent =
-      "Vyplň e-mail a heslo.";
+      dashboardText("Vyplň e-mail a heslo.");
 
     return;
   }
 
   button.disabled = true;
-  error.textContent = "Přihlašuji...";
+  error.textContent = dashboardText("Přihlašuji...");
 
   try {
     const response = await fetch(
@@ -3206,15 +3212,15 @@ async function login(event) {
 
     if (!response.ok) {
       error.textContent = response.status === 429
-        ? "Příliš mnoho pokusů. Zkuste to později."
+        ? dashboardText("Příliš mnoho pokusů. Zkuste to později.")
         : response.status >= 500
-          ? "Přihlášení teď není dostupné. Zkuste to za chvíli."
-          : "Nesprávný e-mail nebo heslo.";
+          ? dashboardText("Přihlášení teď není dostupné. Zkuste to za chvíli.")
+          : dashboardText("Nesprávný e-mail nebo heslo.");
       return;
     }
     if (typeof data?.access_token !== "string" || !data.access_token ||
         typeof data?.refresh_token !== "string" || !data.refresh_token) {
-      error.textContent = "Výsledek přihlášení nelze ověřit. Zkuste to znovu.";
+      error.textContent = dashboardText("Výsledek přihlášení nelze ověřit. Zkuste to znovu.");
       return;
     }
 
@@ -3255,7 +3261,7 @@ async function login(event) {
     console.error(loginError);
 
     error.textContent =
-      "Přihlášení se nepodařilo.";
+      dashboardText("Přihlášení se nepodařilo.");
   } finally {
     if (contextIsCurrent()) {
       passwordInput.value = "";
@@ -4605,7 +4611,7 @@ function renderReservationHistory() {
       ) ||
       "Rezervace";
     const actor = entry.actor_email || (entry.action === "created" ? "Veřejný formulář / systém" : "Systém");
-    const when = entry.created_at ? new Date(entry.created_at).toLocaleString("cs-CZ", { timeZone: "Europe/Prague", dateStyle: "short", timeStyle: "short" }) : "—";
+    const when = entry.created_at ? new Date(entry.created_at).toLocaleString(dashboardLocale(), { timeZone: "Europe/Prague", dateStyle: "short", timeStyle: "short" }) : "—";
 
     return `
       <article class="history-card history-${escapeHtml(entry.action || "updated")}">
@@ -6469,7 +6475,7 @@ function renderCharts() {
       getLocalDateString(date);
 
     labels.push(
-      date.toLocaleDateString("cs-CZ", {
+      date.toLocaleDateString(dashboardLocale(), {
         timeZone: "Europe/Prague",
         weekday: "short",
         day: "numeric",
@@ -10700,7 +10706,7 @@ function getCalendarStatusLabel(status) {
         normalizedStatus === "potvrzeno" ||
         normalizedStatus === "confirmed"
     ) {
-        return "Potvrzeno";
+        return dashboardText("Potvrzeno");
     }
 
     if (
@@ -10709,10 +10715,10 @@ function getCalendarStatusLabel(status) {
         normalizedStatus === "cancelled" ||
         normalizedStatus === "canceled"
     ) {
-        return "Zrušeno";
+        return dashboardText("Zrušeno");
     }
 
-    return "Čeká";
+    return dashboardText("Čeká");
 }
 
 /* =========================================================
@@ -10732,7 +10738,7 @@ const ROLE_ALLOWED_SECTIONS = {
 };
 
 function roleLabel(role) {
-  return ROLE_LABELS[String(role || "").toLowerCase()] || "Neznámá role";
+  return dashboardText(ROLE_LABELS[String(role || "").toLowerCase()] || "Neznámá role");
 }
 
 function canAccessSection(sectionId) {

@@ -1,8 +1,9 @@
 {
   "dependencies": {
-    "@electric-sql/pglite": "0.5.10"
+    "@electric-sql/pglite": "0.5.10",
+    "linkedom": "0.18.12"
   },
   "scripts": {
-    "test": "node ai-disabled.mjs && node api-boundaries.mjs && node invite-boundaries.mjs && node public-booking.mjs && node settings-regression.mjs && node team-regression.mjs && node profile-hours-regression.mjs && node auth-context-regression.mjs && node onboarding-regression.mjs && node multi-restaurant-ui.mjs && node multi-restaurant-db.mjs && node isolation.mjs && node concurrency.mjs"
+    "test": "node dashboard-language.mjs && node ai-disabled.mjs && node api-boundaries.mjs && node invite-boundaries.mjs && node public-booking.mjs && node settings-regression.mjs && node team-regression.mjs && node profile-hours-regression.mjs && node auth-context-regression.mjs && node onboarding-regression.mjs && node multi-restaurant-ui.mjs && node multi-restaurant-db.mjs && node isolation.mjs && node concurrency.mjs"
   }
 }

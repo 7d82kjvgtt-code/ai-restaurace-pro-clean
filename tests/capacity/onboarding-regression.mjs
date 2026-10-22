@@ -11,6 +11,7 @@ for(const scenario of ['success','duplicate','token-refresh','no-user','short-na
   let requests=0,reloads=0,contextLoads=0,navigations=0,release;
   let token='fixture';
   const context=vm.createContext({
+    dashboardText: value => value,
     dashboardSessionVersion:1,currentRestaurantId:null,AbortSignal,SUPABASE_URL:'https://fixture.invalid',
     getAccessToken:()=>token,parseJwt:()=>scenario==='no-user'?null:{sub:'fixture-owner'},
     document:{getElementById:id=>id==='newRestaurantName'?name:status,querySelector:()=>button},

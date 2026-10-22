@@ -11,6 +11,7 @@ on:
       - 'script.js'
       - 'dashboard.js'
       - 'restaurant-context.js'
+      - 'dashboard-i18n.js'
       - 'supabase/migrations/**'
       - 'tests/capacity/**'
       - '.github/workflows/pilot-checks.yml'
@@ -23,6 +24,7 @@ on:
       - 'script.js'
       - 'dashboard.js'
       - 'restaurant-context.js'
+      - 'dashboard-i18n.js'
       - 'supabase/migrations/**'
       - 'tests/capacity/**'
       - '.github/workflows/pilot-checks.yml'
@@ -51,6 +53,7 @@ jobs:
         run: |
           node --check script.js
           node --check dashboard.js
+          node --check dashboard-i18n.js
           node --check restaurant-context.js
           for api_file in api/*.js; do node --check "$api_file"; done
       - name: Install pinned local database fixture

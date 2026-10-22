@@ -36,14 +36,14 @@ function renderRestaurantChoices() {
     select.replaceChildren();
     const placeholder = document.createElement('option');
     placeholder.value = '';
-    placeholder.textContent = 'Vyber restauraci';
+    placeholder.textContent = dashboardText('Vyber restauraci');
     placeholder.disabled = true;
     select.appendChild(placeholder);
     for (const membership of availableRestaurantMemberships) {
       const option = document.createElement('option');
       option.value = String(membership.restaurant_id);
-      const name = String(membership.restaurants?.name || `Restaurace #${membership.restaurant_id}`);
-      const role = { owner: 'Majitel', manager: 'Manažer', staff: 'Obsluha' }[membership.role];
+      const name = String(membership.restaurants?.name || `${dashboardText("Restaurace")} #${membership.restaurant_id}`);
+      const role = { owner: dashboardText('Majitel'), manager: dashboardText('Manažer'), staff: dashboardText('Obsluha') }[membership.role];
       option.textContent = `${name} · ${role}`;
       select.appendChild(option);
     }
@@ -64,12 +64,12 @@ function switchDashboardRestaurant(value, askToDiscard = true) {
   const userId = parseJwt(getAccessToken())?.sub;
   const membership = availableRestaurantMemberships.find(row => Number(row.restaurant_id) === Number(value));
   if (!userId || !membership || Number(value) === Number(currentRestaurantId)) return;
-  if (askToDiscard && !window.confirm('Přepnout restauraci? Neuložené změny se zahodí.')) {
+  if (askToDiscard && !window.confirm(dashboardText('Přepnout restauraci? Neuložené změny se zahodí.'))) {
     renderRestaurantChoices();
     return;
   }
   if (!rememberRestaurantSelection(userId, membership.restaurant_id)) {
-    showDashboardNotice('Výběr restaurace se nepodařilo uložit. Povol úložiště prohlížeče a zkus to znovu.', 'error');
+    showDashboardNotice(dashboardText('Výběr restaurace se nepodařilo uložit. Povol úložiště prohlížeče a zkus to znovu.'), 'error');
     return;
   }
   ++dashboardSessionVersion;
@@ -77,7 +77,7 @@ function switchDashboardRestaurant(value, askToDiscard = true) {
   currentUserId = null;
   currentUserRole = null;
   showLogin();
-  document.getElementById('error').textContent = 'Přepínám restauraci…';
+  document.getElementById('error').textContent = dashboardText('Přepínám restauraci…');
   document.getElementById('loginButton').disabled = true;
   location.reload();
 }
@@ -124,7 +124,7 @@ function showAdditionalRestaurantForm() {
   input.value = pending?.name || '';
   input.disabled = Boolean(pending);
   document.getElementById('additionalRestaurantStatus').textContent = pending
-    ? 'Předchozí založení nemá ověřený výsledek. Tlačítkem dokončíš stejný požadavek.' : '';
+    ? dashboardText('Předchozí založení nemá ověřený výsledek. Tlačítkem dokončíš stejný požadavek.') : '';
   document.getElementById('additionalRestaurantButton').disabled = false;
 }
 
@@ -148,17 +148,17 @@ async function createAdditionalRestaurant(event) {
   if (!request) {
     const name = input.value.trim();
     if (name.length < 2 || name.length > 120) {
-      status.textContent = 'Zadej název restaurace (2–120 znaků).';
+      status.textContent = dashboardText('Zadej název restaurace (2–120 znaků).');
       return;
     }
     request = { userId, name, requestId: crypto.randomUUID() };
     try { sessionStorage.setItem('pendingAdditionalRestaurant', JSON.stringify(request)); }
-    catch { status.textContent = 'Požadavek se nepodařilo uložit. Povol úložiště prohlížeče a zkus to znovu.'; return; }
+    catch { status.textContent = dashboardText('Požadavek se nepodařilo uložit. Povol úložiště prohlížeče a zkus to znovu.'); return; }
   }
   button.disabled = true;
   cancel.disabled = true;
   input.disabled = true;
-  status.textContent = 'Zakládám restauraci…';
+  status.textContent = dashboardText('Zakládám restauraci…');
   try {
     const response = await authorizedFetch(`${SUPABASE_URL}/rest/v1/rpc/create_additional_owner_restaurant`, {
       method: 'POST', headers: getHeaders(), body: JSON.stringify({ p_name: request.name, p_request_id: request.requestId })
@@ -175,7 +175,7 @@ async function createAdditionalRestaurant(event) {
     location.reload();
   } catch {
     if (!current()) return;
-    status.textContent = 'Založení se nepodařilo ověřit. Zkus to znovu: systém dokončí stejný požadavek a nezaloží druhou kopii.';
+    status.textContent = dashboardText('Založení se nepodařilo ověřit. Zkus to znovu: systém dokončí stejný požadavek a nezaloží druhou kopii.');
     button.disabled = false;
   } finally {
     if (current()) cancel.disabled = false;
