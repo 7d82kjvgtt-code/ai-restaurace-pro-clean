@@ -5,6 +5,7 @@ No credentials are accepted as command-line values. No database restore, email,
 repository initialization or snapshot deletion is performed by this program.
 """
 import argparse
+import configparser
 import datetime as dt
 import hashlib
 import json
@@ -64,6 +65,16 @@ def load_config(filename):
         config[key] = str(private_file(config[key]))
     if config.get("storage_key_file"):
         config["storage_key_file"] = str(private_file(config["storage_key_file"]))
+    services = configparser.ConfigParser(interpolation=None)
+    services.read(config["pg_service_file"])
+    if config["pg_service"] not in services:
+        raise BackupError("The PostgreSQL service entry is missing.")
+    connection = services[config["pg_service"]]
+    host, user = connection.get("host", ""), connection.get("user", "")
+    expected = ((host == "aws-0-eu-west-1.pooler.supabase.com" and user == "postgres." + PROJECT)
+                or (host == "db." + PROJECT + ".supabase.co" and user == "postgres"))
+    if not expected or connection.get("port", "5432") != "5432" or connection.get("dbname", "postgres") != "postgres":
+        raise BackupError("The PostgreSQL service does not identify the expected restaurant project and session connection.")
     pg_bin = Path(config["pg_bin"]).expanduser()
     config["programs"] = {name: binary(pg_bin / name) for name in ["psql", "pg_dump", "pg_dumpall", "pg_restore"]}
     config["restic"] = binary(config["restic"])

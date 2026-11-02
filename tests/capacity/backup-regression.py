@@ -114,6 +114,7 @@ class BackupTests(unittest.TestCase):
             for name in ["service", "pgpass", "restic-key"]:
                 (root / name).write_text("synthetic-fixture-only")
                 (root / name).chmod(0o600)
+            (root / "service").write_text("[fixture]\nhost=aws-0-eu-west-1.pooler.supabase.com\nport=5432\ndbname=postgres\nuser=postgres." + backup.PROJECT + "\n")
             fake = '''#!/usr/bin/env python3
 from pathlib import Path
 import os,sys
@@ -135,6 +136,11 @@ raise AssertionError(name)
             filename.write_text(json.dumps(config))
             filename.chmod(0o600)
             config = backup.load_config(filename)
+            original_service = (root / "service").read_text()
+            (root / "service").write_text(original_service.replace(backup.PROJECT, "wrong-project"))
+            with self.assertRaises(backup.BackupError):
+                backup.load_config(filename)
+            (root / "service").write_text(original_service)
             env = backup.environment(config)
             subprocess.run([config["restic"], "init"], env=env, check=True, capture_output=True)
             rows = [{"id": "fixture", "bucket_id": "food-images", "name": "1/manifest.json", "updated_at": "fixed", "metadata": {"size": 4}, "public": True}]

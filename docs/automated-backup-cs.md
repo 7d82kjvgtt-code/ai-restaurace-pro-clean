@@ -6,6 +6,7 @@ Stav k 2. 11. 2026: exportní program, kontrola zpětného stažení a instalát
 
 `scripts/backup-restaurant.py` používá PostgreSQL 17 a existující šifrovaný repozitář restic. Přes libpq service a soubor pgpass provede databázový export ve formátu custom, export rolí bez databázových hesel a export všech evidovaných objektů Storage. Záloha zahrnuje databázi včetně auth/public a metadata ostatních schémat; sama nezajišťuje přenos Vault kořenových klíčů, nastavení Supabase projektu, přihlašovacích providerů ani tajných hodnot konfigurace aplikace.
 
+- Konfigurace musí odpovídat výslovně projektu decpnnbaejxjbpmyjocs; cizí projekt nebo transaction pooler odmítne, aby záloha nebyla chybně označená.
 - Exportní připojení má nastavené `default_transaction_read_only=on`; program neobnovuje ani nemaže produkční data a neposílá e-maily.
 - Veřejné obrázky stáhne z veřejných URL. U soukromých objektů vyžaduje serverový klíč v chráněném souboru mimo repozitář.
 - Porovná Storage inventář před a po exportu. Změna objektů během exportu znamená neúspěch; nevytváří se přijatá záloha s neověřenými obrázky. Databáze má vlastní konzistentní snapshot pg_dump; Storage API není atomický databázový snapshot.
