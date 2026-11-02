@@ -20,6 +20,10 @@ function fixture(options = {}) {
   let reloads = 0, requests = 0, notices = [], confirms = 0, resolveFetch;
   const context = vm.createContext({
     dashboardText: value => value,
+    dashboardLanguage: () => 'cs',
+    dashboardLocale: () => 'cs-CZ',
+    dashboardMessage: (parts, ...values) => parts.reduce((text, part, i) => text + part + (i < values.length ? values[i] : ''), ''),
+
     dashboardSessionVersion: 1, currentRestaurantId: null, currentUserId: null, currentUserRole: null, restaurantContextReadFailed: false,
     roleRefreshInProgress:false,lastRoleRefreshAt:0,ensureValidSession:async()=>true,
     SUPABASE_URL: 'https://fixture.invalid', AbortSignal, crypto: { randomUUID: () => '00000000-0000-4000-8000-000000000010' },

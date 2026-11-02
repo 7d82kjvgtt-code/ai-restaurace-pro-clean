@@ -12,6 +12,10 @@ for(const scenario of ['success','duplicate','token-refresh','no-user','short-na
   let token='fixture';
   const context=vm.createContext({
     dashboardText: value => value,
+    dashboardLanguage: () => 'cs',
+    dashboardLocale: () => 'cs-CZ',
+    dashboardMessage: (parts, ...values) => parts.reduce((text, part, i) => text + part + (i < values.length ? values[i] : ''), ''),
+
     dashboardSessionVersion:1,currentRestaurantId:null,AbortSignal,SUPABASE_URL:'https://fixture.invalid',
     getAccessToken:()=>token,parseJwt:()=>scenario==='no-user'?null:{sub:'fixture-owner'},
     document:{getElementById:id=>id==='newRestaurantName'?name:status,querySelector:()=>button},

@@ -12,6 +12,10 @@ for (const action of ['invite','role','active']) for (const scenario of scenario
   let requests = 0, reloads = 0, release;
   const notices = [];
   const context = vm.createContext({
+    dashboardText: value => value,
+    dashboardLanguage: () => 'cs',
+    dashboardLocale: () => 'cs-CZ',
+    dashboardMessage: (parts, ...values) => parts.reduce((text, part, i) => text + part + (i < values.length ? values[i] : ''), ''),
     dashboardSessionVersion:1,currentRestaurantId:7,currentUserId:scenario === 'signed-out' ? null : 'fixture-owner',currentUserRole:scenario === 'staff' ? 'staff' : 'owner',
     SUPABASE_URL:'https://fixture.invalid',document:{getElementById:id=>inputs[id]},getCurrentUserEmail:()=> 'owner@example.invalid',getAccessToken:()=> 'fixture-token',getHeaders:x=>x,
     console:{error(){}},showDashboardNotice:(...args)=>notices.push(args),

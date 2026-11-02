@@ -15,6 +15,10 @@ for(const scenario of ['success','staff','signed-out','unknown-role','empty','wr
   const old={restaurant_id:7,customer_key:'fixture',note:'old',is_regular:false};
   const saved={...old,note:'new'};
   const context=vm.createContext({
+    dashboardText: value => value,
+    dashboardLanguage: () => 'cs',
+    dashboardLocale: () => 'cs-CZ',
+    dashboardMessage: (parts, ...values) => parts.reduce((text, part, i) => text + part + (i < values.length ? values[i] : ''), ''),
     dashboardSessionVersion:1,currentRestaurantId:7,currentUserId:scenario==='signed-out'?null:'fixture-owner',currentUserRole:scenario==='unknown-role'?'unknown':scenario==='staff'?'staff':'owner',
     SUPABASE_URL:'https://fixture.invalid',customerProfiles:[{...old}],
     buildCustomers:()=>[{key:'fixture',name:'Local'}],getCustomerProfileForCustomer:()=>old,getHeaders:x=>x,
@@ -62,6 +66,10 @@ for(const scenario of ['success','reordered','staff','signed-out','missing-input
   if(scenario==='duplicate-input') rows[6].day_of_week=5;
   if(scenario==='bad-day-input') rows[6].day_of_week=9;
   const context=vm.createContext({
+    dashboardText: value => value,
+    dashboardLanguage: () => 'cs',
+    dashboardLocale: () => 'cs-CZ',
+    dashboardMessage: (parts, ...values) => parts.reduce((text, part, i) => text + part + (i < values.length ? values[i] : ''), ''),
     dashboardSessionVersion:1,currentRestaurantId:7,currentUserId:scenario==='signed-out'?null:'fixture-owner',currentUserRole:scenario==='staff'?'staff':'owner',
     SUPABASE_URL:'https://fixture.invalid',openingHours:[{original:true}],openingHoursConfigured:false,
     console:{error(){}},getHeaders:x=>x,renderOpeningHours:()=>renders++,renderSetupChecklist(){},showDashboardNotice:(...args)=>notices.push(args),

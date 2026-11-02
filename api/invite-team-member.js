@@ -1,3 +1,38 @@
+const INVITATION_ENGLISH = Object.freeze({
+  "Serverová konfigurace pozvánek není dokončená.": "Server invitation configuration is incomplete.",
+  "Chybí přihlášení.": "Sign in is required.",
+  "Přihlášení vypršelo.": "Your session has expired.",
+  "Nepodařilo se ověřit členství v restauraci.": "Could not verify restaurant membership.",
+  "Vyber restauraci, do které chceš člena týmu přidat.": "Choose the restaurant to add the team member to.",
+  "Neplatná odpověď při ověřování oprávnění majitele.": "Invalid response while checking owner permissions.",
+  "Pozvat zaměstnance může pouze majitel.": "Only the owner can invite team members.",
+  "Pozvat zaměstnance může pouze aktivní majitel.": "Only an active owner can invite team members.",
+  "Chybí APP_URL nebo Vercel deployment URL pro pozvánky.": "The application URL for invitations is not configured.",
+  "APP_URL / Vercel deployment URL nemá platný formát.": "The application URL for invitations is invalid.",
+  "Adresa aplikace pro pozvánky musí používat HTTPS.": "The application URL for invitations must use HTTPS.",
+  "Použij POST.": "Use POST.",
+  "Pozvánky teď nejsou dostupné. Zkus to prosím později.": "Invitations are currently unavailable. Try again later.",
+  "Zadej jméno člena týmu.": "Enter the team member's name.",
+  "Neplatný e-mail.": "Invalid email address.",
+  "Neplatná role.": "Invalid role.",
+  "Neplatná restaurace.": "Invalid restaurant.",
+  "Nepodařilo se ověřit stávající členství.": "Could not verify existing membership.",
+  "Neplatná odpověď při ověřování stávajícího členství.": "Invalid response while checking existing membership.",
+  "Účet dosáhl limitu 100 restaurací.": "The account has reached the limit of 100 restaurants.",
+  "Neplatné propojení účtu člena týmu.": "Invalid team member account link.",
+  "Nepodařilo se ověřit stávajícího člena týmu.": "Could not verify the existing team member.",
+  "Neplatná odpověď při ověřování člena týmu.": "Invalid response while checking the team member.",
+  "Tento e-mail už je v týmu.": "This email is already in the team.",
+  "Neplatný účet stávajícího člena týmu.": "Invalid existing team member account.",
+  "Účet se nepodařilo ověřit. Uživatel musí nejdřív potvrdit svůj e-mail.": "Could not verify the account. The user must confirm their email first.",
+  "Pozvánku se nepodařilo odeslat.": "Could not send the invitation.",
+  "Pozvánku se teď nepodařilo odeslat. Zkus to prosím později.": "Could not send the invitation right now. Try again later.",
+  "Pozvánka možná odešla, ale účet se nepodařilo přiřadit k týmu. Zkus pozvání zopakovat.": "The invitation may have been sent, but the account could not be assigned to the team. Try inviting again.",
+  "Pozvánka možná odešla, ale účet už má aktivní členství v restauraci. Člen týmu nebyl přidán.": "The invitation may have been sent, but the account already has active restaurant membership. The team member was not added.",
+  "Pozvánka odešla, ale člen týmu se nepodařilo uložit. Zkuste pozvání zopakovat.": "The invitation was sent, but the team member could not be saved. Try inviting again.",
+  "Pozvánka možná odešla, ale členství se mezitím změnilo. Obnovte tým a zkontrolujte aktuální stav.": "The invitation may have been sent, but membership changed in the meantime. Refresh the team and check the current status."
+});
+
 const SUPABASE_URL =
   process.env.SUPABASE_URL ||
   "https://decpnnbaejxjbpmyjocs.supabase.co";
@@ -17,9 +52,15 @@ function send(
     "no-store"
   );
 
-  return res
-    .status(status)
-    .json(body);
+  const localizedBody = { ...body };
+  if (res.invitationLocale === "en") {
+    for (const field of ["error", "message"]) {
+      if (typeof localizedBody[field] === "string" && Object.hasOwn(INVITATION_ENGLISH, localizedBody[field])) {
+        localizedBody[field] = INVITATION_ENGLISH[localizedBody[field]];
+      }
+    }
+  }
+  return res.status(status).json(localizedBody);
 }
 
 
@@ -267,6 +308,8 @@ module.exports =
     req,
     res
   ) {
+    // Locale only controls presentation; it never changes membership or permission checks.
+    res.invitationLocale = req.body?.locale === "en" ? "en" : "cs";
     if (
       req.method !== "POST"
     ) {
@@ -653,8 +696,12 @@ module.exports =
 
           message:
             existingAccount
-              ? `Uživatel ${email} byl přidán do týmu. Přihlásí se svým stávajícím účtem.`
-              : `Pozvánka byla odeslána na ${email}.`
+              ? (res.invitationLocale === "en"
+                ? `${email} was added to the team and can sign in with their existing account.`
+                : `Uživatel ${email} byl přidán do týmu. Přihlásí se svým stávajícím účtem.`)
+              : (res.invitationLocale === "en"
+                ? `An invitation was sent to ${email}.`
+                : `Pozvánka byla odeslána na ${email}.`)
         }
       );
     } catch (error) {

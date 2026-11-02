@@ -13,6 +13,10 @@ for (const scenario of scenarios) {
   let requests = 0, renders = 0;
   const notices = [];
   const context = vm.createContext({
+    dashboardText: value => value,
+    dashboardLanguage: () => 'cs',
+    dashboardLocale: () => 'cs-CZ',
+    dashboardMessage: (parts, ...values) => parts.reduce((text, part, i) => text + part + (i < values.length ? values[i] : ''), ''),
     dashboardSessionVersion: 1, currentRestaurantId: 7, currentUserId: scenario === 'signed-out' ? null : 'fixture-owner', currentUserRole: scenario === 'staff' ? 'staff' : scenario === 'manager' ? 'manager' : 'owner',
     reservationSettings: { original: true }, reservationSettingsConfigured: false,
     SUPABASE_URL: 'https://fixture.invalid',

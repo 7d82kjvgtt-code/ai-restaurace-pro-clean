@@ -82,15 +82,15 @@ let upcomingReservationTimer = null;
 const shownUpcomingReservationAlerts = new Set();
 
 function showDashboardNotice(message, type = "auto", action = null) {
-  const text = String(message || "").trim();
+  const text = dashboardApiError(message).trim();
   if (!text) return;
 
   let resolvedType = type;
   if (resolvedType === "auto") {
     const lower = text.toLowerCase();
-    resolvedType = /úspěš|uložen|spojen|rozpojen/.test(lower)
+    resolvedType = /úspěš|uložen|spojen|rozpojen|success|saved|joined|separated/.test(lower)
       ? "success"
-      : /obsazen|nepodař|nenalezen|vyplň|vyber|pouze|nemá přístup/.test(lower)
+      : /obsazen|nepodař|nenalezen|vyplň|vyber|pouze|nemá přístup|occupied|could not|cannot|not found|enter|select|only|no permission/.test(lower)
         ? "error"
         : "info";
   }
@@ -109,7 +109,7 @@ function showDashboardNotice(message, type = "auto", action = null) {
   notice.setAttribute("role", resolvedType === "error" ? "alert" : "status");
 
   const icon = resolvedType === "success" ? "✓" : resolvedType === "error" ? "!" : "i";
-  notice.innerHTML = `
+  notice.innerHTML = dashboardMessage`
     <span class="dashboard-notice__icon">${icon}</span>
     <span class="dashboard-notice__text"></span>
     <button class="dashboard-notice__close" type="button" aria-label="Zavřít">×</button>
@@ -129,7 +129,7 @@ function showDashboardNotice(message, type = "auto", action = null) {
     const actionButton = document.createElement("button");
     actionButton.type = "button";
     actionButton.className = "dashboard-notice__action";
-    actionButton.textContent = String(action.label || "Zkusit znovu");
+    actionButton.textContent = String(action.label || dashboardText("Zkusit znovu"));
     actionButton.addEventListener("click", async () => {
       actionButton.disabled = true;
       await action.onClick();
@@ -152,8 +152,8 @@ function toggleMergeMode() {
 
   if (btn) {
     btn.textContent = mergeModeActive
-      ? "✕ Zrušit spojování"
-      : "🔗 Spojit stoly";
+      ? dashboardText("✕ Zrušit spojování")
+      : dashboardText("🔗 Spojit stoly");
   }
 
   renderFloorMap();
@@ -169,7 +169,7 @@ function toggleMergeMode() {
   if (!restaurantId || !userId || !canContinue()) return;
   const selectedIds = [...new Set(selectedTablesForMerge.map(Number))];
   if (selectedIds.length < 2 || selectedIds.some(id => !Number.isSafeInteger(id) || id < 1)) {
-    showDashboardNotice("Vyber alespoň 2 stoly.");
+    showDashboardNotice(dashboardText("Vyber alespoň 2 stoly."));
     return;
   }
 
@@ -189,7 +189,7 @@ function toggleMergeMode() {
     );
 
     showDashboardNotice(
-      "Stoly teď nelze bezpečně spojit. Obnov stránku a zkus to znovu."
+      dashboardText("Stoly teď nelze bezpečně spojit. Obnov stránku a zkus to znovu.")
     );
     return;
   }
@@ -199,7 +199,7 @@ function toggleMergeMode() {
   );
 
   if (selectedTables.length !== selectedIds.length) {
-    showDashboardNotice("Vybrané stoly se nepodařilo najít.");
+    showDashboardNotice(dashboardText("Vybrané stoly se nepodařilo najít."));
     return;
   }
 
@@ -211,7 +211,7 @@ function toggleMergeMode() {
 
   if (inactiveTable) {
     showDashboardNotice(
-      `${inactiveTable.name || "Vybraný stůl"} je neaktivní. Spojit lze jen aktivní stoly.`
+      dashboardMessage`${inactiveTable.name || dashboardText("Vybraný stůl")} je neaktivní. Spojit lze jen aktivní stoly.`
     );
     return;
   }
@@ -226,7 +226,7 @@ function toggleMergeMode() {
 
   if (groupedTable) {
     showDashboardNotice(
-      `${groupedTable.name || "Vybraný stůl"} už je součástí aktivní skupiny.`
+      dashboardMessage`${groupedTable.name || dashboardText("Vybraný stůl")} už je součástí aktivní skupiny.`
     );
     return;
   }
@@ -246,7 +246,7 @@ function toggleMergeMode() {
 
   if (reservedTable) {
     showDashboardNotice(
-      `${reservedTable.name || "Vybraný stůl"} má aktuální nebo budoucí rezervaci. Spoj ho až po přesunu nebo zrušení rezervace.`
+      dashboardMessage`${reservedTable.name || dashboardText("Vybraný stůl")} má aktuální nebo budoucí rezervaci. Spoj ho až po přesunu nebo zrušení rezervace.`
     );
     return;
   }
@@ -256,7 +256,7 @@ function toggleMergeMode() {
   )];
 
   if (rooms.length > 1) {
-    showDashboardNotice("Spojit lze pouze stoly ze stejné místnosti.");
+    showDashboardNotice(dashboardText("Spojit lze pouze stoly ze stejné místnosti."));
     return;
   }
 
@@ -266,7 +266,7 @@ function toggleMergeMode() {
   );
 
   const groupName = selectedTables
-    .map((table) => table.name || `Stůl ${table.id}`)
+    .map((table) => table.name || dashboardMessage`Stůl ${table.id}`)
     .join(" + ");
 
   try {
@@ -295,7 +295,7 @@ function toggleMergeMode() {
     await requireChangedRestaurantRow(response);
     if (!canContinue()) return;
 
-    showDashboardNotice("Stoly byly úspěšně spojeny.");
+    showDashboardNotice(dashboardText("Stoly byly úspěšně spojeny."));
 
     selectedTablesForMerge = [];
     mergeModeActive = false;
@@ -310,7 +310,7 @@ function toggleMergeMode() {
       document.getElementById("mergeSelectionInfo");
 
     if (mergeButton) {
-      mergeButton.textContent = "🔗 Spojit stoly";
+      mergeButton.textContent = dashboardText("🔗 Spojit stoly");
     }
 
     if (confirmButton) {
@@ -318,14 +318,14 @@ function toggleMergeMode() {
     }
 
     if (info) {
-      info.textContent = "Vybráno: 0 stolů";
+      info.textContent = dashboardText("Vybráno: 0 stolů");
     }
 
    await loadTables();
   } catch (error) {
     if (!canContinue()) return;
     console.error(error);
-    showDashboardNotice("Spojení stolů se nepodařilo uložit.");
+    showDashboardNotice(dashboardText("Spojení stolů se nepodařilo uložit."));
   }
   } finally {
     if (contextIsCurrent()) tableMergeInProgress = false;
@@ -413,7 +413,7 @@ document.querySelectorAll(".room-switch").forEach((button) => {
   } catch {
     showLogin();
     document.getElementById("error").textContent =
-      "Přihlášení se teď nepodařilo ověřit. Zkontrolujte připojení a obnovte stránku.";
+      dashboardText("Přihlášení se teď nepodařilo ověřit. Zkontrolujte připojení a obnovte stránku.");
     return;
   }
   if (sessionValid) {
@@ -514,7 +514,7 @@ async function loadCurrentRestaurantInfo() {
     ) {
       throw new Error(
         data?.error ||
-        "Údaje restaurace se nepodařilo načíst."
+        dashboardText("Údaje restaurace se nepodařilo načíst.")
       );
     }
 
@@ -964,9 +964,9 @@ function updateRestaurantBrandingPreview() {
         )
         ?.value ||
       currentRestaurantName ||
-      "Restaurace"
+      dashboardText("Restaurace")
     ).trim() ||
-    "Restaurace";
+    dashboardText("Restaurace");
 
   const description =
     String(
@@ -1056,7 +1056,7 @@ function updateRestaurantBrandingPreview() {
   if (previewDescription) {
     previewDescription.textContent =
       description ||
-      "Krátký popis restaurace se zobrazí tady.";
+      dashboardText("Krátký popis restaurace se zobrazí tady.");
   }
 
   if (previewContact) {
@@ -1070,7 +1070,7 @@ function updateRestaurantBrandingPreview() {
     previewContact.textContent =
       parts.length
         ? parts.join(" · ")
-        : "Kontaktní údaje se doplní po uložení.";
+        : dashboardText("Kontaktní údaje se doplní po uložení.");
   }
 
   if (fallback) {
@@ -1311,7 +1311,7 @@ async function uploadRestaurantLogo(
 
   if (!extension) {
     throw new Error(
-      "Logo musí být JPG, PNG, WebP nebo AVIF."
+      dashboardText("Logo musí být JPG, PNG, WebP nebo AVIF.")
     );
   }
 
@@ -1321,7 +1321,7 @@ async function uploadRestaurantLogo(
       MAX_RESTAURANT_LOGO_BYTES
   ) {
     throw new Error(
-      "Logo může mít maximálně 5 MB."
+      dashboardText("Logo může mít maximálně 5 MB.")
     );
   }
 
@@ -1361,7 +1361,7 @@ async function uploadRestaurantLogo(
 
   if (!response.ok) {
     throw new Error(
-      "Logo se nepodařilo nahrát."
+      dashboardText("Logo se nepodařilo nahrát.")
     );
   }
 
@@ -1394,7 +1394,7 @@ async function saveRestaurantBranding() {
     !currentRestaurantId
   ) {
     showDashboardNotice(
-      "Branding restaurace může upravovat pouze majitel.",
+      dashboardText("Branding restaurace může upravovat pouze majitel."),
       "error"
     );
     return;
@@ -1503,7 +1503,7 @@ async function saveRestaurantBranding() {
     )
   ) {
     showDashboardNotice(
-      "Zkontroluj název, kontaktní údaje, popis a barvu restaurace.",
+      dashboardText("Zkontroluj název, kontaktní údaje, popis a barvu restaurace."),
       "error"
     );
     return;
@@ -1515,7 +1515,7 @@ async function saveRestaurantBranding() {
     )
   ) {
     showDashboardNotice(
-      "Zadej platný e-mail, nebo ho nech prázdný.",
+      dashboardText("Zadej platný e-mail, nebo ho nech prázdný."),
       "error"
     );
     return;
@@ -1533,7 +1533,7 @@ async function saveRestaurantBranding() {
     !websiteUrl
   ) {
     showDashboardNotice(
-      "Web musí začínat http:// nebo https://.",
+      dashboardText("Web musí začínat http:// nebo https://."),
       "error"
     );
     return;
@@ -1545,7 +1545,7 @@ async function saveRestaurantBranding() {
     isPlaceholderRestaurantName(name)
   ) {
     showDashboardNotice(
-      "Před zveřejněním zadej skutečný název restaurace místo výchozího názvu.",
+      dashboardText("Před zveřejněním zadej skutečný název restaurace místo výchozího názvu."),
       "error"
     );
     return;
@@ -1559,7 +1559,7 @@ async function saveRestaurantBranding() {
     !email
   ) {
     showDashboardNotice(
-      "Před zveřejněním doplň adresu, telefon nebo e-mail restaurace.",
+      dashboardText("Před zveřejněním doplň adresu, telefon nebo e-mail restaurace."),
       "error"
     );
     return;
@@ -1570,7 +1570,7 @@ async function saveRestaurantBranding() {
     !canPublishRestaurantFromDashboard()
   ) {
     showDashboardNotice(
-      "Před zveřejněním dokonči aktivní stůl, provozní dobu, pravidla rezervací a alespoň jedno jídlo.",
+      dashboardText("Před zveřejněním dokonči aktivní stůl, provozní dobu, pravidla rezervací a alespoň jedno jídlo."),
       "error"
     );
     return;
@@ -1588,7 +1588,7 @@ async function saveRestaurantBranding() {
       true;
 
     saveButton.textContent =
-      "Ukládám…";
+      dashboardText("Ukládám…");
   }
 
   try {
@@ -1664,8 +1664,8 @@ async function saveRestaurantBranding() {
       !rows[0] || Number(rows[0].id) !== Number(restaurantId)
     ) {
       throw new Error(response.status === 409
-        ? "Tento veřejný slug už používá jiná restaurace."
-        : "Restauraci se nepodařilo uložit.");
+        ? dashboardText("Tento veřejný slug už používá jiná restaurace.")
+        : dashboardText("Restauraci se nepodařilo uložit."));
     }
 
     currentRestaurantBranding =
@@ -1742,7 +1742,7 @@ async function saveRestaurantBranding() {
     renderSetupChecklist();
 
     showDashboardNotice(
-      "Údaje restaurace byly uloženy.",
+      dashboardText("Údaje restaurace byly uloženy."),
       "success"
     );
   } catch (error) {
@@ -1753,10 +1753,10 @@ async function saveRestaurantBranding() {
 
     showDashboardNotice(
       ["AbortError", "TimeoutError", "TypeError"].includes(error?.name)
-        ? "Uložení se nepodařilo potvrdit. Obnov stránku a zkontroluj údaje před dalším uložením."
+        ? dashboardText("Uložení se nepodařilo potvrdit. Obnov stránku a zkontroluj údaje před dalším uložením.")
         : String(
         error?.message ||
-        "Restauraci se nepodařilo uložit."
+        dashboardText("Restauraci se nepodařilo uložit.")
       ),
       "error"
     );
@@ -1768,7 +1768,7 @@ async function saveRestaurantBranding() {
         false;
 
       saveButton.textContent =
-        "Uložit restauraci";
+        dashboardText("Uložit restauraci");
     }
   }
 }
@@ -1831,7 +1831,7 @@ async function removeRestaurantLogo() {
       !rows[0] || Number(rows[0].id) !== Number(restaurantId)
     ) {
       throw new Error(
-        "Logo se nepodařilo odebrat."
+        dashboardText("Logo se nepodařilo odebrat.")
       );
     }
 
@@ -1852,7 +1852,7 @@ async function removeRestaurantLogo() {
     if (removeButton) removeButton.hidden = true;
 
     showDashboardNotice(
-      "Logo bylo odebráno.",
+      dashboardText("Logo bylo odebráno."),
       "success"
     );
   } catch (error) {
@@ -1863,10 +1863,10 @@ async function removeRestaurantLogo() {
 
     showDashboardNotice(
       ["AbortError", "TimeoutError", "TypeError"].includes(error?.name)
-        ? "Odebrání loga se nepodařilo potvrdit. Obnov stránku a zkontroluj logo před dalším pokusem."
+        ? dashboardText("Odebrání loga se nepodařilo potvrdit. Obnov stránku a zkontroluj logo před dalším pokusem.")
         : String(
         error?.message ||
-        "Logo se nepodařilo odebrat."
+        dashboardText("Logo se nepodařilo odebrat.")
       ),
       "error"
     );
@@ -1939,7 +1939,7 @@ function setupRestaurantBrandingInputs() {
             MAX_RESTAURANT_LOGO_BYTES
         ) {
           showDashboardNotice(
-            "Logo musí být JPG, PNG, WebP nebo AVIF a mít maximálně 5 MB.",
+            dashboardText("Logo musí být JPG, PNG, WebP nebo AVIF a mít maximálně 5 MB."),
             "error"
           );
 
@@ -2002,7 +2002,7 @@ function setSetupStepState(elementId, completed) {
 
   const action = element.querySelector(".setup-step-action:not(.setup-public-link)");
   if (action) {
-    action.textContent = completed ? "Hotovo" : "Nastavit →";
+    action.textContent = completed ? "Hotovo" : dashboardText("Nastavit →");
   }
 }
 
@@ -2098,7 +2098,7 @@ function renderSetupChecklist() {
     summary.textContent =
       dashboardLanguage() === "en"
         ? `${completed} of ${total} steps complete. Finish setup to prepare the restaurant for the pilot.`
-        : `Hotovo ${completed} z ${total} kroků. Dokonči základní nastavení a restaurace bude připravená pro pilot.`;
+        : dashboardMessage`Hotovo ${completed} z ${total} kroků. Dokonči základní nastavení a restaurace bude připravená pro pilot.`;
   }
 
   if (progressValue) {
@@ -2683,7 +2683,7 @@ function clearSession() {
   const foodSaveButton = document.getElementById("foodBtn");
   if (foodSaveButton) {
     foodSaveButton.disabled = false;
-    foodSaveButton.textContent = "Přidat jídlo";
+    foodSaveButton.textContent = dashboardText("Přidat jídlo");
   }
   const foodCancelButton = document.getElementById("cancelEditBtn");
   if (foodCancelButton) foodCancelButton.style.display = "none";
@@ -2694,7 +2694,7 @@ function clearSession() {
   const quickTableButton = document.querySelector("#quickTableModal .primary-button");
   if (quickTableButton) {
     quickTableButton.disabled = false;
-    quickTableButton.textContent = "Přidat stůl";
+    quickTableButton.textContent = dashboardText("Přidat stůl");
   }
   saveTableInProgress = false;
   editingTableId = null;
@@ -2709,7 +2709,7 @@ function clearSession() {
   const tableSaveButton = document.getElementById("tableBtn");
   if (tableSaveButton) {
     tableSaveButton.disabled = false;
-    tableSaveButton.textContent = "Přidat stůl";
+    tableSaveButton.textContent = dashboardText("Přidat stůl");
   }
   const tableCancelButton = document.getElementById("cancelTableEditBtn");
   if (tableCancelButton) tableCancelButton.style.display = "none";
@@ -2726,7 +2726,7 @@ function clearSession() {
   const inviteButton = document.getElementById("teamInviteButton");
   if (inviteButton) {
     inviteButton.disabled = false;
-    inviteButton.textContent = "Pozvat zaměstnance";
+    inviteButton.textContent = dashboardText("Pozvat zaměstnance");
   }
   reservationHistory = [];
   customerNoteDrafts.clear();
@@ -2752,7 +2752,7 @@ function clearSession() {
   if (logoInput) logoInput.value = "";
   setRestaurantBrandingBusy(false);
   const brandingSaveButton = document.getElementById("restaurantBrandSaveButton");
-  if (brandingSaveButton) brandingSaveButton.textContent = "Uložit restauraci";
+  if (brandingSaveButton) brandingSaveButton.textContent = dashboardText("Uložit restauraci");
   renderRestaurantBrandingForm({});
   document.title = "AI Restaurace PRO";
   const restaurantLabel = document.getElementById("currentRestaurantNameLabel");
@@ -2963,7 +2963,7 @@ async function refreshCurrentUserContext(options = {}) {
         return;
       }
       if (restaurantContextReadFailed) {
-        throw new Error("Oprávnění se teď nepodařilo ověřit.");
+        throw new Error(dashboardText("Oprávnění se teď nepodařilo ověřit."));
       }
       clearSession();
       location.reload();
@@ -2976,7 +2976,7 @@ async function refreshCurrentUserContext(options = {}) {
       currentUserId = null;
       currentUserRole = null;
       showLogin();
-      document.getElementById("error").textContent = "Přístup k restauraci se změnil. Načítám nový přehled…";
+      document.getElementById("error").textContent = dashboardText("Přístup k restauraci se změnil. Načítám nový přehled…");
       location.reload();
       return;
     }
@@ -2992,7 +2992,7 @@ async function refreshCurrentUserContext(options = {}) {
     if (previousRole && (previousRole !== currentUserRole || previousRestaurantId !== currentRestaurantId)) {
       history.replaceState(null, "", "#prehled");
       await loadDashboardData();
-      showDashboardNotice(`Přístup byl aktualizován: ${roleLabel(currentUserRole)}.`, "success");
+      showDashboardNotice(dashboardMessage`Přístup byl aktualizován: ${roleLabel(currentUserRole)}.`, "success");
     }
   } catch (error) {
     console.error("Aktualizace role se nepodařila:", error);
@@ -3073,7 +3073,7 @@ async function refreshSession() {
     } catch {
       if (!contextIsCurrent()) return false;
       if (getRefreshToken() !== refreshToken) return !!getAccessToken();
-      throw new Error("Přihlášení se teď nepodařilo ověřit. Zkontrolujte připojení a zkuste to za chvíli.");
+      throw new Error(dashboardText("Přihlášení se teď nepodařilo ověřit. Zkontrolujte připojení a zkuste to za chvíli."));
     }
   })();
   sessionRefreshInFlight = flight;
@@ -3100,7 +3100,7 @@ async function ensureValidSession() {
   if (!refreshed) {
     clearSession();
     showLogin();
-    document.getElementById("error").textContent = "Platnost přihlášení vypršela. Přihlaste se znovu.";
+    document.getElementById("error").textContent = dashboardText("Platnost přihlášení vypršela. Přihlaste se znovu.");
   }
 
   return refreshed;
@@ -3111,14 +3111,14 @@ async function authorizedFetch(url, options = {}) {
   const requestUserId = parseJwt(getAccessToken())?.sub;
   const sameAccount = () => sessionVersion === dashboardSessionVersion && !!requestUserId &&
     parseJwt(getAccessToken())?.sub === requestUserId;
-  const accountChangedError = () => new Error("Účet se během požadavku změnil. Obnovte stránku.");
+  const accountChangedError = () => new Error(dashboardText("Účet se během požadavku změnil. Obnovte stránku."));
 
   if (!(await ensureValidSession())) {
     if (sessionVersion === dashboardSessionVersion && (sameAccount() || !getAccessToken())) {
       clearSession();
       location.reload();
     }
-    throw new Error("Přihlášení vypršelo.");
+    throw new Error(dashboardText("Přihlášení vypršelo."));
   }
   if (!sameAccount()) throw accountChangedError();
 
@@ -3351,7 +3351,7 @@ async function fetchReservationsSnapshot() {
   const userId = currentUserId;
   const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && userId === currentUserId && Number(currentRestaurantId) === restaurantId;
   if (!Number.isInteger(restaurantId) || restaurantId < 1) {
-    throw new Error("Restaurace není vybraná.");
+    throw new Error(dashboardText("Restaurace není vybraná."));
   }
 
   const pageSize = 500;
@@ -3369,20 +3369,20 @@ async function fetchReservationsSnapshot() {
     );
 
     if (!response.ok) {
-      throw new Error("Rezervace se nepodařilo kompletně načíst.");
+      throw new Error(dashboardText("Rezervace se nepodařilo kompletně načíst."));
     }
 
     const rows = await response.json();
-    if (!contextIsCurrent()) throw new Error("Session se během načítání změnila.");
+    if (!contextIsCurrent()) throw new Error(dashboardText("Session se během načítání změnila."));
     if (!Array.isArray(rows) || rows.length > pageSize) {
-      throw new Error("Neplatná odpověď při načítání rezervací.");
+      throw new Error(dashboardText("Neplatná odpověď při načítání rezervací."));
     }
 
     if (rows.length) {
       const lastId = Number(rows[rows.length - 1]?.id);
       if (!Number.isSafeInteger(lastId) || lastId < 1 ||
           (beforeId !== null && lastId >= beforeId)) {
-        throw new Error("Neplatné stránkování rezervací.");
+        throw new Error(dashboardText("Neplatné stránkování rezervací."));
       }
       beforeId = lastId;
       snapshot.push(...rows);
@@ -3390,14 +3390,14 @@ async function fetchReservationsSnapshot() {
 
     if (rows.length < pageSize) {
       if (Number(currentRestaurantId) !== restaurantId) {
-        throw new Error("Během načítání byla změněna restaurace.");
+        throw new Error(dashboardText("Během načítání byla změněna restaurace."));
       }
       reservations = snapshot;
       return snapshot;
     }
   }
 
-  throw new Error("Historie rezervací je pro tento přehled příliš rozsáhlá.");
+  throw new Error(dashboardText("Historie rezervací je pro tento přehled příliš rozsáhlá."));
 }
 
 async function loadPendingStatusEmails() {
@@ -3414,11 +3414,11 @@ async function loadPendingStatusEmails() {
       restaurant_id: restaurantId
     })
   });
-  if (!response.ok) throw new Error("Stav e-mailů se nepodařilo načíst.");
+  if (!response.ok) throw new Error(dashboardText("Stav e-mailů se nepodařilo načíst."));
   const data = await response.json();
   if (!contextIsCurrent() ||
       !Array.isArray(data?.pending)) {
-    throw new Error("Neplatný stav e-mailů restaurace.");
+    throw new Error(dashboardText("Neplatný stav e-mailů restaurace."));
   }
   const pendingByReservation = new Map();
   for (const item of data.pending) {
@@ -3454,7 +3454,7 @@ async function loadReservations() {
       if (!contextIsCurrent()) return false;
       pendingStatusEmails = new Map();
       console.error(emailStateError);
-      showDashboardNotice("Stav odeslání e-mailů se nepodařilo načíst. Před mazáním rezervace jej ověřte.", "error");
+      showDashboardNotice(dashboardText("Stav odeslání e-mailů se nepodařilo načíst. Před mazáním rezervace jej ověřte."), "error");
     }
 
     if (!contextIsCurrent()) return false;
@@ -3477,7 +3477,7 @@ async function loadReservations() {
     );
 
     if (table) {
-      table.innerHTML = `
+      table.innerHTML = dashboardMessage`
         <tr>
           <td colspan="10">
             Nepodařilo se načíst rezervace.
@@ -3551,7 +3551,7 @@ function refreshReservationNotifications() {
   if (overview) overview.classList.toggle("has-unread", count > 0);
 
   if (!count) {
-    list.innerHTML = `
+    list.innerHTML = dashboardMessage`
       <div class="reservation-notification-empty">
         <span>✓</span>
         <div>
@@ -3559,13 +3559,13 @@ function refreshReservationNotifications() {
           <small>Nové rezervace se objeví automaticky.</small>
         </div>
       </div>`;
-    if (title) title.textContent = "Žádná nepřečtená upozornění";
-    if (text) text.textContent = "Jakmile přijde nová rezervace, objeví se tady i ve zvonku nahoře.";
+    if (title) title.textContent = dashboardText("Žádná nepřečtená upozornění");
+    if (text) text.textContent = dashboardText("Jakmile přijde nová rezervace, objeví se tady i ve zvonku nahoře.");
     return;
   }
 
   list.innerHTML = unread.map(reservation => {
-    const fullName = getReservationGuestName(reservation) === "-" ? "Nový host" : getReservationGuestName(reservation);
+    const fullName = getReservationGuestName(reservation) === "-" ? dashboardText("Nový host") : getReservationGuestName(reservation);
     const tableLabel = getReservationTableLabel(reservation);
     const people = Number(reservation.people || 0);
     return `
@@ -3574,7 +3574,7 @@ function refreshReservationNotifications() {
         <span class="reservation-notification-copy">
           <strong>${escapeHtml(fullName)}</strong>
           <small>${escapeHtml(formatDate(reservation.date))} · ${escapeHtml(String(reservation.time || "").slice(0,5))} · ${formatCzechCount(people, "osoba", "osoby", "osob")}</small>
-          <em>${escapeHtml(tableLabel || "Bez stolu")}</em>
+          <em>${escapeHtml(tableLabel || dashboardText("Bez stolu"))}</em>
         </span>
       </button>`;
   }).join("");
@@ -3582,9 +3582,9 @@ function refreshReservationNotifications() {
   if (title) title.textContent = formatCzechCount(count, "nepřečtené upozornění", "nepřečtená upozornění", "nepřečtených upozornění");
   if (text) {
     const newest = unread[0];
-    const guest = getReservationGuestName(newest) === "-" ? "Nový host" : getReservationGuestName(newest);
+    const guest = getReservationGuestName(newest) === "-" ? dashboardText("Nový host") : getReservationGuestName(newest);
     text.textContent = `${guest} · ${String(newest.time || "").slice(0,5)} · ${getReservationTableLabel(newest)}` +
-      (count > unread.length ? ` · Ve zvonku je zobrazeno ${unread.length} nejnovějších.` : "");
+      (count > unread.length ? dashboardMessage` · Ve zvonku je zobrazeno ${unread.length} nejnovějších.` : "");
   }
 }
 
@@ -3660,28 +3660,28 @@ function getReservationTableLabel(reservation) {
         .filter(Boolean);
 
       if (memberNames.length) return memberNames.join(" + ");
-      return `Spojené stoly #${reservation.table_group_id}`;
+      return dashboardMessage`Spojené stoly #${reservation.table_group_id}`;
     }
 
-    return `Spojené stoly #${reservation.table_group_id}`;
+    return dashboardMessage`Spojené stoly #${reservation.table_group_id}`;
   }
 
-  if (!reservation?.table_id) return "Bez stolu";
+  if (!reservation?.table_id) return dashboardText("Bez stolu");
 
   const table = restaurantTables.find(
     item => Number(item.id) === Number(reservation.table_id)
   );
 
-  return table?.name || `Stůl ${reservation.table_id}`;
+  return table?.name || dashboardMessage`Stůl ${reservation.table_id}`;
 }
 
 function formatUpcomingTime(minutes) {
-  if (minutes <= 0) return "Právě teď";
-  if (minutes < 60) return `Za ${minutes} min`;
+  if (minutes <= 0) return dashboardText("Právě teď");
+  if (minutes < 60) return dashboardMessage`Za ${minutes} min`;
 
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  return rest ? `Za ${hours} h ${rest} min` : `Za ${hours} h`;
+  return rest ? dashboardMessage`Za ${hours} h ${rest} min` : dashboardMessage`Za ${hours} h`;
 }
 
 function getUpcomingReservations(now = new Date()) {
@@ -3711,7 +3711,7 @@ function renderUpcomingReservations() {
   const upcoming = getUpcomingReservations();
 
   if (!upcoming.length) {
-    list.innerHTML = `
+    list.innerHTML = dashboardMessage`
       <div class="upcoming-empty-state">
         <span>✓</span>
         <div>
@@ -3739,10 +3739,10 @@ function renderUpcomingReservations() {
           <small>${escapeHtml(formatUpcomingTime(minutesUntil))}</small>
         </span>
         <span class="upcoming-main-info">
-          <strong>${escapeHtml(getReservationGuestName(reservation) === "-" ? "Bez jména" : getReservationGuestName(reservation))}</strong>
-          <small>${people} ${people === 1 ? "osoba" : people >= 2 && people <= 4 ? "osoby" : "osob"} · ${escapeHtml(getReservationTableLabel(reservation))}</small>
+          <strong>${escapeHtml(getReservationGuestName(reservation) === "-" ? dashboardText("Bez jména") : getReservationGuestName(reservation))}</strong>
+          <small>${people} ${people === 1 ? "osoba" : people >= 2 && people <= 4 ? "osoby" : dashboardText("osob")} · ${escapeHtml(getReservationTableLabel(reservation))}</small>
         </span>
-        <span class="upcoming-status">${isImminent ? "Brzy přijde" : escapeHtml(getCalendarStatusLabel(reservation.status))}</span>
+        <span class="upcoming-status">${isImminent ? dashboardText("Brzy přijde") : escapeHtml(getCalendarStatusLabel(reservation.status))}</span>
       </button>
     `;
   }).join("");
@@ -3756,7 +3756,7 @@ function renderUpcomingReservations() {
     shownUpcomingReservationAlerts.add(alertKey);
     const tableLabel = getReservationTableLabel(reservation);
     showDashboardNotice(
-      `${formatUpcomingTime(minutesUntil)} přijde ${getReservationGuestName(reservation) === "-" ? "rezervace" : getReservationGuestName(reservation)} – ${reservation.people || 0} osob, ${tableLabel}.`,
+      dashboardMessage`${formatUpcomingTime(minutesUntil)} přijde ${getReservationGuestName(reservation) === "-" ? "rezervace" : getReservationGuestName(reservation)} – ${reservation.people || 0} osob, ${tableLabel}.`,
       "info"
     );
   });
@@ -3814,8 +3814,8 @@ function renderReservations(data) {
     const emptyMessage =
       reservations.length &&
       hasActiveFilter
-        ? "Žádné rezervace neodpovídají aktuálnímu filtru."
-        : "Zatím tu nejsou žádné rezervace. Jakmile host odešle veřejný formulář, objeví se tady.";
+        ? dashboardText("Žádné rezervace neodpovídají aktuálnímu filtru.")
+        : dashboardText("Zatím tu nejsou žádné rezervace. Jakmile host odešle veřejný formulář, objeví se tady.");
 
     table.innerHTML = `
       <tr>
@@ -3854,7 +3854,7 @@ function renderReservations(data) {
         Number.isFinite(pendingAge) && pendingAge >= -60000 && pendingAge < 23 * 60 * 60 * 1000;
 
 
-      return `
+      return dashboardMessage`
         <tr>
 
           <td data-label="Jméno">
@@ -3935,15 +3935,13 @@ function renderReservations(data) {
                 currentStatus
               )}"
             >
-              ${escapeHtml(
-                currentStatus
-              )}
+              ${escapeHtml(getCalendarStatusLabel(currentStatus))}
             </span>
           </td>
 
           <td data-label="Akce">
             <div class="tableActions">
-              ${canRetryEmail ? `<button type="button" title="Stavový e-mail čeká na odeslání" onclick="retryStatusEmail(${currentReservationId}, ${Number(pendingEmail.status_revision)})">📧 Odeslat e-mail</button>` : emailPending ? `<span title="E-mail nebyl potvrzen jako odeslaný">E-mail neodeslán – kontaktujte hosta</span>` : ""}
+              ${canRetryEmail ? dashboardMessage`<button type="button" title="Stavový e-mail čeká na odeslání" onclick="retryStatusEmail(${currentReservationId}, ${Number(pendingEmail.status_revision)})">📧 Odeslat e-mail</button>` : emailPending ? dashboardMessage`<span title="E-mail nebyl potvrzen jako odeslaný">E-mail neodeslán – kontaktujte hosta</span>` : ""}
 
   <button
     type="button"
@@ -3965,8 +3963,8 @@ function renderReservations(data) {
                 type="button"
                 title="${
                   currentStatus === "Potvrzeno"
-                    ? "Rezervace už je potvrzená"
-                    : "Potvrdit rezervaci"
+                    ? dashboardText("Rezervace už je potvrzená")
+                    : dashboardText("Potvrdit rezervaci")
                 }"
                 data-reservation-status-id="${
                   currentReservationId
@@ -3988,8 +3986,8 @@ function renderReservations(data) {
                 type="button"
                 title="${
                   currentStatus === "Zrušeno"
-                    ? "Rezervace už je zrušená"
-                    : "Zrušit rezervaci"
+                    ? dashboardText("Rezervace už je zrušená")
+                    : dashboardText("Zrušit rezervaci")
                 }"
                 data-reservation-status-id="${
                   currentReservationId
@@ -4007,7 +4005,7 @@ function renderReservations(data) {
                 )"
               >Zrušit</button>
 
-              ${currentUserRole === "owner" ? `<button
+              ${currentUserRole === "owner" ? dashboardMessage`<button
                 class="deleteBtn"
                 type="button"
                 title="Smazat rezervaci"
@@ -4073,7 +4071,7 @@ async function updateReservationStatusRequest(id, status) {
     if (!response.ok) {
       const requestError = new Error(
         data?.error ||
-        "Stav rezervace se nepodařilo změnit."
+        dashboardText("Stav rezervace se nepodařilo změnit.")
       );
       requestError.status = response.status;
       throw requestError;
@@ -4083,7 +4081,7 @@ async function updateReservationStatusRequest(id, status) {
         Number(data.reservation_id) !== Number(id) || data.status !== status ||
         typeof data.email_sent !== "boolean") {
       throw new Error(
-        "Server nepotvrdil změnu stavu. Obnov přehled a zkontroluj aktuální stav rezervace."
+        dashboardText("Server nepotvrdil změnu stavu. Obnov přehled a zkontroluj aktuální stav rezervace.")
       );
     }
 
@@ -4094,7 +4092,7 @@ async function updateReservationStatusRequest(id, status) {
       "AbortError"
     ) {
       throw new Error(
-        "Změna stavu trvala příliš dlouho. Obnov stránku a zkontroluj výsledek."
+        dashboardText("Změna stavu trvala příliš dlouho. Obnov stránku a zkontroluj výsledek.")
       );
     }
 
@@ -4120,7 +4118,7 @@ async function retryStatusEmail(reservationId, statusRevision) {
   if (!userId || !["owner", "manager", "staff"].includes(role) || !Number.isSafeInteger(restaurantId) || restaurantId < 1) return false;
   if (!Number.isSafeInteger(id) || id < 1 ||
       !Number.isSafeInteger(revision) || revision < 1) {
-    showDashboardNotice("Neplatná rezervace nebo verze e-mailu.", "error");
+    showDashboardNotice(dashboardText("Neplatná rezervace nebo verze e-mailu."), "error");
     return;
   }
   const retryKey = sessionVersion + ":" + restaurantId + ":" + id + ":" + revision;
@@ -4139,13 +4137,13 @@ async function retryStatusEmail(reservationId, statusRevision) {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.success !== true || data.email_sent !== true) {
-      throw new Error(data.error || "Odeslání e-mailu nebylo potvrzeno. Kontaktujte hosta ručně.");
+      throw new Error(data.error || dashboardText("Odeslání e-mailu nebylo potvrzeno. Kontaktujte hosta ručně."));
     }
     if (!contextIsCurrent()) return;
     const pendingRevision = Number(pendingStatusEmails.get(id)?.status_revision);
     if (pendingRevision > revision) {
       showDashboardNotice(
-        "E-mail k původní změně byl odeslán. E-mail k novější změně stále čeká na odeslání.",
+        dashboardText("E-mail k původní změně byl odeslán. E-mail k novější změně stále čeká na odeslání."),
         "info"
       );
       return;
@@ -4154,15 +4152,15 @@ async function retryStatusEmail(reservationId, statusRevision) {
     renderReservations(reservations);
     showDashboardNotice(
       data.already_sent
-        ? "E-mail už byl odeslán. Další zpráva nevznikla."
-        : "E-mail byl odeslán hostovi.",
+        ? dashboardText("E-mail už byl odeslán. Další zpráva nevznikla.")
+        : dashboardText("E-mail byl odeslán hostovi."),
       "success"
     );
   } catch (error) {
     console.error("Opakování stavového e-mailu selhalo:", error);
     if (contextIsCurrent()) {
       showDashboardNotice(
-        error?.message || "E-mail se nepodařilo odeslat. Kontaktujte hosta ručně.",
+        error?.message || dashboardText("E-mail se nepodařilo odeslat. Kontaktujte hosta ručně."),
         "error"
       );
     }
@@ -4197,7 +4195,7 @@ async function updateStatus(id, status) {
     ].includes(nextStatus)
   ) {
     showDashboardNotice(
-      "Neplatná změna stavu rezervace.",
+      dashboardText("Neplatná změna stavu rezervace."),
       "error"
     );
 
@@ -4230,8 +4228,8 @@ async function updateStatus(id, status) {
   ) {
     showDashboardNotice(
       nextStatus === "Potvrzeno"
-        ? "Rezervace už je potvrzená."
-        : "Rezervace už je zrušená.",
+        ? dashboardText("Rezervace už je potvrzená.")
+        : dashboardText("Rezervace už je zrušená."),
       "info"
     );
 
@@ -4283,8 +4281,8 @@ async function updateStatus(id, status) {
 
   showDashboardNotice(
     nextStatus === "Potvrzeno"
-      ? "Potvrzuji rezervaci…"
-      : "Ruším rezervaci…",
+      ? dashboardText("Potvrzuji rezervaci…")
+      : dashboardText("Ruším rezervaci…"),
     "info"
   );
 
@@ -4308,8 +4306,8 @@ async function updateStatus(id, status) {
 
       showDashboardNotice(
         nextStatus === "Potvrzeno"
-          ? "Rezervace už byla potvrzena."
-          : "Rezervace už byla zrušena.",
+          ? dashboardText("Rezervace už byla potvrzena.")
+          : dashboardText("Rezervace už byla zrušena."),
         "info"
       );
 
@@ -4327,8 +4325,8 @@ async function updateStatus(id, status) {
     ) {
       showDashboardNotice(
         nextStatus === "Potvrzeno"
-          ? "Rezervace byla potvrzena a zákazníkovi byl odeslán e-mail."
-          : "Rezervace byla zrušena a zákazníkovi byl odeslán e-mail.",
+          ? dashboardText("Rezervace byla potvrzena a zákazníkovi byl odeslán e-mail.")
+          : dashboardText("Rezervace byla zrušena a zákazníkovi byl odeslán e-mail."),
         "success"
       );
     } else if (
@@ -4336,16 +4334,16 @@ async function updateStatus(id, status) {
     ) {
       const revision = Number(result.status_revision);
       showDashboardNotice(
-        `Stav rezervace byl změněn, ale e-mail se nepodařilo odeslat. Kontaktujte hosta ručně podle údajů rezervace. ${result.email_error}`,
+        dashboardMessage`Stav rezervace byl změněn, ale e-mail se nepodařilo odeslat. Kontaktujte hosta ručně podle údajů rezervace. ${result.email_error}`,
         "error",
         result.has_email === true &&
         Number.isSafeInteger(revision) && revision > 0
-          ? { label: "Zkusit e-mail znovu", onClick: () => retryStatusEmail(reservationId, revision) }
+          ? { label: dashboardText("Zkusit e-mail znovu"), onClick: () => retryStatusEmail(reservationId, revision) }
           : null
       );
     } else {
       showDashboardNotice(
-        "Stav rezervace byl změněn.",
+        dashboardText("Stav rezervace byl změněn."),
         "success"
       );
     }
@@ -4394,7 +4392,7 @@ async function updateStatus(id, status) {
 
     showDashboardNotice(
       error?.message ||
-      "Nepodařilo se změnit stav rezervace.",
+      dashboardText("Nepodařilo se změnit stav rezervace."),
       "error"
     );
 
@@ -4427,13 +4425,13 @@ async function deleteReservation(id) {
   const deleteKey = `${sessionVersion}:${restaurantId}:${reservationId}`;
   if (reservationDeletesInFlight.has(deleteKey)) return false;
   if (currentUserRole !== "owner") {
-    showDashboardNotice("Rezervaci může smazat jen vlastník restaurace.");
+    showDashboardNotice(dashboardText("Rezervaci může smazat jen vlastník restaurace."));
     return;
   }
 
   const reservation = reservations.find(item => Number(item.id) === Number(id));
   if (!reservation) {
-    showDashboardNotice("Rezervace už není v přehledu. Obnovte jej před mazáním.");
+    showDashboardNotice(dashboardText("Rezervace už není v přehledu. Obnovte jej před mazáním."));
     return false;
   }
   const todayInPrague = new Date().toLocaleDateString("sv-SE", {
@@ -4442,11 +4440,11 @@ async function deleteReservation(id) {
 
   if (reservation && reservation.status !== "Zrušeno" &&
       reservation.date >= todayInPrague) {
-    showDashboardNotice("Budoucí rezervaci nejdřív zrušte a ověřte odeslání zprávy hostovi.");
+    showDashboardNotice(dashboardText("Budoucí rezervaci nejdřív zrušte a ověřte odeslání zprávy hostovi."));
     return;
   }
 
-  if (!confirm("Opravdu smazat rezervaci?")) {
+  if (!confirm(dashboardText("Opravdu smazat rezervaci?"))) {
     return;
   }
 
@@ -4468,7 +4466,7 @@ async function deleteReservation(id) {
     if (!Array.isArray(deleted) || deleted.length !== 1 ||
         Number(deleted[0]?.id) !== reservationId ||
         Number(deleted[0]?.restaurant_id) !== restaurantId) {
-      throw new Error("Rezervace nebyla smazána.");
+      throw new Error(dashboardText("Rezervace nebyla smazána."));
     }
 
     if (!contextIsCurrent()) return false;
@@ -4483,10 +4481,10 @@ async function deleteReservation(id) {
     const deleteError = String(error?.message || "");
     showDashboardNotice(
       deleteError.includes("PENDING_CANCELLATION_EMAIL")
-        ? "Zrušení je uložené, ale e-mail hostovi není potvrzený. Zkuste jej odeslat znovu; pokud to nejde, kontaktujte hosta ručně a rezervaci ponechte v historii."
+        ? dashboardText("Zrušení je uložené, ale e-mail hostovi není potvrzený. Zkuste jej odeslat znovu; pokud to nejde, kontaktujte hosta ručně a rezervaci ponechte v historii.")
         : deleteError.includes("ACTIVE_FUTURE_RESERVATION_DELETE")
-          ? "Budoucí rezervaci nejdřív zrušte a ověřte odeslání zprávy hostovi."
-          : "Nepodařilo se smazat rezervaci."
+          ? dashboardText("Budoucí rezervaci nejdřív zrušte a ověřte odeslání zprávy hostovi.")
+          : dashboardText("Nepodařilo se smazat rezervaci.")
     );
     return false;
   } finally {
@@ -4502,25 +4500,25 @@ let historyLoadVersion = 0;
 let historyLoadingMore = false;
 
 function historyActionLabel(action) {
-  if (action === "created") return "Vytvořeno";
-  if (action === "deleted") return "Smazáno";
-  return "Upraveno";
+  if (action === "created") return dashboardText("Vytvořeno");
+  if (action === "deleted") return dashboardText("Smazáno");
+  return dashboardText("Upraveno");
 }
 
 function historyFieldLabel(field) {
   const labels = {
-    name: "Jméno",
-    last_name: "Příjmení",
-    people: "Počet osob",
-    date: "Datum",
-    time: "Čas",
-    duration_minutes: "Délka",
-    table_id: "Stůl",
-    table_group_id: "Skupina stolů",
-    status: "Stav",
-    phone: "Telefon",
-    email: "E-mail",
-    note: "Poznámka"
+    name: dashboardText("Jméno"),
+    last_name: dashboardText("Příjmení"),
+    people: dashboardText("Počet osob"),
+    date: dashboardText("Datum"),
+    time: dashboardText("Čas"),
+    duration_minutes: dashboardText("Délka"),
+    table_id: dashboardText("Stůl"),
+    table_group_id: dashboardText("Skupina stolů"),
+    status: dashboardText("Stav"),
+    phone: dashboardText("Telefon"),
+    email: dashboardText("E-mail"),
+    note: dashboardText("Poznámka")
   };
   return labels[field] || field;
 }
@@ -4529,16 +4527,17 @@ function formatHistoryValue(field, value) {
   if (value === null || value === undefined || value === "") return "—";
   if (field === "date") return formatDate(value);
   if (field === "time") return String(value).slice(0, 5);
+  if (field === "status") return getCalendarStatusLabel(value);
   if (field === "duration_minutes") return `${value} min`;
   if (field === "table_id") {
     return value
-      ? (getTableName(value) || `Stůl ${value}`)
-      : "Bez stolu";
+      ? (getTableName(value) || dashboardMessage`Stůl ${value}`)
+      : dashboardText("Bez stolu");
   }
 
   if (field === "table_group_id") {
     if (!value) {
-      return "Bez skupiny";
+      return dashboardText("Bez skupiny");
     }
 
     const group =
@@ -4550,7 +4549,7 @@ function formatHistoryValue(field, value) {
 
     return (
       group?.name ||
-      `Spojené stoly #${value}`
+      dashboardMessage`Spojené stoly #${value}`
     );
   }
 
@@ -4558,8 +4557,8 @@ function formatHistoryValue(field, value) {
 }
 
 function getHistoryChanges(entry) {
-  if (entry.action === "created") return ["Rezervace byla vytvořena."];
-  if (entry.action === "deleted") return ["Rezervace byla smazána."];
+  if (entry.action === "created") return [dashboardText("Rezervace byla vytvořena.")];
+  if (entry.action === "deleted") return [dashboardText("Rezervace byla smazána.")];
 
   const before = entry.before_data || {};
   const after = entry.after_data || {};
@@ -4581,13 +4580,13 @@ function renderReservationHistory() {
   if (moreButton) {
     moreButton.hidden = !historyHasMore;
     moreButton.disabled = historyLoadingMore;
-    moreButton.textContent = historyLoadingMore ? "Načítám…" : "Načíst starší změny";
+    moreButton.textContent = historyLoadingMore ? dashboardText("Načítám…") : dashboardText("Načíst starší změny");
   }
 
   if (!data.length) {
     list.innerHTML = `<div class="history-empty">${historyHasMore
-      ? "V načtené části nejsou položky tohoto typu. Načti starší změny."
-      : filter ? "Pro zvolený filtr nejsou záznamy." : "Zatím tu není žádná historie."}</div>`;
+      ? dashboardText("V načtené části nejsou položky tohoto typu. Načti starší změny.")
+      : filter ? dashboardText("Pro zvolený filtr nejsou záznamy.") : dashboardText("Zatím tu není žádná historie.")}</div>`;
     return;
   }
 
@@ -4609,11 +4608,11 @@ function renderReservationHistory() {
             )
           : ""
       ) ||
-      "Rezervace";
-    const actor = entry.actor_email || (entry.action === "created" ? "Veřejný formulář / systém" : "Systém");
+      dashboardText("Rezervace");
+    const actor = entry.actor_email || (entry.action === "created" ? dashboardText("Veřejný formulář / systém") : dashboardText("Systém"));
     const when = entry.created_at ? new Date(entry.created_at).toLocaleString(dashboardLocale(), { timeZone: "Europe/Prague", dateStyle: "short", timeStyle: "short" }) : "—";
 
-    return `
+    return dashboardMessage`
       <article class="history-card history-${escapeHtml(entry.action || "updated")}">
         <div class="history-card-top">
           <div>
@@ -4623,7 +4622,7 @@ function renderReservationHistory() {
           <time>${escapeHtml(when)}</time>
         </div>
         <div class="history-changes">
-          ${(changes.length ? changes : ["Rezervace byla upravena."]).map(change => `<div>${escapeHtml(change)}</div>`).join("")}
+          ${(changes.length ? changes : [dashboardText("Rezervace byla upravena.")]).map(change => `<div>${escapeHtml(change)}</div>`).join("")}
         </div>
         <div class="history-meta">Provedl: ${escapeHtml(actor)}</div>
       </article>
@@ -4643,9 +4642,9 @@ async function loadReservationHistory() {
       `${SUPABASE_URL}/rest/v1/reservation_history?restaurant_id=eq.${restaurantId}&select=*&order=id.desc&limit=100`,
       { headers: getHeaders() }
     );
-    if (!response.ok) throw new Error("Historii rezervací se nepodařilo načíst.");
+    if (!response.ok) throw new Error(dashboardText("Historii rezervací se nepodařilo načíst."));
     const rows = await response.json();
-    if (!Array.isArray(rows)) throw new Error("Neplatná odpověď historie.");
+    if (!Array.isArray(rows)) throw new Error(dashboardText("Neplatná odpověď historie."));
     if (version !== historyLoadVersion || restaurantId !== Number(currentRestaurantId)) return;
 
     reservationHistory = rows;
@@ -4659,7 +4658,7 @@ async function loadReservationHistory() {
     historyOldestId = null;
     const moreButton = document.getElementById("loadMoreReservationHistoryButton");
     if (moreButton) moreButton.hidden = true;
-    if (list) list.innerHTML = `<div class="history-empty">Historii rezervací se teď nepodařilo načíst. Zkus stránku obnovit.</div>`;
+    if (list) list.innerHTML = dashboardMessage`<div class="history-empty">Historii rezervací se teď nepodařilo načíst. Zkus stránku obnovit.</div>`;
   }
 }
 
@@ -4676,10 +4675,10 @@ async function loadMoreReservationHistory() {
       `${SUPABASE_URL}/rest/v1/reservation_history?restaurant_id=eq.${restaurantId}&id=lt.${beforeId}&select=*&order=id.desc&limit=100`,
       { headers: getHeaders() }
     );
-    if (!response.ok) throw new Error("Starší historii se nepodařilo načíst.");
+    if (!response.ok) throw new Error(dashboardText("Starší historii se nepodařilo načíst."));
     const rows = await response.json();
     if (!Array.isArray(rows) || rows.some(row => Number(row.id) >= beforeId)) {
-      throw new Error("Neplatná odpověď historie.");
+      throw new Error(dashboardText("Neplatná odpověď historie."));
     }
     if (version !== historyLoadVersion || restaurantId !== Number(currentRestaurantId)) return;
 
@@ -4689,7 +4688,7 @@ async function loadMoreReservationHistory() {
   } catch (error) {
     if (version === historyLoadVersion) {
       console.error("Starší historii se nepodařilo načíst:", error);
-      showDashboardNotice("Starší historii se nepodařilo načíst. Zkus to znovu.", "error");
+      showDashboardNotice(dashboardText("Starší historii se nepodařilo načíst. Zkus to znovu."), "error");
     }
   } finally {
     if (version === historyLoadVersion) {
@@ -4833,7 +4832,7 @@ function renderCustomerSummary(customers) {
   if (!summary) return;
   const regulars = customers.filter(c => c.isRegular).length;
   const returning = customers.filter(c => c.reservationCount >= 2).length;
-  summary.innerHTML = `
+  summary.innerHTML = dashboardMessage`
     <div><strong>${customers.length}</strong><span>Zákazníků</span></div>
     <div><strong>${returning}</strong><span>Vracejících se</span></div>
     <div><strong>${regulars}</strong><span>Stálých hostů</span></div>
@@ -4879,8 +4878,8 @@ function renderCustomers() {
     list.innerHTML =
       allCustomers.length &&
       hasCustomerFilter
-        ? `<div class="history-empty">Žádní zákazníci neodpovídají filtru.</div>`
-        : `<div class="history-empty">Zákazníci se vytvoří automaticky z prvních rezervací.</div>`;
+        ? dashboardMessage`<div class="history-empty">Žádní zákazníci neodpovídají filtru.</div>`
+        : dashboardMessage`<div class="history-empty">Zákazníci se vytvoří automaticky z prvních rezervací.</div>`;
 
     return;
   }
@@ -4889,17 +4888,17 @@ function renderCustomers() {
     const last = customer.lastReservation;
     const lastText = last ? `${formatDate(last.date)} ${String(last.time || "").slice(0,5)}` : "—";
     const autoHint = !customer.isRegular && customer.reservationCount >= 3
-      ? `<span class="customer-hint">Častý host · vhodný k označení ⭐</span>` : "";
-    const history = customer.reservations.map(r => `
+      ? dashboardMessage`<span class="customer-hint">Častý host · vhodný k označení ⭐</span>` : "";
+    const history = customer.reservations.map(r => dashboardMessage`
       <div class="customer-reservation-row">
         <span>${escapeHtml(formatDate(r.date))} ${escapeHtml(String(r.time || "").slice(0,5))}</span>
         <span>${escapeHtml(String(r.people || 0))} osob</span>
         <span>${escapeHtml(getReservationTableLabel(r))}</span>
-        <span class="status ${escapeHtml(r.status || "Čeká")}">${escapeHtml(r.status || "Čeká")}</span>
+        <span class="status ${escapeHtml(r.status || "Čeká")}">${escapeHtml(getCalendarStatusLabel(r.status))}</span>
       </div>
     `).join("");
 
-    return `
+    return dashboardMessage`
       <article class="customer-card ${customer.isRegular ? "is-regular" : ""}">
         <div class="customer-card-head">
           <div>
@@ -4908,8 +4907,8 @@ function renderCustomers() {
               ${autoHint}
             </div>
             <div class="customer-contact">
-              <span>📞 ${escapeHtml(customer.phone || "Bez telefonu")}</span>
-              <span>✉️ ${escapeHtml(customer.email || "Bez e-mailu")}</span>
+              <span>📞 ${escapeHtml(customer.phone || dashboardText("Bez telefonu"))}</span>
+              <span>✉️ ${escapeHtml(customer.email || dashboardText("Bez e-mailu"))}</span>
             </div>
           </div>
           <label class="regular-toggle">
@@ -4968,22 +4967,22 @@ function renderCustomers() {
 
 
 async function refreshCustomers(button) {
-  const originalText = button?.textContent || "↻ Obnovit";
+  const originalText = button?.textContent || dashboardText("↻ Obnovit");
   if (button) {
     button.disabled = true;
-    button.textContent = "Obnovuji…";
+    button.textContent = dashboardText("Obnovuji…");
   }
 
   try {
     // Znovu načteme rezervace i uložené profily zákazníků z databáze.
     // Samotné renderCustomers() jen překresluje data, která už jsou v paměti.
-    if (!await loadReservations()) throw new Error("Rezervace se nepodařilo obnovit.");
+    if (!await loadReservations()) throw new Error(dashboardText("Rezervace se nepodařilo obnovit."));
     await loadCustomerProfiles({ throwOnError: true });
     renderCustomers();
-    showDashboardNotice("Zákazníci byli aktualizováni.", "success");
+    showDashboardNotice(dashboardText("Zákazníci byli aktualizováni."), "success");
   } catch (error) {
     console.error("Obnovení zákazníků selhalo:", error);
-    showDashboardNotice("Zákazníky se nepodařilo aktualizovat.", "error");
+    showDashboardNotice(dashboardText("Zákazníky se nepodařilo aktualizovat."), "error");
   } finally {
     if (button) {
       button.disabled = false;
@@ -4998,7 +4997,7 @@ async function loadCustomerProfiles({ throwOnError = false } = {}) {
   const userId = currentUserId;
   const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && restaurantId === currentRestaurantId && userId === currentUserId;
   if (!currentRestaurantId) {
-    if (throwOnError) throw new Error("Chybí restaurace pro načtení CRM.");
+    if (throwOnError) throw new Error(dashboardText("Chybí restaurace pro načtení CRM."));
     return;
   }
   try {
@@ -5009,8 +5008,8 @@ async function loadCustomerProfiles({ throwOnError = false } = {}) {
     if (!response.ok) throw new Error(await response.text());
 
     const rows = await response.json();
-    if (!contextIsCurrent()) throw new Error("Session CRM se během načítání změnila.");
-    if (!Array.isArray(rows)) throw new Error("Neplatná odpověď CRM.");
+    if (!contextIsCurrent()) throw new Error(dashboardText("Session CRM se během načítání změnila."));
+    if (!Array.isArray(rows)) throw new Error(dashboardText("Neplatná odpověď CRM."));
     customerProfiles = rows;
     renderCustomers();
   } catch (error) {
@@ -5018,7 +5017,7 @@ async function loadCustomerProfiles({ throwOnError = false } = {}) {
       if (throwOnError) throw error;
       return;
     }
-    console.warn("Profily zákazníků zatím nejsou dostupné:", error);
+    console.warn(dashboardText("Profily zákazníků zatím nejsou dostupné:"), error);
     // Nemažeme lokální profily při dočasné chybě načtení, aby se právě
     // uložená poznámka nebo označení stálého hosta neztratily z UI.
     renderCustomers();
@@ -5107,27 +5106,27 @@ async function persistCustomerProfile(customerKey, changes) {
 
     if (!contextIsCurrent()) return;
     const persisted = getCustomerProfile(customerKey);
-    if (!persisted) throw new Error("Uložený profil se z databáze nenačetl.");
+    if (!persisted) throw new Error(dashboardText("Uložený profil se z databáze nenačetl."));
     if (Object.prototype.hasOwnProperty.call(changes, "note") &&
         String(persisted?.note || "") !== String(changes.note || "")) {
-      throw new Error("Poznámka se po uložení nenačetla zpět z databáze.");
+      throw new Error(dashboardText("Poznámka se po uložení nenačetla zpět z databáze."));
     }
     if (Object.prototype.hasOwnProperty.call(changes, "is_regular") &&
         Boolean(persisted?.is_regular) !== Boolean(changes.is_regular)) {
-      throw new Error("Označení stálého hosta se po uložení nenačetlo zpět z databáze.");
+      throw new Error(dashboardText("Označení stálého hosta se po uložení nenačetlo zpět z databáze."));
     }
 
     if (Object.prototype.hasOwnProperty.call(changes, "note")) {
       clearSavedCustomerNoteDraft(customerKey, changes.note, payload.restaurant_id);
       renderCustomers();
     }
-    showDashboardNotice("Profil zákazníka byl uložen.", "success");
+    showDashboardNotice(dashboardText("Profil zákazníka byl uložen."), "success");
   } catch (error) {
     if (!contextIsCurrent()) return;
     console.error(error);
     showDashboardNotice(writeAccepted
-      ? "Zápis byl přijat, ale uložení profilu se nepodařilo ověřit. Obnov zákazníky a zkontroluj hodnoty."
-      : "Profil zákazníka se nepodařilo uložit.", "error");
+      ? dashboardText("Zápis byl přijat, ale uložení profilu se nepodařilo ověřit. Obnov zákazníky a zkontroluj hodnoty.")
+      : dashboardText("Profil zákazníka se nepodařilo uložit."), "error");
   }
 }
 
@@ -5140,7 +5139,7 @@ function toggleCustomerHistory(id, button) {
   const element = document.getElementById(id);
   if (!element) return;
   element.hidden = !element.hidden;
-  if (button) button.textContent = element.hidden ? `Zobrazit historii rezervací (${element.children.length})` : "Skrýt historii rezervací";
+  if (button) button.textContent = element.hidden ? dashboardMessage`Zobrazit historii rezervací (${element.children.length})` : dashboardText("Skrýt historii rezervací");
 }
 
 document.getElementById("customerSearch")?.addEventListener("input", renderCustomers);
@@ -5208,7 +5207,7 @@ function editReservation(id) {
     );
 
     if (!reservation) {
-        showDashboardNotice("Rezervace nebyla nalezena.");
+        showDashboardNotice(dashboardText("Rezervace nebyla nalezena."));
         return;
     }
 
@@ -5384,7 +5383,7 @@ function updateEditReservationTableOptions(
     createTableOption({
       value: "",
       label:
-        "Bez stolu"
+        dashboardText("Bez stolu")
     })
   );
 
@@ -5442,25 +5441,25 @@ function updateEditReservationTableOptions(
 
       if (!table.active) {
         label +=
-          " — neaktivní";
+          dashboardText(" — neaktivní");
       } else if (
         inActiveGroup
       ) {
         label +=
-          " — součást spojených stolů";
+          dashboardText(" — součást spojených stolů");
       } else if (
         tooSmall
       ) {
         label +=
-          " — malá kapacita";
+          dashboardText(" — malá kapacita");
       } else if (
         occupied
       ) {
         label +=
-          " — obsazený";
+          dashboardText(" — obsazený");
       } else {
         label +=
-          " — volný";
+          dashboardText(" — volný");
       }
 
       tableSelect.appendChild(
@@ -5527,24 +5526,24 @@ function updateEditReservationTableOptions(
         occupied;
 
       let label =
-        `🔗 ${group.name || "Spojené stoly"} (${formatCzechCount(capacity, "místo", "místa", "míst")})`;
+        `🔗 ${group.name || dashboardText("Spojené stoly")} (${formatCzechCount(capacity, "místo", "místa", "míst")})`;
 
       if (!usable) {
         label +=
-          " — neaktivní";
+          dashboardText(" — neaktivní");
       } else if (
         tooSmall
       ) {
         label +=
-          " — malá kapacita";
+          dashboardText(" — malá kapacita");
       } else if (
         occupied
       ) {
         label +=
-          " — obsazená";
+          dashboardText(" — obsazená");
       } else {
         label +=
-          " — volná";
+          dashboardText(" — volná");
       }
 
       tableSelect.appendChild(
@@ -5753,7 +5752,7 @@ async function saveReservationChanges() {
     )
   ) {
     showDashboardNotice(
-      "Vyplň správně jméno, počet osob, datum, čas, délku, místo a stav."
+      dashboardText("Vyplň správně jméno, počet osob, datum, čas, délku, místo a stav.")
     );
     return;
   }
@@ -5764,7 +5763,7 @@ async function saveReservationChanges() {
     )
   ) {
     showDashboardNotice(
-      "Zadej platný e-mail, nebo pole nech prázdné."
+      dashboardText("Zadej platný e-mail, nebo pole nech prázdné.")
     );
     return;
   }
@@ -5779,7 +5778,7 @@ async function saveReservationChanges() {
     if (!contextIsCurrent()) return;
 
     showDashboardNotice(
-      "Rezervaci teď nelze bezpečně upravit. Obnov stránku a zkus to znovu."
+      dashboardText("Rezervaci teď nelze bezpečně upravit. Obnov stránku a zkus to znovu.")
     );
     return;
   }
@@ -5795,7 +5794,7 @@ async function saveReservationChanges() {
 
   if (!currentReservation) {
     showDashboardNotice(
-      "Rezervace nebyla nalezena."
+      dashboardText("Rezervace nebyla nalezena.")
     );
     return;
   }
@@ -5850,7 +5849,7 @@ async function saveReservationChanges() {
 
     if (!selectedTable) {
       showDashboardNotice(
-        "Vybraný stůl nebyl nalezen."
+        dashboardText("Vybraný stůl nebyl nalezen.")
       );
       return;
     }
@@ -5864,7 +5863,7 @@ async function saveReservationChanges() {
       ) !== tableId
     ) {
       showDashboardNotice(
-        `${selectedTable.name} je součástí spojených stolů. Vyber skupinu nebo jiný stůl.`
+        dashboardMessage`${selectedTable.name} je součástí spojených stolů. Vyber skupinu nebo jiný stůl.`
       );
       return;
     }
@@ -5876,7 +5875,7 @@ async function saveReservationChanges() {
       )
     ) {
       showDashboardNotice(
-        `${selectedTable.name} má jen ${formatCzechCount(selectedTable.capacity, "místo", "místa", "míst")}.`
+        dashboardMessage`${selectedTable.name} má jen ${formatCzechCount(selectedTable.capacity, "místo", "místa", "míst")}.`
       );
       return;
     }
@@ -5890,7 +5889,7 @@ async function saveReservationChanges() {
       )
     ) {
       showDashboardNotice(
-        `${selectedTable.name} je v tomto čase obsazený.\n\nVyber jiné místo nebo jiný čas.`
+        dashboardMessage`${selectedTable.name} je v tomto čase obsazený.\n\nVyber jiné místo nebo jiný čas.`
       );
       return;
     }
@@ -5922,7 +5921,7 @@ async function saveReservationChanges() {
       )
     ) {
       showDashboardNotice(
-        "Vybraná skupina stolů není dostupná."
+        dashboardText("Vybraná skupina stolů není dostupná.")
       );
       return;
     }
@@ -5939,7 +5938,7 @@ async function saveReservationChanges() {
       groupCapacity
     ) {
       showDashboardNotice(
-        `${selectedGroup.name || "Spojené stoly"} mají jen ${formatCzechCount(groupCapacity, "místo", "místa", "míst")}.`
+        dashboardMessage`${selectedGroup.name || dashboardText("Spojené stoly")} mají jen ${formatCzechCount(groupCapacity, "místo", "místa", "míst")}.`
       );
       return;
     }
@@ -5953,7 +5952,7 @@ async function saveReservationChanges() {
       )
     ) {
       showDashboardNotice(
-        `${selectedGroup.name || "Spojené stoly"} jsou v tomto čase obsazené.\n\nVyber jiné místo nebo jiný čas.`
+        dashboardMessage`${selectedGroup.name || dashboardText("Spojené stoly")} jsou v tomto čase obsazené.\n\nVyber jiné místo nebo jiný čas.`
       );
       return;
     }
@@ -6005,14 +6004,14 @@ async function saveReservationChanges() {
     if (!response.ok) {
       throw new Error(
         statusResult?.error ||
-        "Rezervaci se nepodařilo upravit."
+        dashboardText("Rezervaci se nepodařilo upravit.")
       );
     }
 
     if (statusResult?.success !== true ||
         Number(statusResult?.reservation?.id) !== id ||
         Number(statusResult?.reservation?.restaurant_id) !== restaurantId) {
-      throw new Error("Server nepotvrdil úpravu rezervace. Obnov přehled a zkontroluj aktuální stav.");
+      throw new Error(dashboardText("Server nepotvrdil úpravu rezervace. Obnov přehled a zkontroluj aktuální stav."));
     }
     if (!contextIsCurrent()) return;
     closeReservationModal();
@@ -6028,7 +6027,7 @@ async function saveReservationChanges() {
 
     if (!reservationsLoaded) {
       showDashboardNotice(
-        "Rezervace byla uložena, ale přehled se nepodařilo obnovit. Obnov stránku a zkontroluj aktuální stav.",
+        dashboardText("Rezervace byla uložena, ale přehled se nepodařilo obnovit. Obnov stránku a zkontroluj aktuální stav."),
         "info"
       );
       return;
@@ -6040,8 +6039,8 @@ async function saveReservationChanges() {
     ) {
       showDashboardNotice(
         status === "Potvrzeno"
-          ? "Rezervace byla upravena, potvrzena a zákazníkovi byl odeslán e-mail."
-          : "Rezervace byla upravena, zrušena a zákazníkovi byl odeslán e-mail.",
+          ? dashboardText("Rezervace byla upravena, potvrzena a zákazníkovi byl odeslán e-mail.")
+          : dashboardText("Rezervace byla upravena, zrušena a zákazníkovi byl odeslán e-mail."),
         "success"
       );
     } else if (
@@ -6050,16 +6049,16 @@ async function saveReservationChanges() {
     ) {
       const revision = Number(statusResult.reservation?.status_revision);
       showDashboardNotice(
-        `Rezervace byla upravena a stav změněn, ale e-mail se nepodařilo odeslat: ${statusResult.email_error}`,
+        dashboardMessage`Rezervace byla upravena a stav změněn, ale e-mail se nepodařilo odeslat: ${statusResult.email_error}`,
         "error",
         statusResult.reservation?.email && isValidOptionalEmail(statusResult.reservation.email) &&
         Number.isSafeInteger(revision) && revision > 0
-          ? { label: "Zkusit e-mail znovu", onClick: () => retryStatusEmail(id, revision) }
+          ? { label: dashboardText("Zkusit e-mail znovu"), onClick: () => retryStatusEmail(id, revision) }
           : null
       );
     } else {
       showDashboardNotice(
-        "Rezervace byla úspěšně upravena.",
+        dashboardText("Rezervace byla úspěšně upravena."),
         "success"
       );
     }
@@ -6069,7 +6068,7 @@ async function saveReservationChanges() {
     );
     if (!contextIsCurrent()) return;
 
-    const errorText = String(error?.message || "Rezervaci se nepodařilo kompletně upravit.");
+    const errorText = String(error?.message || dashboardText("Rezervaci se nepodařilo kompletně upravit."));
     if (inlineError) {
       inlineError.textContent = errorText;
       inlineError.hidden = false;
@@ -6115,7 +6114,7 @@ async function updateReservation(id, data = {}) {
     !current || !Number.isSafeInteger(restaurantId) || restaurantId < 1
   ) {
     showDashboardNotice(
-      "Rezervace nebyla nalezena."
+      dashboardText("Rezervace nebyla nalezena.")
     );
     return false;
   }
@@ -6265,7 +6264,7 @@ async function updateReservation(id, data = {}) {
     if (!response.ok) {
       throw new Error(
         result?.error ||
-        "Nepodařilo se upravit rezervaci."
+        dashboardText("Nepodařilo se upravit rezervaci.")
       );
     }
 
@@ -6273,7 +6272,7 @@ async function updateReservation(id, data = {}) {
     if (result?.success !== true ||
         Number(savedReservation?.id) !== reservationId ||
         Number(savedReservation?.restaurant_id) !== restaurantId) {
-      throw new Error("Server nepotvrdil úpravu rezervace. Obnov přehled a zkontroluj aktuální stav.");
+      throw new Error(dashboardText("Server nepotvrdil úpravu rezervace. Obnov přehled a zkontroluj aktuální stav."));
     }
     if (!contextIsCurrent()) return false;
     if (Number(savedReservation?.id) === reservationId &&
@@ -6297,7 +6296,7 @@ async function updateReservation(id, data = {}) {
       renderFloorMap();
       updateStatistics();
       showDashboardNotice(
-        "Rezervace byla uložena, ale přehled se nepodařilo obnovit. Obnov stránku a zkontroluj aktuální stav.",
+        dashboardText("Rezervace byla uložena, ale přehled se nepodařilo obnovit. Obnov stránku a zkontroluj aktuální stav."),
         "info"
       );
     }
@@ -6310,7 +6309,7 @@ async function updateReservation(id, data = {}) {
     showDashboardNotice(
       String(
         error?.message ||
-        "Nepodařilo se upravit rezervaci."
+        dashboardText("Nepodařilo se upravit rezervaci.")
       ),
       "error"
     );
@@ -6347,21 +6346,21 @@ function exportReservations() {
 
   if (!data.length) {
     showDashboardNotice(
-      "Nejsou žádné rezervace ke stažení."
+      dashboardText("Nejsou žádné rezervace ke stažení.")
     );
     return;
   }
 
   const columns = [
-    "Jméno",
-    "Počet osob",
-    "Datum",
-    "Čas",
-    "Stůl / skupina",
-    "Telefon",
-    "E-mail",
-    "Poznámka",
-    "Stav"
+    dashboardText("Jméno"),
+    dashboardText("Počet osob"),
+    dashboardText("Datum"),
+    dashboardText("Čas"),
+    dashboardText("Stůl / skupina"),
+    dashboardText("Telefon"),
+    dashboardText("E-mail"),
+    dashboardText("Poznámka"),
+    dashboardText("Stav")
   ];
 
   const rows =
@@ -6383,7 +6382,7 @@ function exportReservations() {
         reservation.phone || "",
         reservation.email || "",
         reservation.note || "",
-        reservation.status || "Čeká"
+        getCalendarStatusLabel(reservation.status)
       ]
     );
 
@@ -6434,7 +6433,7 @@ function exportReservations() {
     url;
 
   link.download =
-    `rezervace-${getLocalDateString()}.csv`;
+    dashboardMessage`rezervace-${getLocalDateString()}.csv`;
 
   document.body.appendChild(
     link
@@ -6503,7 +6502,7 @@ function renderCharts() {
         labels,
         datasets: [
           {
-            label: "Rezervace",
+            label: dashboardText("Rezervace"),
             data: counts,
             backgroundColor:
               "rgba(255,90,31,.75)",
@@ -6553,7 +6552,7 @@ function renderCharts() {
     {
       type: "doughnut",
       data: {
-        labels: statuses,
+        labels: statuses.map(getCalendarStatusLabel),
         datasets: [
           {
             data: statuses.map(status => {
@@ -6650,7 +6649,7 @@ if (!groupsResponse.ok) {
     ).textContent = "–";
 
     if (list) {
-      list.innerHTML = `
+      list.innerHTML = dashboardMessage`
         <div class="emptyState">
           Nepodařilo se načíst stoly.
         </div>
@@ -6804,7 +6803,7 @@ function renderFloorMap() {
 
       return {
         id: group.id,
-        name: group.name || "Spojené stoly",
+        name: group.name || dashboardText("Spojené stoly"),
         capacity: Number(group.total_capacity || 0),
         x,
         y,
@@ -6828,11 +6827,11 @@ function renderFloorMap() {
     const emptyState = document.createElement("div");
     emptyState.className = "emptyState";
     emptyState.append(
-      document.createTextNode("V místnosti "),
+      document.createTextNode(dashboardText("V místnosti ")),
       Object.assign(document.createElement("strong"), {
-        textContent: String(selectedRoom || "")
+        textContent: dashboardText(String(selectedRoom || ""))
       }),
-      document.createTextNode(" zatím nejsou žádné stoly.")
+      document.createTextNode(dashboardText(" zatím nejsou žádné stoly."))
     );
 
     floorMap.appendChild(emptyState);
@@ -6847,10 +6846,10 @@ function renderFloorMap() {
 
       const statusLabel =
         statusClass === "occupied"
-          ? "Obsazený"
+          ? dashboardText("Obsazený")
           : statusClass === "busy"
-            ? "Rezervace brzy"
-            : "Volný";
+            ? dashboardText("Rezervace brzy")
+            : dashboardText("Volný");
 
       const capacity =
         item.capacity || item.seats || 0;
@@ -6875,11 +6874,11 @@ function renderFloorMap() {
               : `data-table-id="${safeItemId}"`
           }
           style="left:${safeX}px; top:${safeY}px;"
-          title="${escapeHtml(item.name || `Stůl ${item.id}`)} • ${formatCzechCount(Number(capacity) || 0, "místo", "místa", "míst")} • ${escapeHtml(statusLabel)}"
+          title="${escapeHtml(item.name || dashboardMessage`Stůl ${item.id}`)} • ${formatCzechCount(Number(capacity) || 0, "místo", "místa", "míst")} • ${escapeHtml(statusLabel)}"
           ${clickAction}
         >
           <span class="table-map-name">
-            ${escapeHtml(item.name || `Stůl ${item.id}`)}
+            ${escapeHtml(item.name || dashboardMessage`Stůl ${item.id}`)}
           </span>
 
           <span class="table-map-capacity">
@@ -6927,7 +6926,7 @@ function handleTableClick(event, tableId) {
 
   if (mergeSelectionInfo) {
     mergeSelectionInfo.textContent =
-      `Vybráno: ${selectedTablesForMerge.length} stolů`;
+      dashboardMessage`Vybráno: ${selectedTablesForMerge.length} stolů`;
   }
 
   if (confirmMergeButton) {
@@ -6963,16 +6962,16 @@ function openTableGroup(groupId) {
   );
 
   document.getElementById("tableModalTitle").textContent =
-    group.name || "Spojené stoly";
+    group.name || dashboardText("Spojené stoly");
 
   document.getElementById("tableModalCapacity").textContent =
     group.total_capacity || 0;
 
   document.getElementById("tableModalStatus").textContent =
-    "Spojená skupina stolů";
+    dashboardText("Spojená skupina stolů");
 
   if (primaryButton) {
-    primaryButton.textContent = "Rozpojit stoly";
+    primaryButton.textContent = dashboardText("Rozpojit stoly");
     primaryButton.onclick = () => unmergeTableGroup(group.id);
   }
 
@@ -6993,7 +6992,7 @@ function openTableGroup(groupId) {
   const canContinue = () => contextIsCurrent() && ["owner", "manager"].includes(currentUserRole);
   if (!restaurantId || !userId || !canContinue() || !Number.isSafeInteger(Number(groupId)) || Number(groupId) < 1) return;
   const confirmed = confirm(
-    "Opravdu chcete tyto stoly rozpojit?"
+    dashboardText("Opravdu chcete tyto stoly rozpojit?")
   );
 
   if (!confirmed) return;
@@ -7004,7 +7003,7 @@ function openTableGroup(groupId) {
     );
 
     if (!group) {
-      throw new Error("Skupina stolů nebyla nalezena.");
+      throw new Error(dashboardText("Skupina stolů nebyla nalezena."));
     }
 
     const memberIds = Array.isArray(group.table_ids)
@@ -7012,7 +7011,7 @@ function openTableGroup(groupId) {
       : [];
 
     if (memberIds.length === 0) {
-      throw new Error("Skupina neobsahuje žádné stoly.");
+      throw new Error(dashboardText("Skupina neobsahuje žádné stoly."));
     }
 
     const members = restaurantTables.filter((table) =>
@@ -7020,7 +7019,7 @@ function openTableGroup(groupId) {
     );
 
     if (members.length === 0) {
-      throw new Error("Stoly ze skupiny nebyly nalezeny.");
+      throw new Error(dashboardText("Stoly ze skupiny nebyly nalezeny."));
     }
 
     const groupReservationsResponse =
@@ -7057,7 +7056,7 @@ function openTableGroup(groupId) {
       )
     ) {
       showDashboardNotice(
-        "Skupinu nelze rozpojit, protože na ní je aktuální nebo budoucí rezervace. Nejdřív rezervaci přesuň nebo zruš."
+        dashboardText("Skupinu nelze rozpojit, protože na ní je aktuální nebo budoucí rezervace. Nejdřív rezervaci přesuň nebo zruš.")
       );
       return;
     }
@@ -7146,14 +7145,14 @@ function openTableGroup(groupId) {
 
     if (!canContinue()) return;
     showDashboardNotice(
-      "Stoly byly úspěšně rozpojeny."
+      dashboardText("Stoly byly úspěšně rozpojeny.")
     );
   } catch (error) {
     if (!canContinue()) return;
     console.error(error);
 
     showDashboardNotice(
-      "Stoly se nepodařilo rozpojit."
+      dashboardText("Stoly se nepodařilo rozpojit.")
     );
   }
 }
@@ -7217,8 +7216,8 @@ function openTable(tableId) {
   if (primaryButton) {
     primaryButton.textContent =
       reservation
-        ? "✏️ Upravit rezervaci"
-        : "+ Nová rezervace";
+        ? dashboardText("✏️ Upravit rezervaci")
+        : dashboardText("+ Nová rezervace");
 
     primaryButton.onclick =
       handleTableModalPrimaryAction;
@@ -7249,12 +7248,12 @@ function openTable(tableId) {
     )
     .textContent =
       !table.active
-        ? "Neaktivní"
+        ? dashboardText("Neaktivní")
         : tableStatus === "occupied"
-          ? "Obsazený"
+          ? dashboardText("Obsazený")
           : tableStatus === "busy"
-            ? "Brzy obsazený"
-            : "Volný";
+            ? dashboardText("Brzy obsazený")
+            : dashboardText("Volný");
 
   if (reservation) {
     const tableModalCapacity =
@@ -7270,7 +7269,7 @@ function openTable(tableId) {
         `👤 ${getReservationGuestName(
           reservation
         )}`,
-        `👥 ${reservation.people || "-"} osoby`,
+        dashboardMessage`👥 ${reservation.people || "-"} osoby`,
         `🕒 ${String(
           reservation.time || "-"
         ).slice(0, 5)}`,
@@ -7300,9 +7299,7 @@ function openTable(tableId) {
       .getElementById(
         "tableModalStatus"
       )
-      .textContent =
-        reservation.status ||
-        "Čeká";
+      .textContent = getCalendarStatusLabel(reservation.status);
   }
 
   document
@@ -7440,7 +7437,7 @@ function fillNewTableOptions(
     createTableOption({
       value: "auto",
       label:
-        "🪄 Automaticky vybrat nejlepší stůl / skupinu"
+        dashboardText("🪄 Automaticky vybrat nejlepší stůl / skupinu")
     }),
     ...activeTables.map(
       table =>
@@ -7448,7 +7445,7 @@ function fillNewTableOptions(
           value:
             Number(table.id),
           label:
-            `${String(
+            dashboardMessage`${String(
               table.name || ""
             )} (${Number(
               table.capacity
@@ -7463,9 +7460,9 @@ function fillNewTableOptions(
               group.id
             )}`,
           label:
-            `🔗 ${String(
+            dashboardMessage`🔗 ${String(
               group.name ||
-              "Spojené stoly"
+              dashboardText("Spojené stoly")
             )} (${Number(
               group.total_capacity || 0
             )} míst)`
@@ -7522,7 +7519,7 @@ function updateNewTableRecommendation() {
       "tableRecommendation";
 
     box.textContent =
-      "Zadej počet osob, datum a čas. Systém potom doporučí nejlepší volný stůl nebo skupinu.";
+      dashboardText("Zadej počet osob, datum a čas. Systém potom doporučí nejlepší volný stůl nebo skupinu.");
 
     return;
   }
@@ -7537,7 +7534,7 @@ function updateNewTableRecommendation() {
       "tableRecommendation unavailable";
 
     box.textContent =
-      `Pro ${draft.people} osob v ${draft.time} není volný vhodný stůl ani skupina.`;
+      dashboardMessage`Pro ${draft.people} osob v ${draft.time} není volný vhodný stůl ani skupina.`;
 
     return;
   }
@@ -7551,7 +7548,7 @@ function updateNewTableRecommendation() {
     );
 
   strong.textContent =
-    `🪄 Doporučení: ${bestResource.type === "group" ? "🔗 " : ""}${bestResource.name}`;
+    dashboardMessage`🪄 Doporučení: ${bestResource.type === "group" ? "🔗 " : ""}${bestResource.name}`;
 
   const detail =
     document.createElement(
@@ -7559,7 +7556,7 @@ function updateNewTableRecommendation() {
     );
 
   detail.textContent =
-    `${formatCzechCount(bestResource.capacity, "místo", "místa", "míst")} · volné po celou dobu rezervace`;
+    dashboardMessage`${formatCzechCount(bestResource.capacity, "místo", "místa", "míst")} · volné po celou dobu rezervace`;
 
   box.replaceChildren(
     strong,
@@ -7585,7 +7582,7 @@ function openNewReservationForm() {
     )
   ) {
     showDashboardNotice(
-      "Pro vytváření rezervací nemáš oprávnění.",
+      dashboardText("Pro vytváření rezervací nemáš oprávnění."),
       "info"
     );
     return;
@@ -7607,7 +7604,7 @@ function openNewReservationForm() {
 
   if (!reservationSection) {
     showDashboardNotice(
-      "Formulář nové rezervace se nepodařilo otevřít."
+      dashboardText("Formulář nové rezervace se nepodařilo otevřít.")
     );
     return;
   }
@@ -7656,7 +7653,7 @@ function createReservationFromTable() {
     const tableSelect = document.getElementById("newTable");
 
     if (!reservationSection || !tableSelect) {
-        showDashboardNotice("Formulář rezervace se nepodařilo otevřít.");
+        showDashboardNotice(dashboardText("Formulář rezervace se nepodařilo otevřít."));
         return;
     }
 
@@ -7764,7 +7761,7 @@ async function saveNewReservation() {
     durationMinutes > 360
   ) {
     showDashboardNotice(
-      "Vyplň správně jméno, počet osob, datum, čas a délku."
+      dashboardText("Vyplň správně jméno, počet osob, datum, čas a délku.")
     );
     return;
   }
@@ -7775,7 +7772,7 @@ async function saveNewReservation() {
     note.length > 1000
   ) {
     showDashboardNotice(
-      "Jméno může mít maximálně 120 znaků, telefon 40 a poznámka 1000."
+      dashboardText("Jméno může mít maximálně 120 znaků, telefon 40 a poznámka 1000.")
     );
     return;
   }
@@ -7786,7 +7783,7 @@ async function saveNewReservation() {
     )
   ) {
     showDashboardNotice(
-      "Zadej platný e-mail, nebo pole nech prázdné."
+      dashboardText("Zadej platný e-mail, nebo pole nech prázdné.")
     );
     return;
   }
@@ -7818,7 +7815,7 @@ async function saveNewReservation() {
     if (!contextIsCurrent()) return;
 
     showDashboardNotice(
-      "Rezervaci teď nelze bezpečně uložit. Obnov stránku a zkus to znovu."
+      dashboardText("Rezervaci teď nelze bezpečně uložit. Obnov stránku a zkus to znovu.")
     );
     return;
   }
@@ -7851,8 +7848,8 @@ async function saveNewReservation() {
 
     if (!bestResource) {
       showDashboardNotice(
-        `Pro ${people} osob v ${time} není volný vhodný stůl ani skupina.\n\n` +
-        "Zvol jiný čas, kratší délku nebo uprav rozložení stolů."
+        dashboardMessage`Pro ${people} osob v ${time} není volný vhodný stůl ani skupina.\n\n` +
+        dashboardText("Zvol jiný čas, kratší délku nebo uprav rozložení stolů.")
       );
       return;
     }
@@ -7898,7 +7895,7 @@ async function saveNewReservation() {
     !selectedGroup
   ) {
     showDashboardNotice(
-      "Vyber platný stůl nebo skupinu."
+      dashboardText("Vyber platný stůl nebo skupinu.")
     );
     return;
   }
@@ -7906,7 +7903,7 @@ async function saveNewReservation() {
   const resourceName =
     selectedTable?.name ||
     selectedGroup?.name ||
-    "Vybrané místo";
+    dashboardText("Vybrané místo");
 
   const resourceCapacity =
     selectedTable
@@ -7925,7 +7922,7 @@ async function saveNewReservation() {
     resourceCapacity
   ) {
     showDashboardNotice(
-      `${resourceName} má pouze ${formatCzechCount(resourceCapacity, "místo", "místa", "míst")}.`
+      dashboardMessage`${resourceName} má pouze ${formatCzechCount(resourceCapacity, "místo", "místa", "míst")}.`
     );
     return;
   }
@@ -7937,7 +7934,7 @@ async function saveNewReservation() {
     )
   ) {
     showDashboardNotice(
-      `${resourceName} je součástí spojených stolů. Vyber skupinu nebo jiný stůl.`
+      dashboardMessage`${resourceName} je součástí spojených stolů. Vyber skupinu nebo jiný stůl.`
     );
     return;
   }
@@ -7980,7 +7977,7 @@ async function saveNewReservation() {
     )
   ) {
     showDashboardNotice(
-      `${resourceName} je v tomto čase obsazený.\n\nVyber jiné místo nebo jiný čas.`
+      dashboardMessage`${resourceName} je v tomto čase obsazený.\n\nVyber jiné místo nebo jiný čas.`
     );
     return;
   }
@@ -7993,7 +7990,7 @@ async function saveNewReservation() {
     )
   ) {
     showDashboardNotice(
-      `${resourceName} je v tomto čase obsazená.\n\nVyber jiné místo nebo jiný čas.`
+      dashboardMessage`${resourceName} je v tomto čase obsazená.\n\nVyber jiné místo nebo jiný čas.`
     );
     return;
   }
@@ -8044,7 +8041,7 @@ async function saveNewReservation() {
     if (!response.ok) {
       throw new Error(
         result?.error ||
-        "Rezervaci se nepodařilo uložit."
+        dashboardText("Rezervaci se nepodařilo uložit.")
       );
     }
 
@@ -8052,7 +8049,7 @@ async function saveNewReservation() {
         !Number.isSafeInteger(Number(result?.reservation?.id)) ||
         Number(result.reservation.id) < 1 ||
         Number(result?.reservation?.restaurant_id) !== restaurantId) {
-      throw new Error("Server nepotvrdil vytvoření rezervace. Obnov přehled a zkontroluj jej před dalším pokusem.");
+      throw new Error(dashboardText("Server nepotvrdil vytvoření rezervace. Obnov přehled a zkontroluj jej před dalším pokusem."));
     }
     if (!contextIsCurrent()) return;
 
@@ -8104,13 +8101,13 @@ async function saveNewReservation() {
 
     showDashboardNotice(
       !reservationsLoaded
-        ? "Rezervace byla uložena, ale přehled se nepodařilo obnovit. Obnov stránku." +
-          (emailFailed ? " E-mail hostovi se nepodařilo odeslat." : "")
+        ? dashboardText("Rezervace byla uložena, ale přehled se nepodařilo obnovit. Obnov stránku.") +
+          (emailFailed ? dashboardText(" E-mail hostovi se nepodařilo odeslat.") : "")
         : emailFailed
-          ? "Rezervace byla uložena, ale e-mail hostovi se nepodařilo odeslat."
+          ? dashboardText("Rezervace byla uložena, ale e-mail hostovi se nepodařilo odeslat.")
           : result?.email?.sent
-            ? "Rezervace byla uložena a e-mail hostovi odeslán."
-            : "Rezervace byla úspěšně uložena.",
+            ? dashboardText("Rezervace byla uložena a e-mail hostovi odeslán.")
+            : dashboardText("Rezervace byla úspěšně uložena."),
       reservationsLoaded && !emailFailed ? "success" : "info"
     );
   } catch (error) {
@@ -8122,7 +8119,7 @@ async function saveNewReservation() {
     showDashboardNotice(
       String(
         error?.message ||
-        "Rezervaci se nepodařilo uložit."
+        dashboardText("Rezervaci se nepodařilo uložit.")
       ),
       "error"
     );
@@ -8144,7 +8141,7 @@ function renderTables() {
   }
 
   if (!restaurantTables.length) {
-    list.innerHTML = `
+    list.innerHTML = dashboardMessage`
       <div class="emptyState">
         Zatím nejsou vytvořené žádné stoly. Přidej první stůl a nastav jeho kapacitu.
       </div>
@@ -8155,7 +8152,7 @@ function renderTables() {
 
   list.innerHTML = restaurantTables
     .map(table => {
-      return `
+      return dashboardMessage`
         <div
           class="tableItem ${
             table.active
@@ -8172,7 +8169,7 @@ function renderTables() {
 
             <b>
               ${escapeHtml(
-                table.name || "Stůl"
+                table.name || dashboardText("Stůl")
               )}
             </b>
 
@@ -8182,13 +8179,13 @@ function renderTables() {
 
             <small>
               ${escapeHtml(
-                table.note || "Bez poznámky"
+                table.note || dashboardText("Bez poznámky")
               )}
               •
               ${
                 table.active
-                  ? "Aktivní"
-                  : "Neaktivní"
+                  ? dashboardText("Aktivní")
+                  : dashboardText("Neaktivní")
               }
             </small>
 
@@ -8273,7 +8270,7 @@ function deleteCurrentTable() {
     selectedTableId === undefined
   ) {
     showDashboardNotice(
-      "Není vybraný žádný stůl."
+      dashboardText("Není vybraný žádný stůl.")
     );
     return;
   }
@@ -8337,7 +8334,7 @@ async function saveTable() {
     name.length < 2
   ) {
     showDashboardNotice(
-      "Zadej název stolu."
+      dashboardText("Zadej název stolu.")
     );
     return;
   }
@@ -8350,7 +8347,7 @@ async function saveTable() {
     capacity > 30
   ) {
     showDashboardNotice(
-      "Kapacita musí být od 1 do 30 míst."
+      dashboardText("Kapacita musí být od 1 do 30 míst.")
     );
     return;
   }
@@ -8368,7 +8365,7 @@ async function saveTable() {
       )
     ) {
       showDashboardNotice(
-        "Stůl je součástí aktivní skupiny. Nejdřív skupinu rozpoj."
+        dashboardText("Stůl je součástí aktivní skupiny. Nejdřív skupinu rozpoj.")
       );
       return;
     }
@@ -8387,7 +8384,7 @@ async function saveTable() {
       blockingReservation
     ) {
       showDashboardNotice(
-        "Stůl má aktuální nebo budoucí rezervaci. Nejdřív ji přesuň nebo zruš."
+        dashboardText("Stůl má aktuální nebo budoucí rezervaci. Nejdřív ji přesuň nebo zruš.")
       );
       return;
     }
@@ -8408,7 +8405,7 @@ async function saveTable() {
 
   if (duplicate) {
     showDashboardNotice(
-      "Stůl s tímto názvem už existuje."
+      dashboardText("Stůl s tímto názvem už existuje.")
     );
     return;
   }
@@ -8471,8 +8468,8 @@ async function saveTable() {
 
     showDashboardNotice(
       editing
-        ? "Stůl byl upraven."
-        : "Stůl byl vytvořen.",
+        ? dashboardText("Stůl byl upraven.")
+        : dashboardText("Stůl byl vytvořen."),
       "success"
     );
   } catch (error) {
@@ -8482,7 +8479,7 @@ async function saveTable() {
     );
 
     showDashboardNotice(
-      "Nepodařilo se uložit stůl."
+      dashboardText("Nepodařilo se uložit stůl.")
     );
   }
   } finally {
@@ -8523,7 +8520,7 @@ function editTable(id) {
 
   document.getElementById(
     "tableBtn"
-  ).textContent = "Uložit změny";
+  ).textContent = dashboardText("Uložit změny");
 
   document.getElementById(
     "cancelTableEditBtn"
@@ -8559,7 +8556,7 @@ function resetTableForm(force = false) {
 
   document.getElementById(
     "tableBtn"
-  ).textContent = "Přidat stůl";
+  ).textContent = dashboardText("Přidat stůl");
 
   document.getElementById(
     "cancelTableEditBtn"
@@ -8586,7 +8583,7 @@ async function deleteTable(id) {
 
   if (!table) {
     showDashboardNotice(
-      "Stůl nebyl nalezen."
+      dashboardText("Stůl nebyl nalezen.")
     );
     return;
   }
@@ -8597,7 +8594,7 @@ async function deleteTable(id) {
     )
   ) {
     showDashboardNotice(
-      "Stůl je součástí aktivní skupiny. Nejdřív skupinu rozpoj."
+      dashboardText("Stůl je součástí aktivní skupiny. Nejdřív skupinu rozpoj.")
     );
     return;
   }
@@ -8612,18 +8609,18 @@ async function deleteTable(id) {
     0
   ) {
     showDashboardNotice(
-      "Stůl je použitý v rezervacích. Pro zachování historie ho místo smazání deaktivuj."
+      dashboardText("Stůl je použitý v rezervacích. Pro zachování historie ho místo smazání deaktivuj.")
     );
     return;
   }
 
   const tableName =
     table.name ||
-    "tento stůl";
+    dashboardText("tento stůl");
 
   if (
     !confirm(
-      `Opravdu trvale smazat ${tableName}?`
+      dashboardMessage`Opravdu trvale smazat ${tableName}?`
     )
   ) {
     return;
@@ -8676,7 +8673,7 @@ async function deleteTable(id) {
 
     if (!canContinue()) return;
     showDashboardNotice(
-      "Stůl byl smazán.",
+      dashboardText("Stůl byl smazán."),
       "success"
     );
   } catch (error) {
@@ -8686,7 +8683,7 @@ async function deleteTable(id) {
     );
 
     showDashboardNotice(
-      "Nepodařilo se smazat stůl."
+      dashboardText("Nepodařilo se smazat stůl.")
     );
   }
 }
@@ -8731,7 +8728,7 @@ function renderTableSelect(
     createTableOption({
       value: "",
       label:
-        "Bez stolu",
+        dashboardText("Bez stolu"),
       selected:
         assignedValue === ""
     })
@@ -8762,9 +8759,9 @@ function renderTableSelect(
 
       const suffix =
         !table.active
-          ? " – neaktivní"
+          ? dashboardText(" – neaktivní")
           : inActiveGroup
-            ? " – součást spojených stolů"
+            ? dashboardText(" – součást spojených stolů")
             : "";
 
       options.push(
@@ -8772,7 +8769,7 @@ function renderTableSelect(
           value:
             Number(table.id),
           label:
-            `${String(
+            dashboardMessage`${String(
               table.name || ""
             )} (${Number(
               table.capacity || 0
@@ -8810,7 +8807,7 @@ function renderTableSelect(
           group
         )
           ? ""
-          : " – neaktivní";
+          : dashboardText(" – neaktivní");
 
       options.push(
         createTableOption({
@@ -8819,9 +8816,9 @@ function renderTableSelect(
               group.id
             )}`,
           label:
-            `🔗 ${String(
+            dashboardMessage`🔗 ${String(
               group.name ||
-              "Spojené stoly"
+              dashboardText("Spojené stoly")
             )} (${Number(
               group.total_capacity || 0
             )} míst)${suffix}`,
@@ -8834,7 +8831,7 @@ function renderTableSelect(
       );
     });
 
-  return `
+  return dashboardMessage`
     <select
       class="tableSelect"
       aria-label="Přiřadit stůl nebo skupinu"
@@ -9218,7 +9215,7 @@ function findBestAvailableResource(
         Number(table.id),
       name:
         table.name ||
-        `Stůl ${table.id}`,
+        dashboardMessage`Stůl ${table.id}`,
       capacity:
         Number(
           table.capacity || 0
@@ -9247,7 +9244,7 @@ function findBestAvailableResource(
       Number(group.id),
     name:
       group.name ||
-      "Spojené stoly",
+      dashboardText("Spojené stoly"),
     capacity:
       Number(
         group.total_capacity || 0
@@ -9298,7 +9295,7 @@ async function autoAssignTable(
 
   if (!reservation) {
     showDashboardNotice(
-      "Rezervace nebyla nalezena."
+      dashboardText("Rezervace nebyla nalezena.")
     );
     return;
   }
@@ -9309,7 +9306,7 @@ async function autoAssignTable(
     "Zrušeno"
   ) {
     showDashboardNotice(
-      "Zrušené rezervaci nelze přiřadit stůl."
+      dashboardText("Zrušené rezervaci nelze přiřadit stůl.")
     );
     return;
   }
@@ -9321,7 +9318,7 @@ async function autoAssignTable(
 
   if (!bestResource) {
     showDashboardNotice(
-      `Pro rezervaci na ${formatDate(
+      dashboardMessage`Pro rezervaci na ${formatDate(
         reservation.date
       )} v ${reservation.time || "-"} není volný vhodný stůl ani skupina.\n\nKontrola používá skutečnou délku rezervace.`
     );
@@ -9330,10 +9327,10 @@ async function autoAssignTable(
 
   const confirmed =
     confirm(
-      `Doporučení: ${bestResource.type === "group" ? "🔗 " : ""}${bestResource.name}\n` +
-      `Kapacita: ${formatCzechCount(bestResource.capacity, "místo", "místa", "míst")}\n` +
-      `Rezervace: ${reservation.people} osob\n\n` +
-      "Přiřadit toto místo?"
+      dashboardMessage`Doporučení: ${bestResource.type === "group" ? "🔗 " : ""}${bestResource.name}\n` +
+      dashboardMessage`Kapacita: ${formatCzechCount(bestResource.capacity, "místo", "místa", "míst")}\n` +
+      dashboardMessage`Rezervace: ${reservation.people} osob\n\n` +
+      dashboardText("Přiřadit toto místo?")
     );
 
   if (!confirmed) {
@@ -9389,7 +9386,7 @@ async function assignTable(
     );
 
     showDashboardNotice(
-      "Přiřazení teď nelze bezpečně změnit. Obnov stránku a zkus to znovu."
+      dashboardText("Přiřazení teď nelze bezpečně změnit. Obnov stránku a zkus to znovu.")
     );
 
     renderReservations(
@@ -9409,7 +9406,7 @@ async function assignTable(
 
   if (!reservation) {
     showDashboardNotice(
-      "Rezervace nebyla nalezena."
+      dashboardText("Rezervace nebyla nalezena.")
     );
     return;
   }
@@ -9438,7 +9435,7 @@ async function assignTable(
     !selectedGroup
   ) {
     showDashboardNotice(
-      "Vybrané místo nebylo nalezeno."
+      dashboardText("Vybrané místo nebylo nalezeno.")
     );
 
     renderReservations(
@@ -9460,7 +9457,7 @@ async function assignTable(
       )
   ) {
     showDashboardNotice(
-      `${selectedTable.name} je součástí spojených stolů.`
+      dashboardMessage`${selectedTable.name} je součástí spojených stolů.`
     );
 
     renderReservations(
@@ -9475,7 +9472,7 @@ async function assignTable(
       false
   ) {
     showDashboardNotice(
-      `${selectedTable.name} je neaktivní.`
+      dashboardMessage`${selectedTable.name} je neaktivní.`
     );
 
     renderReservations(
@@ -9494,7 +9491,7 @@ async function assignTable(
       )
   ) {
     showDashboardNotice(
-      `${selectedTable.name} má pouze ${formatCzechCount(selectedTable.capacity, "místo", "místa", "míst")}, ale rezervace je pro ${reservation.people} osob.`
+      dashboardMessage`${selectedTable.name} má pouze ${formatCzechCount(selectedTable.capacity, "místo", "místa", "míst")}, ale rezervace je pro ${reservation.people} osob.`
     );
 
     renderReservations(
@@ -9512,7 +9509,7 @@ async function assignTable(
     )
   ) {
     showDashboardNotice(
-      `${selectedTable.name} je v tomto čase obsazený.\n\nVyber jiné místo nebo jiný čas.`
+      dashboardMessage`${selectedTable.name} je v tomto čase obsazený.\n\nVyber jiné místo nebo jiný čas.`
     );
 
     renderReservations(
@@ -9540,7 +9537,7 @@ async function assignTable(
       )
     ) {
       showDashboardNotice(
-        "Vybraná skupina stolů není dostupná."
+        dashboardText("Vybraná skupina stolů není dostupná.")
       );
 
       renderReservations(
@@ -9563,7 +9560,7 @@ async function assignTable(
       groupCapacity
     ) {
       showDashboardNotice(
-        `${selectedGroup.name || "Spojené stoly"} mají pouze ${formatCzechCount(groupCapacity, "místo", "místa", "míst")}, ale rezervace je pro ${reservation.people} osob.`
+        dashboardMessage`${selectedGroup.name || dashboardText("Spojené stoly")} mají pouze ${formatCzechCount(groupCapacity, "místo", "místa", "míst")}, ale rezervace je pro ${reservation.people} osob.`
       );
 
       renderReservations(
@@ -9580,7 +9577,7 @@ async function assignTable(
       )
     ) {
       showDashboardNotice(
-        `${selectedGroup.name || "Spojené stoly"} jsou v tomto čase obsazené.\n\nVyber jiné místo nebo jiný čas.`
+        dashboardMessage`${selectedGroup.name || dashboardText("Spojené stoly")} jsou v tomto čase obsazené.\n\nVyber jiné místo nebo jiný čas.`
       );
 
       renderReservations(
@@ -9612,7 +9609,7 @@ async function assignTable(
   if (!canContinue()) return;
   if (saved) {
     showDashboardNotice(
-      "Přiřazení bylo uloženo.",
+      dashboardText("Přiřazení bylo uloženo."),
       "success"
     );
   } else {
@@ -9679,10 +9676,10 @@ async function loadFoods() {
 
     if (foods.length) {
       renderFoods();
-      showDashboardNotice("Menu se nepodařilo obnovit. Zobrazené položky pocházejí z posledního úspěšného načtení.", "error");
+      showDashboardNotice(dashboardText("Menu se nepodařilo obnovit. Zobrazené položky pocházejí z posledního úspěšného načtení."), "error");
     } else {
       const list = document.getElementById("foodList");
-      if (list) list.innerHTML = `<p role="alert">Nepodařilo se načíst menu. Zkus načtení znovu.</p>`;
+      if (list) list.innerHTML = dashboardMessage`<p role="alert">Nepodařilo se načíst menu. Zkus načtení znovu.</p>`;
     }
     return false;
   }
@@ -9759,7 +9756,7 @@ async function saveFood() {
     ).files?.[0];
 
   if (!name || price === "") {
-    showDashboardNotice("Vyplň název i cenu.");
+    showDashboardNotice(dashboardText("Vyplň název i cenu."));
     return;
   }
 
@@ -9768,7 +9765,7 @@ async function saveFood() {
     priceNumber < 0 ||
     priceNumber > 1000000
   ) {
-    showDashboardNotice("Cena musí být platné nezáporné číslo.");
+    showDashboardNotice(dashboardText("Cena musí být platné nezáporné číslo."));
     return;
   }
 
@@ -9781,7 +9778,7 @@ async function saveFood() {
     weight.length > 80
   ) {
     showDashboardNotice(
-      "Některé údaje jídla jsou příliš dlouhé. Zkrať název, popis, ingredience nebo doplňující údaje."
+      dashboardText("Některé údaje jídla jsou příliš dlouhé. Zkrať název, popis, ingredience nebo doplňující údaje.")
     );
     return;
   }
@@ -9794,12 +9791,12 @@ async function saveFood() {
       const extension = FOOD_IMAGE_TYPES.get(imageFile.type);
 
       if (!extension) {
-        showDashboardNotice("Fotografie musí být JPG, PNG nebo WebP.");
+        showDashboardNotice(dashboardText("Fotografie musí být JPG, PNG nebo WebP."));
         return;
       }
 
       if (imageFile.size <= 0 || imageFile.size > MAX_FOOD_IMAGE_BYTES) {
-        showDashboardNotice("Fotografie může mít maximálně 5 MB.");
+        showDashboardNotice(dashboardText("Fotografie může mít maximálně 5 MB."));
         return;
       }
 
@@ -9884,7 +9881,7 @@ async function saveFood() {
     console.error(error);
 
     showDashboardNotice(
-      "Nepodařilo se uložit jídlo nebo nahrát fotografii."
+      dashboardText("Nepodařilo se uložit jídlo nebo nahrát fotografii.")
     );
   }
   } finally {
@@ -9900,7 +9897,7 @@ function renderFoods() {
     document.getElementById("foodList");
 
   if (!foods.length) {
-    list.innerHTML = `
+    list.innerHTML = dashboardMessage`
       <div class="emptyState">
         Menu je zatím prázdné. Přidej první jídlo ve formuláři výše.
       </div>
@@ -9918,7 +9915,7 @@ function renderFoods() {
             src="${escapeHtml(safeImageUrl)}"
             class="foodPhoto"
             alt="${escapeHtml(
-              food.name || "Jídlo"
+              food.name || dashboardText("Jídlo")
             )}"
           >
         `
@@ -9938,7 +9935,7 @@ function renderFoods() {
           </div>
         `;
 
-      return `
+      return dashboardMessage`
         <div class="foodItem">
 
           ${photo}
@@ -9951,7 +9948,7 @@ function renderFoods() {
               )}
 
               ${escapeHtml(
-                food.name || "Bez názvu"
+                food.name || dashboardText("Bez názvu")
               )}
             </b>
 
@@ -9959,13 +9956,12 @@ function renderFoods() {
               ${escapeHtml(
                 food.price || 0
               )}
-              Kč
+              ${dashboardText("Kč")}
             </div>
 
             <small>
               ${escapeHtml(
-                food.category ||
-                "Bez kategorie"
+                dashboardFoodCategory(food.category)
               )}
             </small>
 
@@ -10048,7 +10044,7 @@ function editFood(id) {
 
   document.getElementById(
     "foodBtn"
-  ).textContent = "Uložit změny";
+  ).textContent = dashboardText("Uložit změny");
 
   document.getElementById(
     "cancelEditBtn"
@@ -10085,7 +10081,7 @@ function resetFoodForm(force = false) {
 
   document.getElementById(
     "foodBtn"
-  ).textContent = "Přidat jídlo";
+  ).textContent = dashboardText("Přidat jídlo");
 
   document.getElementById(
     "cancelEditBtn"
@@ -10101,7 +10097,7 @@ async function deleteFood(id) {
   const canContinue = () => contextIsCurrent() && ["owner", "manager"].includes(currentUserRole);
   if (!restaurantId || !userId || !canContinue()) return;
   if (!Number.isSafeInteger(Number(id)) || Number(id) < 1) return;
-  if (!confirm("Opravdu smazat jídlo?")) {
+  if (!confirm(dashboardText("Opravdu smazat jídlo?"))) {
     return;
   }
 
@@ -10141,7 +10137,7 @@ async function deleteFood(id) {
     console.error(error);
 
     showDashboardNotice(
-      "Nepodařilo se smazat jídlo."
+      dashboardText("Nepodařilo se smazat jídlo.")
     );
   } finally {
     if (contextIsCurrent()) {
@@ -10318,7 +10314,7 @@ function openReservationFromCalendar(date, time) {
   const timeInput = document.getElementById("newTime");
 
   if (!reservationSection || !tableSelect || !dateInput || !timeInput) {
-    showDashboardNotice("Formulář nové rezervace se nepodařilo otevřít.");
+    showDashboardNotice(dashboardText("Formulář nové rezervace se nepodařilo otevřít."));
     return;
   }
 
@@ -10469,7 +10465,7 @@ function attachCalendarDragHandlers() {
           );
 
           showDashboardNotice(
-            "Rezervaci teď nelze bezpečně přesunout. Obnov stránku a zkus to znovu."
+            dashboardText("Rezervaci teď nelze bezpečně přesunout. Obnov stránku a zkus to znovu.")
           );
 
           renderCalendar();
@@ -10481,7 +10477,7 @@ function attachCalendarDragHandlers() {
         );
 
         if (!draggedReservation) {
-          showDashboardNotice("Rezervace nebyla nalezena.");
+          showDashboardNotice(dashboardText("Rezervace nebyla nalezena."));
           renderCalendar();
           return;
         }
@@ -10525,8 +10521,8 @@ function attachCalendarDragHandlers() {
           )
         ) {
           showDashboardNotice(
-            `${getTableName(proposedReservation.table_id)} je v čase ${newTime} obsazený.\n\n` +
-            "Rezervace nebyla přesunuta."
+            dashboardMessage`${getTableName(proposedReservation.table_id)} je v čase ${newTime} obsazený.\n\n` +
+            dashboardText("Rezervace nebyla přesunuta.")
           );
           renderCalendar();
           return;
@@ -10543,8 +10539,8 @@ function attachCalendarDragHandlers() {
           )
         ) {
           showDashboardNotice(
-            `${getReservationTableLabel(proposedReservation)} jsou v čase ${newTime} obsazené.\n\n` +
-            "Rezervace nebyla přesunuta."
+            dashboardMessage`${getReservationTableLabel(proposedReservation)} jsou v čase ${newTime} obsazené.\n\n` +
+            dashboardText("Rezervace nebyla přesunuta.")
           );
           renderCalendar();
           return;
@@ -10611,7 +10607,7 @@ function renderCalendar() {
       const reservationId = Number(r.id);
       const guestName =
         getReservationGuestName(r) === "-"
-          ? "Bez jména"
+          ? dashboardText("Bez jména")
           : getReservationGuestName(r);
       const statusClass = getCalendarStatusClass(r.status);
       const statusLabel = getCalendarStatusLabel(r.status);
@@ -10619,7 +10615,7 @@ function renderCalendar() {
         ? ` • 🪑 ${escapeHtml(r.table_name)}`
         : "";
 
-      return `
+      return dashboardMessage`
         <button
           type="button"
           class="calendar-reservation ${statusClass}"
@@ -10818,25 +10814,25 @@ function renderTeamMembers() {
   if (count) count.textContent = String(teamMembers.filter(member => member.active !== false).length);
 
   if (!teamMembers.length) {
-    list.innerHTML = `<div class="history-empty">Zatím tu není žádný člen týmu.</div>`;
+    list.innerHTML = dashboardMessage`<div class="history-empty">Zatím tu není žádný člen týmu.</div>`;
     return;
   }
 
   list.innerHTML = teamMembers.map(member => {
     const isCurrent = member.user_id && member.user_id === currentUserId;
     const isOwner = member.role === 'owner';
-    const status = member.active === false ? 'Neaktivní' : (member.user_id ? 'Aktivní' : 'Pozván');
+    const status = member.active === false ? dashboardText('Neaktivní') : (member.user_id ? dashboardText('Aktivní') : dashboardText('Pozván'));
     const statusClass = member.active === false ? 'inactive' : (member.user_id ? 'active' : 'pending');
     const safeId = Number(member.id);
 
-    return `
+    return dashboardMessage`
       <article class="team-member-card ${member.active === false ? 'is-inactive' : ''}">
         <div class="team-member-main">
           <div class="team-avatar">${escapeHtml((member.full_name || member.email || '?').trim().charAt(0).toUpperCase())}</div>
           <div>
             <div class="team-name-line">
-              <h3>${escapeHtml(member.full_name || member.email || 'Člen týmu')}</h3>
-              ${isCurrent ? '<span class="team-you-badge">Ty</span>' : ''}
+              <h3>${escapeHtml(member.full_name || member.email || dashboardText('Člen týmu'))}</h3>
+              ${isCurrent ? dashboardText('<span class="team-you-badge">Ty</span>') : ''}
             </div>
             <div class="team-email">${escapeHtml(member.email || '')}</div>
           </div>
@@ -10847,11 +10843,11 @@ function renderTeamMembers() {
           <select aria-label="Role zaměstnance" onchange="updateTeamMemberRole(${safeId}, this.value)" ${isOwner || isCurrent ? 'disabled' : ''}>
             <option value="manager" ${member.role === 'manager' ? 'selected' : ''}>Manažer</option>
             <option value="staff" ${member.role === 'staff' ? 'selected' : ''}>Obsluha</option>
-            ${isOwner ? '<option value="owner" selected>Majitel</option>' : ''}
+            ${isOwner ? dashboardText('<option value="owner" selected>Majitel</option>') : ''}
           </select>
           ${!isOwner && !isCurrent ? `
             <button type="button" class="${member.active === false ? 'successButton' : 'dangerButton'} team-action-button" onclick="toggleTeamMemberActive(${safeId}, ${member.active === false ? 'true' : 'false'})">
-              ${member.active === false ? 'Aktivovat' : 'Deaktivovat'}
+              ${member.active === false ? dashboardText('Aktivovat') : dashboardText('Deaktivovat')}
             </button>
           ` : ''}
         </div>
@@ -10872,7 +10868,7 @@ async function loadTeamMembers() {
   }
 
   const list = document.getElementById('teamMemberList');
-  if (list) list.innerHTML = `<div class="history-empty">Načítám tým…</div>`;
+  if (list) list.innerHTML = dashboardMessage`<div class="history-empty">Načítám tým…</div>`;
 
   try {
     const response = await authorizedFetch(
@@ -10890,7 +10886,7 @@ async function loadTeamMembers() {
     if (!contextIsCurrent() || currentUserRole !== 'owner') return;
     console.error('Tým se nepodařilo načíst:', error);
     teamMembers = [];
-    if (list) list.innerHTML = `<div class="history-empty">Tým se teď nepodařilo načíst. Zkus stránku obnovit.</div>`;
+    if (list) list.innerHTML = dashboardMessage`<div class="history-empty">Tým se teď nepodařilo načíst. Zkus stránku obnovit.</div>`;
   }
 }
 
@@ -10914,23 +10910,23 @@ async function inviteTeamMember(event) {
   const role = roleInput?.value || 'staff';
 
   if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-    showDashboardNotice('Zadej platný e-mail zaměstnance.');
+    showDashboardNotice(dashboardText('Zadej platný e-mail zaměstnance.'));
     return;
   }
 
   if (!['manager', 'staff'].includes(role)) {
-    showDashboardNotice('Vyber platnou roli.');
+    showDashboardNotice(dashboardText('Vyber platnou roli.'));
     return;
   }
 
   if (email === getCurrentUserEmail()) {
-    showDashboardNotice('Tento e-mail patří aktuálně přihlášenému majiteli.');
+    showDashboardNotice(dashboardText('Tento e-mail patří aktuálně přihlášenému majiteli.'));
     return;
   }
 
   button.disabled = true;
   const oldText = button.textContent;
-  button.textContent = 'Odesílám pozvánku…';
+  button.textContent = dashboardText('Odesílám pozvánku…');
 
   try {
     const response = await authorizedFetch('/api/invite-team-member', {
@@ -10939,24 +10935,24 @@ async function inviteTeamMember(event) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${getAccessToken()}`
       },
-      body: JSON.stringify({ full_name: fullName, email, role, restaurant_id: restaurantId })
+      body: JSON.stringify({ full_name: fullName, email, role, restaurant_id: restaurantId, locale: dashboardLanguage() })
     });
 
     if (!canContinue()) return;
     const data = await response.json().catch(() => ({}));
     if (!canContinue()) return;
-    if (!response.ok || data?.ok !== true) throw new Error(data?.error || 'Výsledek pozvánky nelze ověřit. Obnov tým a zkontroluj stav před dalším pozváním.');
+    if (!response.ok || data?.ok !== true) throw new Error(data?.error || dashboardText('Výsledek pozvánky nelze ověřit. Obnov tým a zkontroluj stav před dalším pozváním.'));
 
     nameInput.value = '';
     emailInput.value = '';
     roleInput.value = 'staff';
     await loadTeamMembers();
     if (!canContinue()) return;
-    showDashboardNotice(data.message || 'Pozvánka zaměstnanci byla odeslána.', 'success');
+    showDashboardNotice(data.message || dashboardText('Pozvánka zaměstnanci byla odeslána.'), 'success');
   } catch (error) {
     if (!canContinue()) return;
     console.error(error);
-    const msg = String(error.message || 'Pozvánku se nepodařilo odeslat.');
+    const msg = String(error.message || dashboardText('Pozvánku se nepodařilo odeslat.'));
     showDashboardNotice(
       msg,
       "error"
@@ -10998,11 +10994,11 @@ async function updateTeamMemberRole(memberId, role) {
     }
     await loadTeamMembers();
     if (!canContinue()) return;
-    showDashboardNotice('Role zaměstnance byla změněna.', 'success');
+    showDashboardNotice(dashboardText('Role zaměstnance byla změněna.'), 'success');
   } catch (error) {
     if (!canContinue()) return;
     console.error(error);
-    showDashboardNotice('Roli zaměstnance se nepodařilo změnit.');
+    showDashboardNotice(dashboardText('Roli zaměstnance se nepodařilo změnit.'));
     await loadTeamMembers();
   }
 }
@@ -11036,11 +11032,11 @@ async function toggleTeamMemberActive(memberId, active) {
     }
     await loadTeamMembers();
     if (!canContinue()) return;
-    showDashboardNotice(active ? 'Zaměstnanec byl aktivován.' : 'Zaměstnanec byl deaktivován.', 'success');
+    showDashboardNotice(active ? dashboardText('Zaměstnanec byl aktivován.') : dashboardText('Zaměstnanec byl deaktivován.'), 'success');
   } catch (error) {
     if (!canContinue()) return;
     console.error(error);
-    showDashboardNotice('Stav zaměstnance se nepodařilo změnit.');
+    showDashboardNotice(dashboardText('Stav zaměstnance se nepodařilo změnit.'));
     await loadTeamMembers();
   }
 }
@@ -11053,7 +11049,7 @@ function showDashboardSection(sectionId, options = {}) {
     const resolvedSection = denied ? "prehled" : (sectionExists ? requestedSection : "prehled");
 
     if (denied && notifyDenied) {
-        showDashboardNotice("Pro tuto část nemáš oprávnění.", "info");
+        showDashboardNotice(dashboardText("Pro tuto část nemáš oprávnění."), "info");
     }
 
     const sectionIds = [
@@ -11279,8 +11275,8 @@ document.addEventListener("mouseup", async () => {
 
     showDashboardNotice(
       isGroup
-        ? "Pozici spojených stolů se nepodařilo uložit."
-        : "Pozici stolu se nepodařilo uložit."
+        ? dashboardText("Pozici spojených stolů se nepodařilo uložit.")
+        : dashboardText("Pozici stolu se nepodařilo uložit.")
     );
 
     await loadTables();
@@ -11425,7 +11421,7 @@ const roomInput =
   const capacity = Number(capacityInput.value);
   const room = roomInput.value;
   if (name.length < 2) {
-    showDashboardNotice("Zadej název stolu.");
+    showDashboardNotice(dashboardText("Zadej název stolu."));
     nameInput.focus();
     return;
   }
@@ -11435,7 +11431,7 @@ const roomInput =
     capacity < 1 ||
     capacity > 30
   ) {
-    showDashboardNotice("Počet míst musí být od 1 do 30.");
+    showDashboardNotice(dashboardText("Počet míst musí být od 1 do 30."));
     capacityInput.focus();
     return;
   }
@@ -11444,7 +11440,7 @@ const roomInput =
     pendingTableX === null ||
     pendingTableY === null
   ) {
-    showDashboardNotice("Nejdříve klikni do mapy.");
+    showDashboardNotice(dashboardText("Nejdříve klikni do mapy."));
     closeQuickTableModal();
     return;
   }
@@ -11458,7 +11454,7 @@ const roomInput =
   });
 
   if (duplicate) {
-    showDashboardNotice("Stůl s tímto názvem už existuje.");
+    showDashboardNotice(dashboardText("Stůl s tímto názvem už existuje."));
     nameInput.focus();
     return;
   }
@@ -11477,7 +11473,7 @@ const roomInput =
   try {
     if (addButton) {
       addButton.disabled = true;
-      addButton.textContent = "Ukládám...";
+      addButton.textContent = dashboardText("Ukládám...");
     }
 
     const response = await authorizedFetch(
@@ -11524,13 +11520,13 @@ const roomInput =
       error
     );
 
-    showDashboardNotice("Stůl se nepodařilo přidat.");
+    showDashboardNotice(dashboardText("Stůl se nepodařilo přidat."));
   } finally {
     if (contextIsCurrent()) {
     quickTableInProgress = false;
     if (addButton) {
       addButton.disabled = !canContinue();
-      addButton.textContent = "Přidat stůl";
+      addButton.textContent = dashboardText("Přidat stůl");
     }
     }
   }
@@ -11548,7 +11544,7 @@ document.addEventListener("DOMContentLoaded", () => {
 /* =========================================================
    PROVOZNÍ DOBA A BLOKOVANÉ ČASY
 ========================================================= */
-const DAY_NAMES = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
+const DAY_NAMES = [dashboardText("Neděle"), dashboardText("Pondělí"), dashboardText("Úterý"), dashboardText("Středa"), dashboardText("Čtvrtek"), dashboardText("Pátek"), dashboardText("Sobota")];
 let openingHours = [];
 let blockedTimes = [];
 
@@ -11577,7 +11573,7 @@ async function loadOpeningHours() {
   } catch (error) {
     if (!contextIsCurrent()) return;
     console.error(error);
-    showDashboardNotice("Provozní dobu se teď nepodařilo načíst. Zkus stránku obnovit.");
+    showDashboardNotice(dashboardText("Provozní dobu se teď nepodařilo načíst. Zkus stránku obnovit."));
   }
 }
 
@@ -11587,7 +11583,7 @@ function renderOpeningHours() {
   const byDay = new Map(openingHours.map(row => [Number(row.day_of_week), row]));
   container.innerHTML = DAY_NAMES.map((name, day) => {
     const row = byDay.get(day) || { is_open: true, open_time: "10:00", close_time: "22:00" };
-    return `<div class="opening-day" data-day="${day}">
+    return dashboardMessage`<div class="opening-day" data-day="${day}">
       <strong>${name}</strong>
       <label><input class="day-open" type="checkbox" ${row.is_open ? "checked" : ""}> Otevřeno</label>
       <input class="day-from" type="time" value="${escapeHtml(String(row.open_time || "").slice(0,5))}">
@@ -11614,12 +11610,12 @@ async function saveOpeningHours() {
 
   if (rows.length !== 7 || new Set(rows.map(row => row.day_of_week)).size !== 7 ||
       rows.some(row => !Number.isInteger(row.day_of_week) || row.day_of_week < 0 || row.day_of_week > 6)) {
-    showDashboardNotice("Týden se nenačetl celý. Obnov stránku a zkus to znovu.");
+    showDashboardNotice(dashboardText("Týden se nenačetl celý. Obnov stránku a zkus to znovu."));
     return;
   }
 
   if (rows.some(row => row.is_open && (!row.open_time || !row.close_time || row.close_time <= row.open_time))) {
-    showDashboardNotice("U otevřených dnů musí být konec později než začátek.");
+    showDashboardNotice(dashboardText("U otevřených dnů musí být konec později než začátek."));
     return;
   }
 
@@ -11649,11 +11645,11 @@ async function saveOpeningHours() {
     openingHoursConfigured = openingHours.some(row => row.is_open === true && row.open_time && row.close_time);
     renderOpeningHours();
     renderSetupChecklist();
-    showDashboardNotice("Otevírací doba byla uložena.", "success");
+    showDashboardNotice(dashboardText("Otevírací doba byla uložena."), "success");
   } catch (error) {
     if (!canContinue()) return;
     console.error(error);
-    showDashboardNotice("Otevírací dobu se nepodařilo uložit.");
+    showDashboardNotice(dashboardText("Otevírací dobu se nepodařilo uložit."));
   }
 }
 
@@ -11682,11 +11678,11 @@ function renderBlockedTimes() {
   const container = document.getElementById("blockedTimesList");
   if (!container) return;
   if (!blockedTimes.length) {
-    container.innerHTML = '<p class="empty-state">Žádné blokované časy.</p>';
+    container.innerHTML = dashboardText('<p class="empty-state">Žádné blokované časy.</p>');
     return;
   }
-  container.innerHTML = blockedTimes.map(block => `<div class="blocked-time-item">
-    <div><strong>${escapeHtml(String(block.date || ""))}</strong> · ${escapeHtml(String(block.start_time || "").slice(0,5))}–${escapeHtml(String(block.end_time || "").slice(0,5))}<br><span>${escapeHtml(block.reason || "Bez důvodu")}</span></div>
+  container.innerHTML = blockedTimes.map(block => dashboardMessage`<div class="blocked-time-item">
+    <div><strong>${escapeHtml(String(block.date || ""))}</strong> · ${escapeHtml(String(block.start_time || "").slice(0,5))}–${escapeHtml(String(block.end_time || "").slice(0,5))}<br><span>${escapeHtml(block.reason || dashboardText("Bez důvodu"))}</span></div>
     <button type="button" class="dangerButton" onclick="deleteBlockedTime(${Number(block.id)})">Smazat</button>
   </div>`).join("");
 }
@@ -11703,12 +11699,12 @@ async function addBlockedTime() {
   const end_time = document.getElementById("blockEnd").value;
   const reason = document.getElementById("blockReason").value.trim();
   if (!date || !start_time || !end_time || end_time <= start_time) {
-    showDashboardNotice("Vyplň datum a platný čas blokace.");
+    showDashboardNotice(dashboardText("Vyplň datum a platný čas blokace."));
     return;
   }
 
   if (reason.length > 300) {
-    showDashboardNotice("Důvod blokace může mít maximálně 300 znaků.");
+    showDashboardNotice(dashboardText("Důvod blokace může mít maximálně 300 znaků."));
     return;
   }
 
@@ -11725,11 +11721,11 @@ async function addBlockedTime() {
     document.getElementById("blockReason").value = "";
     await loadBlockedTimes();
     if (!canContinue()) return;
-    showDashboardNotice("Čas byl zablokován.", "success");
+    showDashboardNotice(dashboardText("Čas byl zablokován."), "success");
   } catch (error) {
     if (!canContinue()) return;
     console.error(error);
-    showDashboardNotice("Blokaci se nepodařilo uložit.");
+    showDashboardNotice(dashboardText("Blokaci se nepodařilo uložit."));
   }
 }
 
@@ -11749,22 +11745,22 @@ async function deleteBlockedTime(id) {
     if (!canContinue()) return;
     await loadBlockedTimes();
     if (!canContinue()) return;
-    showDashboardNotice("Blokace byla odstraněna.", "success");
+    showDashboardNotice(dashboardText("Blokace byla odstraněna."), "success");
   } catch (error) {
     if (!canContinue()) return;
     console.error(error);
-    showDashboardNotice("Blokaci se nepodařilo odstranit.");
+    showDashboardNotice(dashboardText("Blokaci se nepodařilo odstranit."));
   }
 }
 
 async function checkDashboardOpeningAvailability({ date, time, durationMinutes }) {
   const day = new Date(`${date}T12:00:00`).getDay();
   const hours = openingHours.find(row => Number(row.day_of_week) === day) || { is_open: true, open_time: "10:00", close_time: "22:00" };
-  if (!hours.is_open) return { ok: false, message: "V tento den má restaurace zavřeno." };
+  if (!hours.is_open) return { ok: false, message: dashboardText("V tento den má restaurace zavřeno.") };
   const start = timeToMinutes(time);
   const end = start + Number(durationMinutes || 120);
   if (start < timeToMinutes(hours.open_time) || end > timeToMinutes(hours.close_time)) {
-    return { ok: false, message: `Rezervace musí celá proběhnout mezi ${String(hours.open_time).slice(0,5)} a ${String(hours.close_time).slice(0,5)}.` };
+    return { ok: false, message: dashboardMessage`Rezervace musí celá proběhnout mezi ${String(hours.open_time).slice(0,5)} a ${String(hours.close_time).slice(0,5)}.` };
   }
   const block = blockedTimes.find(item => item.date === date && start < timeToMinutes(item.end_time) && timeToMinutes(item.start_time) < end);
   if (block) {
@@ -11774,8 +11770,8 @@ async function checkDashboardOpeningAvailability({ date, time, durationMinutes }
     return {
       ok: false,
       message: block.reason
-        ? `Rezervace by končila v ${reservationEnd} a zasahovala do blokace ${blockStart}–${blockEnd}: ${block.reason}`
-        : `Rezervace by končila v ${reservationEnd} a zasahovala do blokovaného času ${blockStart}–${blockEnd}.`
+        ? dashboardMessage`Rezervace by končila v ${reservationEnd} a zasahovala do blokace ${blockStart}–${blockEnd}: ${block.reason}`
+        : dashboardMessage`Rezervace by končila v ${reservationEnd} a zasahovala do blokovaného času ${blockStart}–${blockEnd}.`
     };
   }
   return { ok: true };
@@ -11835,7 +11831,7 @@ function updateReservationSettingsSummary() {
   const summary = document.getElementById("reservationSettingsSummary");
   if (!summary) return;
 
-  summary.innerHTML = `
+  summary.innerHTML = dashboardMessage`
     <strong>Jak to uvidí host:</strong>
     <span>Host vybere pouze počet osob, datum a dostupný čas. Délka zůstává interní a systém ji použije automaticky.</span>
   `;
@@ -11871,7 +11867,7 @@ async function loadReservationSettings() {
     console.error("Nastavení rezervací se nepodařilo načíst:", error);
     reservationSettings = { ...DEFAULT_RESERVATION_SETTINGS };
     renderReservationSettings();
-    showDashboardNotice("Nastavení rezervací se teď nepodařilo načíst. Zkus stránku obnovit.", "info");
+    showDashboardNotice(dashboardText("Nastavení rezervací se teď nepodařilo načíst. Zkus stránku obnovit."), "info");
   }
 }
 
@@ -11897,7 +11893,7 @@ async function saveReservationSettings() {
 
   const durations = [values.duration_1_2, values.duration_3_4, values.duration_5_6, values.duration_7_plus];
   if (durations.some(value => !Number.isFinite(value) || value < 30 || value > 360)) {
-    showDashboardNotice("Délka rezervace musí být mezi 30 a 360 minutami.");
+    showDashboardNotice(dashboardText("Délka rezervace musí být mezi 30 a 360 minutami."));
     return;
   }
 
@@ -11907,13 +11903,13 @@ async function saveReservationSettings() {
     values.min_advance_minutes > 10080
   ) {
     showDashboardNotice(
-      "Minimální čas předem musí být od 0 do 10 080 minut."
+      dashboardText("Minimální čas předem musí být od 0 do 10 080 minut.")
     );
     return;
   }
 
   if (!Number.isFinite(values.max_advance_days) || values.max_advance_days < 1 || values.max_advance_days > 365) {
-    showDashboardNotice("Počet dní dopředu musí být od 1 do 365.");
+    showDashboardNotice(dashboardText("Počet dní dopředu musí být od 1 do 365."));
     return;
   }
 
@@ -11926,7 +11922,7 @@ async function saveReservationSettings() {
     values.max_people > 200
   ) {
     showDashboardNotice(
-      "Minimum hostů musí být 1–50 a maximum musí být alespoň minimum, nejvýše 200."
+      dashboardText("Minimum hostů musí být 1–50 a maximum musí být alespoň minimum, nejvýše 200.")
     );
     return;
   }
@@ -11953,11 +11949,11 @@ async function saveReservationSettings() {
     reservationSettingsConfigured = true;
     renderReservationSettings();
     renderSetupChecklist();
-    showDashboardNotice("Nastavení rezervací bylo uloženo.", "success");
+    showDashboardNotice(dashboardText("Nastavení rezervací bylo uloženo."), "success");
   } catch (error) {
     if (!canContinue()) return;
     console.error(error);
-    showDashboardNotice("Nastavení rezervací se nepodařilo uložit.");
+    showDashboardNotice(dashboardText("Nastavení rezervací se nepodařilo uložit."));
   }
 }
 

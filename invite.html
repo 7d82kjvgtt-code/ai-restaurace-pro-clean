@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dokončení pozvánky</title>
+  <title data-dashboard-i18n>Dokončení pozvánky</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
@@ -91,20 +91,26 @@
 <body>
 
   <div class="card">
-    <h1>👋 Vítejte v týmu</h1>
-    <p>Dokončete svůj účet nastavením vlastního hesla.</p>
+    <label for="invitationLanguage" data-dashboard-i18n>Jazyk administrace</label>
+    <select id="invitationLanguage" data-dashboard-language data-language-mode="live" onchange="changeDashboardLanguage(this)" aria-label="Jazyk administrace" data-dashboard-i18n style="padding:8px;margin-bottom:20px;background:#0f172a;color:white;border:1px solid #475569;border-radius:8px">
+      <option value="cs" lang="cs">Čeština</option>
+      <option value="en" lang="en">English</option>
+    </select>
+    <h1 data-dashboard-i18n>👋 Vítejte v týmu</h1>
+    <p data-dashboard-i18n>Dokončete svůj účet nastavením vlastního hesla.</p>
 
-    <label>Nové heslo</label>
-    <input id="password" type="password" placeholder="Minimálně 12 znaků" />
+    <label for="password" data-dashboard-i18n>Nové heslo</label>
+    <input id="password" type="password" placeholder="Minimálně 12 znaků" / data-dashboard-i18n>
 
-    <label>Potvrdit heslo</label>
-    <input id="passwordConfirm" type="password" placeholder="Zadejte heslo znovu" />
+    <label for="passwordConfirm" data-dashboard-i18n>Potvrdit heslo</label>
+    <input id="passwordConfirm" type="password" placeholder="Zadejte heslo znovu" / data-dashboard-i18n>
 
-    <button id="activateBtn">Aktivovat účet</button>
+    <button id="activateBtn" data-dashboard-i18n>Aktivovat účet</button>
 
     <div id="message" class="message"></div>
   </div>
 
+<script src="dashboard-i18n.js?v=20261102"></script>
 <script>
   const SUPABASE_URL = "https://decpnnbaejxjbpmyjocs.supabase.co";
 
@@ -120,8 +126,19 @@
   const btn = document.getElementById("activateBtn");
   const message = document.getElementById("message");
 
+  let invitationMessage = null;
+  let invitationButtonText = "Aktivovat účet";
+  function setInvitationButton(text) {
+    invitationButtonText = text;
+    btn.textContent = dashboardText(text);
+  }
+  document.addEventListener('dashboardlanguagechange', () => {
+    setInvitationButton(invitationButtonText);
+    if (invitationMessage) showMessage(invitationMessage.text, invitationMessage.type);
+  });
   function showMessage(text, type) {
-    message.textContent = text;
+    invitationMessage = { text, type };
+    message.textContent = dashboardText(text);
     message.className = "message " + type;
   }
 
@@ -185,6 +202,7 @@
   });
 
   btn.addEventListener("click", async () => {
+    if (btn.disabled) return;
     const password = document.getElementById("password").value;
     const passwordConfirm = document.getElementById("passwordConfirm").value;
 
@@ -199,14 +217,14 @@
     }
 
     btn.disabled = true;
-    btn.textContent = "Aktivuji účet...";
+    setInvitationButton("Aktivuji účet...");
 
     try {
       const inviteSession = await ensureInviteSession();
       if (!inviteSession) {
         showMessage("Pozvánka není platná nebo už vypršela. Požádej majitele o novou pozvánku.", "error");
         btn.disabled = false;
-        btn.textContent = "Aktivovat účet";
+        setInvitationButton("Aktivovat účet");
         return;
       }
 
@@ -215,7 +233,7 @@
       if (error) {
         showMessage(error.message || "Účet se nepodařilo aktivovat.", "error");
         btn.disabled = false;
-        btn.textContent = "Aktivovat účet";
+        setInvitationButton("Aktivovat účet");
         return;
       }
 
@@ -247,7 +265,7 @@
     } catch (err) {
       showMessage("Něco se pokazilo. Zkuste to znovu.", "error");
       btn.disabled = false;
-      btn.textContent = "Aktivovat účet";
+      setInvitationButton("Aktivovat účet");
     }
   });
 </script>

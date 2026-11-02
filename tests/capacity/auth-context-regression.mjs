@@ -11,6 +11,10 @@ for(const scenario of ['owner','manager','staff','empty','multiple','invalid-rol
   let requests=0;
   const context=vm.createContext({
     dashboardText: value => value,
+    dashboardLanguage: () => 'cs',
+    dashboardLocale: () => 'cs-CZ',
+    dashboardMessage: (parts, ...values) => parts.reduce((text, part, i) => text + part + (i < values.length ? values[i] : ''), ''),
+
     availableRestaurantMemberships:[],selectRestaurantMembership:rows=>rows.length===1?rows[0]:null,renderRestaurantChoices(){},showRestaurantChooser(){},
     dashboardSessionVersion:1,restaurantContextReadFailed:false,currentUserId:'new-marker',currentRestaurantId:99,currentUserRole:'new-marker',
     SUPABASE_URL:'https://fixture.invalid',AbortSignal,
@@ -45,6 +49,10 @@ for(const scenario of ['same-user-new-session','token-refresh']) {
   let requests=0,waits=0;
   const context=vm.createContext({
     dashboardText: value => value,
+    dashboardLanguage: () => 'cs',
+    dashboardLocale: () => 'cs-CZ',
+    dashboardMessage: (parts, ...values) => parts.reduce((text, part, i) => text + part + (i < values.length ? values[i] : ''), ''),
+
     availableRestaurantMemberships:[],selectRestaurantMembership:rows=>rows.length===1?rows[0]:null,renderRestaurantChoices(){},showRestaurantChooser(){},
     dashboardSessionVersion:1,restaurantContextReadFailed:false,currentUserId:null,currentRestaurantId:null,currentUserRole:null,
     SUPABASE_URL:'https://fixture.invalid',AbortSignal,getAccessToken:()=> 'fixture',parseJwt:()=>({sub:'same-user'}),getHeaders:()=>({}),console:{error(){}},
@@ -63,6 +71,10 @@ for(const scenario of ['new-owner','inactive','profile-linked','http-error','mal
   const error={textContent:''};
   const context=vm.createContext({
     dashboardText: value => value,
+    dashboardLanguage: () => 'cs',
+    dashboardLocale: () => 'cs-CZ',
+    dashboardMessage: (parts, ...values) => parts.reduce((text, part, i) => text + part + (i < values.length ? values[i] : ''), ''),
+
     availableRestaurantMemberships:[],selectRestaurantMembership:rows=>rows.length===1?rows[0]:null,renderRestaurantChoices(){},showRestaurantChooser(){},
     dashboardSessionVersion:1,restaurantContextReadFailed:scenario==='read-failed',SUPABASE_URL:'https://fixture.invalid',AbortSignal,
     getAccessToken:()=> 'fixture',parseJwt:()=>({sub:'same-user'}),getHeaders:()=>({}),document:{getElementById:()=>error},

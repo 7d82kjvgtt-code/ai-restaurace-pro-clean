@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 const source = fs.readFileSync(new URL('../../api/invite-team-member.js', import.meta.url), 'utf8');
 const ownerId='10000000-0000-4000-8000-000000000001', inviteeId='20000000-0000-4000-8000-000000000002';
 const scenarios=[['missing-token',401],['invalid-token',401],['manager',403],['staff',403],['no-membership',403],['multiple-memberships',409],['foreign-target',403],['wrong-target-response',500],['invalid-target',400],['boolean-target',400],['existing-account',200],['existing-wrong-email',409],['existing-unconfirmed',409],['existing-auth-error',409],['active-invalid-json',500],['active-object',500],['active-null-row',500],['active-invalid-id',500],['active-invalid-user',500],['existing-object',500],['existing-invalid-id',500],['existing-active-owner',409],['forbidden-owner-role',400],['valid',200],['legacy-valid',200]];
-for(const [scenario,expectedStatus] of scenarios){
+for(const locale of ['cs','en']) for(const [scenario,expectedStatus] of scenarios){
  let writes=0,status=200,result;
  const json=data=>({ok:true,status:200,json:async()=>data,text:async()=>JSON.stringify(data)});
  const existingAccount=scenario.startsWith('existing-')&&['existing-account','existing-wrong-email','existing-unconfirmed','existing-auth-error'].includes(scenario);
@@ -51,8 +51,9 @@ for(const [scenario,expectedStatus] of scenarios){
  vm.runInContext(source,context);
  const headers={},res={setHeader(k,v){headers[k]=v;},status(n){status=n;return this;},json(v){result=v;return this;}};
  const target=['multiple-memberships','legacy-valid'].includes(scenario)?undefined:scenario==='foreign-target'?999:scenario==='invalid-target'?'bad':scenario==='boolean-target'?true:2;
- await context.module.exports({method:'POST',headers:scenario==='missing-token'?{}:{authorization:'Bearer fixture',host:'attacker.example.invalid'},body:{full_name:'Local fixture',email:'test@example.invalid',restaurant_id:target,role:scenario==='forbidden-owner-role'?'owner':'staff'}},res);
+ await context.module.exports({method:'POST',headers:scenario==='missing-token'?{}:{authorization:'Bearer fixture',host:'attacker.example.invalid'},body:{locale,full_name:'Local fixture',email:'test@example.invalid',restaurant_id:target,role:scenario==='forbidden-owner-role'?'owner':'staff'}},res);
  assert.equal(status,expectedStatus,scenario);assert.equal(headers['Cache-Control'],'no-store');assert.equal(writes,expectedStatus===200?(existingAccount?1:2):0,scenario);
  if(expectedStatus===200) assert.equal(result.ok,true);else assert.equal(typeof result.error,'string');
+ if(locale==='en') assert.doesNotMatch(result.error||result.message||'',/[ěščřžýáíéůúďťň]/i,scenario+' English response');
 }
-console.log(`PASS ${scenarios.length} scoped invitation cases: owner role for chosen restaurant, verified existing accounts and safe legacy fallback; no external calls.`);
+console.log(`PASS ${scenarios.length * 2} scoped invitation cases in CZ/EN: owner role for chosen restaurant, verified existing accounts and safe legacy fallback; no external calls.`);
