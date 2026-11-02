@@ -1,0 +1,9 @@
+{
+  "pg_bin": "/Applications/Postgres.app/Contents/Versions/17/bin",
+  "pg_service": "restaurant_backup",
+  "pg_service_file": "~/Library/Application Support/AI-Restaurace-Backup/pg_service.conf",
+  "pg_password_file": "~/Library/Application Support/AI-Restaurace-Backup/pgpass",
+  "restic": "/opt/homebrew/bin/restic",
+  "restic_repository": "/REPLACE/WITH/PRIVATE/OFFSITE/RESTIC/REPOSITORY",
+  "restic_password_file": "~/Library/Application Support/AI-Restaurace-Backup/restic-password"
+}

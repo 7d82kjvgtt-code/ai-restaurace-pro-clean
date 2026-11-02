@@ -1,13 +1,13 @@
 # Předání první restauraci — pilot
 
-Stav k 18. 10. 2026. Tento dokument je postup předání, nikoli potvrzení, že už byl konkrétní zákazník založen a převzal systém.
+Stav k 2. 11. 2026. Tento dokument je postup předání, nikoli potvrzení, že už byl konkrétní zákazník založen a převzal systém.
 
 ## Ověřený základ
 
 - Produkční web: https://ai-restaurace-pro-clean.vercel.app
 - Ukázková restaurace: https://ai-restaurace-pro-clean.vercel.app/r/restaurace-c03b641f
 - Administrace: https://ai-restaurace-pro-clean.vercel.app/dashboard.html
-- Veřejná stránka má přepínač CZ / EN. Kompletní anglická administrace není součástí potvrzeného rozsahu.
+- Veřejná stránka i administrace mají přepínač CZ / EN. Statické a dynamické provozní texty administrace jsou přeložené a regresně otestované; přejímka skutečným přihlášeným uživatelem v obou jazycích ještě zbývá.
 - Příjem rezervace, potvrzení a zrušení byly dříve ověřeny skutečným doručením e-mailů. Tyto testy bez důvodu neopakovat.
 - Oddělení dat bylo testováno na syntetických 100 restauracích; rozsah a omezení jsou v [ověření kapacity](100-restaurant-verification.md).
 - AI je vypnutá. Nenabízet ji jako aktivní součást pilotu a nezapínat placené služby bez dohody.
@@ -80,6 +80,8 @@ Při hlášení problému zaznamenat čas včetně časového pásma, veřejný 
 - Technická chyba: ve Vercelu otevřít Logs pro daný čas a request; ověřit stav HTTP, dobu běhu a chybu.
 - Problém po nasazení: nejprve zjistit chybný commit a rozsah dopadu. Návrat na staré nasazení nevrací databázové změny; migrace nevracet naslepo.
 - Podezření na cizí soukromá data: nepokračovat v běžném používání dotčené funkce, uchovat minimum podkladů a před dalším spuštěním opravit a ověřit oprávnění.
+
+Aktuální přehled implementace a chybějících vstupů: [stav spuštění](launch-status-cs.md).
 
 ## Co zatím není uzavřené
 

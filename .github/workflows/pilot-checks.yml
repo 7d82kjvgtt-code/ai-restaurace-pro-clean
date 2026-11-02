@@ -13,6 +13,7 @@ on:
       - 'restaurant-context.js'
       - 'dashboard-i18n.js'
       - 'supabase/migrations/**'
+      - 'scripts/**'
       - 'tests/capacity/**'
       - '.github/workflows/pilot-checks.yml'
   pull_request:
@@ -26,6 +27,7 @@ on:
       - 'restaurant-context.js'
       - 'dashboard-i18n.js'
       - 'supabase/migrations/**'
+      - 'scripts/**'
       - 'tests/capacity/**'
       - '.github/workflows/pilot-checks.yml'
   workflow_dispatch:
@@ -60,3 +62,19 @@ jobs:
         run: npm ci --prefix tests/capacity --ignore-scripts --no-audit --no-fund
       - name: Run offline API and tenant regression tests
         run: npm test --prefix tests/capacity
+      - name: Verify backup failure boundaries and encrypted round trip with synthetic data
+        env:
+          RESTIC_TEST_BIN: ${{ runner.temp }}/restaurant-backup-tools/restic
+        run: |
+          python3 -m py_compile scripts/backup-restaurant.py scripts/install-backup-schedule.py
+          python3 - <<'PY'
+          import bz2, hashlib, os, pathlib, urllib.request
+          archive = urllib.request.urlopen('https://github.com/restic/restic/releases/download/v0.18.1/restic_0.18.1_linux_amd64.bz2', timeout=60).read()
+          expected = '680838f19d67151adba227e1570cdd8af12c19cf1735783ed1ba928bc41f363d'
+          assert hashlib.sha256(archive).hexdigest() == expected, 'Unexpected restic archive hash'
+          target = pathlib.Path(os.environ['RESTIC_TEST_BIN'])
+          target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+          target.write_bytes(bz2.decompress(archive))
+          target.chmod(0o700)
+          PY
+          python3 tests/capacity/backup-regression.py
