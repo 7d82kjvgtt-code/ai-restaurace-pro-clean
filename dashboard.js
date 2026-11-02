@@ -2457,6 +2457,9 @@ function showCreateRestaurant() {
 
 async function signupOwner(event) {
   event.preventDefault();
+  const sessionVersion = dashboardSessionVersion;
+  let expectedAccessToken = getAccessToken();
+  const contextIsCurrent = () => sessionVersion === dashboardSessionVersion && getAccessToken() === expectedAccessToken;
   const form = document.getElementById("signupForm");
   const email = document.getElementById("signupEmail").value.trim();
   const password = document.getElementById("signupPassword").value;
@@ -2477,6 +2480,7 @@ async function signupOwner(event) {
       headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
     });
+    if (!contextIsCurrent()) return;
     if (!response.ok) {
       status.textContent = response.status === 429
         ? dashboardText("Příliš mnoho pokusů. Zkuste to později.")
@@ -2484,6 +2488,7 @@ async function signupOwner(event) {
       return;
     }
     const data = await response.json();
+    if (!contextIsCurrent()) return;
     if (data === null || typeof data !== "object" || Array.isArray(data)) {
       throw new Error("Invalid signup response.");
     }
@@ -2500,15 +2505,17 @@ async function signupOwner(event) {
     if (hasSession) {
       sessionStorage.setItem("dashboardLoggedIn", "true");
       sessionStorage.setItem("supabaseAccessToken", data.access_token);
+      expectedAccessToken = data.access_token;
       sessionStorage.setItem("supabaseRefreshToken", data.refresh_token);
       showCreateRestaurant();
     } else {
       status.textContent = dashboardText("Zkontrolujte e-mail a potvrďte účet. Pak se přihlaste a založte restauraci.");
     }
   } catch {
+    if (!contextIsCurrent()) return;
     status.textContent = dashboardText("Výsledek registrace nelze ověřit. Zkontrolujte e-mail a zkuste přihlášení před dalším pokusem.");
   } finally {
-    button.disabled = false;
+    if (contextIsCurrent()) button.disabled = false;
   }
 }
 
